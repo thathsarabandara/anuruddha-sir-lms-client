@@ -1,10 +1,13 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { ROUTES } from '../../utils/constants';
 import { FaGraduationCap, FaUser, FaSignInAlt, FaTimes, FaBars } from 'react-icons/fa';
+import LanguageSwitcher from '../common/LanguageSwitcher';
 import gsap from 'gsap';
 
 const TopNav = () => {
+  const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const location = useLocation();
@@ -30,14 +33,12 @@ const TopNav = () => {
   }, [isMobileMenuOpen]);
 
   const navLinks = [
-    { name: 'Home', path: ROUTES.HOME },
-    { name: 'About', path: ROUTES.ABOUT },
-    { name: 'Courses', path: ROUTES.COURSES },
-    { name: 'Services', path: ROUTES.SERVICES },
-    { name: 'Gallery', path: ROUTES.GALLERY },
-    { name: 'Contact', path: ROUTES.CONTACT },
-    { name: 'Testimonials', path: ROUTES.TESTIMONIALS },
-    { name: 'FAQ', path: ROUTES.FAQ },
+    { name: t('common.home'), path: ROUTES.HOME },
+    { name: t('common.about'), path: ROUTES.ABOUT },
+    { name: t('common.courses'), path: ROUTES.COURSES },
+    { name: t('common.services'), path: ROUTES.SERVICES },
+    { name: t('common.gallery'), path: ROUTES.GALLERY },
+    { name: t('common.contact'), path: ROUTES.CONTACT },
   ];
 
   const isActive = (path) => location.pathname === path;
@@ -78,19 +79,20 @@ const TopNav = () => {
 
             {/* Auth Buttons - Minimalist */}
             <div className="hidden lg:flex items-center space-x-2">
+              <LanguageSwitcher />
               <Link 
                 to={ROUTES.LOGIN} 
                 className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-primary-600 font-medium text-sm transition-colors duration-300"
               >
                 <FaSignInAlt className="text-sm" />
-                <span>Sign In</span>
+                <span>{t('common.login')}</span>
               </Link>
               <Link 
                 to={ROUTES.REGISTER} 
                 className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-medium text-sm rounded-lg hover:shadow-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-300 transform hover:scale-105"
               >
                 <FaUser className="text-sm" />
-                <span>Register</span>
+                <span>{t('common.register')}</span>
               </Link>
             </div>
 
@@ -131,13 +133,16 @@ const TopNav = () => {
                 </Link>
               ))}
               <div className="pt-4 border-t space-y-3">
+                <div className="flex justify-center">
+                  <LanguageSwitcher />
+                </div>
                 <Link
                   to={ROUTES.LOGIN}
                   className="flex items-center justify-center gap-2 px-4 py-3 text-primary-600 hover:bg-primary-50 font-medium rounded-lg transition-all"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <FaSignInAlt className="text-sm" />
-                  Sign In
+                  {t('common.login')}
                 </Link>
                 <Link
                   to={ROUTES.REGISTER}
@@ -145,7 +150,7 @@ const TopNav = () => {
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <FaUser className="text-sm" />
-                  Register
+                  {t('common.register')}
                 </Link>
               </div>
             </div>
