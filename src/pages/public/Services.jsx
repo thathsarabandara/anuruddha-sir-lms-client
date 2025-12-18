@@ -138,37 +138,74 @@ const Services = () => {
   }, []);
 
   return (
-    <div className="py-12" ref={containerRef}>
+    <div className="pb-12" ref={containerRef}>
       {/* Header */}
-      <section className="py-16">
-        <img src='/assets/images/services/hero.jpeg' alt="Services Hero" className='absolute inset-0 opacity-25'/>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h1 className="text-5xl font-bold text-gray-900 mb-4">
+      <section className="relative py-24 overflow-hidden h-96">
+        {/* Background Image with Overlay */}
+        <div className="absolute inset-0">
+          <img 
+            src='/assets/images/services/hero.jpeg' 
+            alt="Services Hero" 
+            className='w-full h-full object-cover'
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-900/70 to-primary-900/80"></div>
+        </div>
+
+        {/* Content */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
             Our Services
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            Complete learning solutions designed to help students achieve excellence
+          <p className="text-xl text-gray-100 max-w-3xl mx-auto leading-relaxed">
+            Complete learning solutions designed to help students achieve excellence through innovative technology and expert guidance
           </p>
         </div>
+
+        <div className="absolute top-20 left-10 w-20 h-20 bg-yellow-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-32 h-32 bg-orange-400/20 rounded-full blur-3xl"></div>
       </section>
 
       {/* Services Grid */}
-      <section className="py-16 mt-16 bg-gray-50 shadow-lg">
+      <section className="py-20 bg-gradient-to-b from-white to-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div serviceCards className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    {services.map((service, index) => (
-                      <div key={index} className="card hover:scale-105 transition-transform duration-200" data-service-card>
-                <service.icon className="text-4xl text-primary-600 mb-4" />
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">{service.title}</h3>
-                <p className="text-gray-600 mb-4">{service.description}</p>
-                <ul className="space-y-2">
-                  {service.features.map((feature, fIndex) => (
-                    <li key={fIndex} className="flex items-center text-sm text-gray-700">
-                      <FaCheck className="text-primary-600 mr-2" />
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
+
+          {/* Services Grid */}
+          <div data-service-cards className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {services.map((service, index) => (
+              <div 
+                key={index} 
+                data-service-card
+                className="group bg-white rounded-xl shadow-md hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 overflow-hidden border border-gray-100"
+              >
+                {/* Card Header with Icon */}
+                <div className="p-6 bg-gradient-to-br from-primary-50 to-secondary-50 border-b border-gray-100">
+                  <div className="w-14 h-14 bg-gradient-to-br from-primary-600 to-secondary-600 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <service.icon className="text-3xl text-white" />
+                  </div>
+                </div>
+
+                {/* Card Body */}
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary-600 transition-colors">
+                    {service.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm leading-relaxed mb-5">
+                    {service.description}
+                  </p>
+
+                  {/* Features List */}
+                  <ul className="space-y-3 border-t border-gray-100 pt-5">
+                    {service.features.map((feature, fIndex) => (
+                      <li key={fIndex} className="flex items-start text-sm text-gray-700">
+                        <FaCheck className="text-primary-600 mr-3 mt-0.5 flex-shrink-0" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+
+                {/* Card Footer Accent */}
+                <div className="h-1 bg-gradient-to-r from-primary-600 to-secondary-600 transform origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
               </div>
             ))}
           </div>
