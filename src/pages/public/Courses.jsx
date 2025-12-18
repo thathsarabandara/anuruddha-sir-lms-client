@@ -169,18 +169,29 @@ const Courses = () => {
   return (
     <div ref={containerRef}>
       {/* Header */}
-      <section className="py-16 relative overflow-hidden">
-        <img src='/assets/images/courses/hero.jpeg' alt="Courses Hero" className='absolute inset-0 opacity-25'/>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
-          <div data-header-title>
-            <h1 className="text-5xl font-bold text-gray-900 mb-4">
-              Our Comprehensive Courses
-            </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Structured programs designed to help students excel in Grade 5 Scholarship examination
-            </p>
-          </div>
+      <section className="relative py-24 overflow-hidden h-96">
+        {/* Background Image with Overlay */}
+        <div className="absolute inset-0">
+          <img 
+            src='/assets/images/courses/hero.jpeg' 
+            alt="Services Hero" 
+            className='w-full h-full object-cover'
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-primary-900/80 via-secondary-900/70 to-primary-900/80"></div>
         </div>
+
+        {/* Content */}
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
+            Our Comprehensive Courses
+          </h1>
+          <p className="text-xl text-gray-100 max-w-3xl mx-auto leading-relaxed">
+            Structured programs designed to help students excel in Grade 5 Scholarship examination. Explore our range of courses tailored to meet diverse learning needs.
+          </p>
+        </div>
+
+        <div className="absolute top-20 left-10 w-20 h-20 bg-yellow-400/20 rounded-full blur-3xl"></div>
+        <div className="absolute bottom-20 right-10 w-32 h-32 bg-orange-400/20 rounded-full blur-3xl"></div>
       </section>
 
       {/* Filters */}
