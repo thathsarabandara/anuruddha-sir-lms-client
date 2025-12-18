@@ -12,8 +12,10 @@ const DashboardTopBar = ({ onMenuToggle }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [notifications] = useState(3);
   const dropdownRef = useRef(null);
+  const notificationsRef = useRef(null);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -25,6 +27,9 @@ const DashboardTopBar = ({ onMenuToggle }) => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
         setIsDropdownOpen(false);
+      }
+      if (notificationsRef.current && !notificationsRef.current.contains(e.target)) {
+        setIsNotificationsOpen(false);
       }
     };
 
@@ -53,7 +58,7 @@ const DashboardTopBar = ({ onMenuToggle }) => {
 
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
-      <div className="px-4 sm:px-6 lg:px-8 py-4">
+      <div className="px-4 sm:px-6 lg:px-8 py-2.5 relative">
         <div className="flex items-center justify-between">
           {/* Left Side - Menu Toggle & Welcome */}
           <div className="flex items-center gap-4">
@@ -70,12 +75,38 @@ const DashboardTopBar = ({ onMenuToggle }) => {
                 {user?.first_name} {user?.last_name}
               </p>
             </div>
+
+          {/* Notifications Panel (separate from profile dropdown) */}
+          {isNotificationsOpen && (
+            <div ref={notificationsRef} className="absolute right-0 top-14  mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+              <div className="p-4 border-b border-gray-100">
+                <p className="font-semibold">Notifications</p>
+              </div>
+              <div className="p-4">
+                <p className="text-sm text-gray-600">You have {notifications} notifications.</p>
+                <div className="mt-3 space-y-2">
+                  <div className="p-3 bg-gray-50 rounded-md">
+                    <p className="text-sm">No new notifications.</p>
+                  </div>
+                </div>
+              </div>
+              <div className="border-t border-gray-100 p-3 text-right">
+                <button className="text-sm text-primary-600 font-medium">View All</button>
+              </div>
+            </div>
+          )}
           </div>
 
           {/* Right Side - Notifications & Profile */}
           <div className="flex items-center gap-6">
             {/* Notification Bell */}
-            <button className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors group">
+            <button
+              className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors group"
+              onClick={() => {
+                setIsNotificationsOpen((s) => !s);
+                setIsDropdownOpen(false);
+              }}
+            >
               <FaBell className="text-xl text-gray-600 group-hover:text-primary-600" />
               {notifications > 0 && (
                 <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
@@ -126,6 +157,8 @@ const DashboardTopBar = ({ onMenuToggle }) => {
                       </div>
                     </div>
                   </div>
+
+                  {/* (notifications panel moved outside profile dropdown) */}
 
                   {/* Menu Items */}
                   <div className="py-2">
