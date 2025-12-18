@@ -1,0 +1,190 @@
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { ROUTES, ROLES } from './utils/constants';
+
+// Layouts
+import PublicLayout from './components/layout/PublicLayout';
+import AuthenticatedLayout from './components/layout/AuthenticatedLayout';
+
+// Route Guards
+import ProtectedRoute from './routes/ProtectedRoute';
+import PublicRoute from './routes/PublicRoute';
+
+// Public Pages
+import Home from './pages/public/Home';
+import About from './pages/public/About';
+import Courses from './pages/public/Courses';
+import Services from './pages/public/Services';
+import Contact from './pages/public/Contact';
+import Testimonials from './pages/public/Testimonials';
+import FAQ from './pages/public/FAQ';
+import Gallery from './pages/public/Gallery';
+
+// Auth Pages
+import Login from './pages/auth/Login';
+import Register from './pages/auth/Register';
+import VerifyOTP from './pages/auth/VerifyOTP';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
+
+// Student Pages
+import StudentDashboard from './pages/student/Dashboard';
+import StudentCourses from './pages/student/Courses';
+import StudentLiveClasses from './pages/student/LiveClasses';
+import StudentQuizzes from './pages/student/Quizzes';
+import StudentProgress from './pages/student/Progress';
+import StudentRecordings from './pages/student/Recordings';
+import StudentCertificates from './pages/student/Certificates';
+import StudentPayments from './pages/student/Payments';
+import StudentRewards from './pages/student/Rewards';
+import StudentProfile from './pages/student/Profile';
+
+// Teacher Pages
+import TeacherDashboard from './pages/teacher/Dashboard';
+import TeacherCourses from './pages/teacher/Courses';
+import TeacherLiveClasses from './pages/teacher/LiveClasses';
+import TeacherStudents from './pages/teacher/Students';
+import TeacherQuizzes from './pages/teacher/Quizzes';
+import TeacherRecordings from './pages/teacher/Recordings';
+import TeacherRevenue from './pages/teacher/Revenue';
+import TeacherRewards from './pages/teacher/Rewards';
+import TeacherAnnouncements from './pages/teacher/Announcements';
+import TeacherProfile from './pages/teacher/Profile';
+
+// Admin Pages
+import AdminDashboard from './pages/admin/Dashboard';
+import AdminStudents from './pages/admin/Students';
+import AdminTeachers from './pages/admin/Teachers';
+import AdminCourses from './pages/admin/Courses';
+import AdminPayments from './pages/admin/Payments';
+import AdminQuizzes from './pages/admin/Quizzes';
+import AdminCertificates from './pages/admin/Certificates';
+import AdminManagement from './pages/admin/Management';
+import AdminReports from './pages/admin/Reports';
+import AdminSettings from './pages/admin/Settings';
+
+// Developer Pages
+import DeveloperDashboard from './pages/developer/Dashboard';
+import SystemHealth from './pages/developer/SystemHealth';
+import APILogs from './pages/developer/APILogs';
+import ErrorMonitoring from './pages/developer/ErrorMonitoring';
+import FeatureFlags from './pages/developer/FeatureFlags';
+import IntegrationStatus from './pages/developer/IntegrationStatus';
+
+function App() {
+  return (
+    <Router>
+      <Routes>
+        {/* Public Routes with TopNav */}
+        <Route element={<PublicLayout />}>
+          <Route path={ROUTES.HOME} element={<Home />} />
+          <Route path={ROUTES.ABOUT} element={<About />} />
+          <Route path={ROUTES.COURSES} element={<Courses />} />
+          <Route path={ROUTES.SERVICES} element={<Services />} />
+          <Route path={ROUTES.CONTACT} element={<Contact />} />
+          <Route path={ROUTES.TESTIMONIALS} element={<Testimonials />} />
+          <Route path={ROUTES.FAQ} element={<FAQ />} />
+          <Route path={ROUTES.GALLERY} element={<Gallery />} />
+        </Route>
+
+        {/* Auth Routes (No Layout) */}
+        <Route
+          path={ROUTES.LOGIN}
+          element={
+            <PublicRoute>
+              <Login />
+            </PublicRoute>
+          }
+        />
+        <Route
+          path={ROUTES.REGISTER}
+          element={
+            <PublicRoute>
+              <Register />
+            </PublicRoute>
+          }
+        />
+        <Route path={ROUTES.VERIFY_OTP} element={<VerifyOTP />} />
+        <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
+        <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
+
+        {/* Student Routes with Sidebar */}
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.STUDENT]}>
+              <AuthenticatedLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path={ROUTES.STUDENT_DASHBOARD} element={<StudentDashboard />} />
+          <Route path={ROUTES.STUDENT_COURSES} element={<StudentCourses />} />
+          <Route path={ROUTES.STUDENT_LIVE_CLASSES} element={<StudentLiveClasses />} />
+          <Route path={ROUTES.STUDENT_QUIZZES} element={<StudentQuizzes />} />
+          <Route path={ROUTES.STUDENT_PROGRESS} element={<StudentProgress />} />
+          <Route path={ROUTES.STUDENT_RECORDINGS} element={<StudentRecordings />} />
+          <Route path={ROUTES.STUDENT_CERTIFICATES} element={<StudentCertificates />} />
+          <Route path={ROUTES.STUDENT_PAYMENTS} element={<StudentPayments />} />
+          <Route path={ROUTES.STUDENT_REWARDS} element={<StudentRewards />} />
+          <Route path={ROUTES.STUDENT_PROFILE} element={<StudentProfile />} />
+        </Route>
+
+        {/* Teacher Routes with Sidebar */}
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.TEACHER]}>
+              <AuthenticatedLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path={ROUTES.TEACHER_DASHBOARD} element={<TeacherDashboard />} />
+          <Route path={ROUTES.TEACHER_COURSES} element={<TeacherCourses />} />
+          <Route path={ROUTES.TEACHER_LIVE_CLASSES} element={<TeacherLiveClasses />} />
+          <Route path={ROUTES.TEACHER_STUDENTS} element={<TeacherStudents />} />
+          <Route path={ROUTES.TEACHER_QUIZZES} element={<TeacherQuizzes />} />
+          <Route path={ROUTES.TEACHER_RECORDINGS} element={<TeacherRecordings />} />
+          <Route path={ROUTES.TEACHER_REVENUE} element={<TeacherRevenue />} />
+          <Route path={ROUTES.TEACHER_REWARDS} element={<TeacherRewards />} />
+          <Route path={ROUTES.TEACHER_ANNOUNCEMENTS} element={<TeacherAnnouncements />} />
+          <Route path={ROUTES.TEACHER_PROFILE} element={<TeacherProfile />} />
+        </Route>
+
+        {/* Admin Routes with Sidebar */}
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+              <AuthenticatedLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboard />} />
+          <Route path={ROUTES.ADMIN_STUDENTS} element={<AdminStudents />} />
+          <Route path={ROUTES.ADMIN_TEACHERS} element={<AdminTeachers />} />
+          <Route path={ROUTES.ADMIN_COURSES} element={<AdminCourses />} />
+          <Route path={ROUTES.ADMIN_PAYMENTS} element={<AdminPayments />} />
+          <Route path={ROUTES.ADMIN_QUIZZES} element={<AdminQuizzes />} />
+          <Route path={ROUTES.ADMIN_CERTIFICATES} element={<AdminCertificates />} />
+          <Route path={ROUTES.ADMIN_MANAGEMENT} element={<AdminManagement />} />
+          <Route path={ROUTES.ADMIN_REPORTS} element={<AdminReports />} />
+          <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettings />} />
+        </Route>
+
+        {/* Developer Routes with Sidebar */}
+        <Route
+          element={
+            <ProtectedRoute allowedRoles={[ROLES.DEVELOPER]}>
+              <AuthenticatedLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path={ROUTES.DEVELOPER_DASHBOARD} element={<DeveloperDashboard />} />
+          <Route path={ROUTES.DEVELOPER_SYSTEM_HEALTH} element={<SystemHealth />} />
+          <Route path={ROUTES.DEVELOPER_API_LOGS} element={<APILogs />} />
+          <Route path={ROUTES.DEVELOPER_ERROR_MONITORING} element={<ErrorMonitoring />} />
+          <Route path={ROUTES.DEVELOPER_FEATURE_FLAGS} element={<FeatureFlags />} />
+          <Route path={ROUTES.DEVELOPER_INTEGRATION_STATUS} element={<IntegrationStatus />} />
+        </Route>
+      </Routes>
+    </Router>
+  );
+}
+
+export default App;
