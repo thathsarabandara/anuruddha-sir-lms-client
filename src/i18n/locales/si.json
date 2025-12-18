@@ -1,0 +1,103 @@
+{
+  "common": {
+    "welcome": "ආයුබෝවන්",
+    "home": "මුල් පිටුව",
+    "about": "අපි ගැන",
+    "courses": "පාඨමාලා",
+    "services": "සේවාවන්",
+    "contact": "සම්බන්ධ වන්න",
+    "testimonials": "සාක්ෂි",
+    "faq": "නිතර අසන ප්‍රශ්න",
+    "gallery": "ගැලරිය",
+    "login": "පිවිසෙන්න",
+    "register": "ලියාපදිංචි වන්න",
+    "logout": "පිටවන්න",
+    "dashboard": "උපකරණ පුවරුව",
+    "profile": "පැතිකඩ",
+    "settings": "සැකසුම්",
+    "search": "සොයන්න",
+    "submit": "ඉදිරිපත් කරන්න",
+    "cancel": "අවලංගු කරන්න",
+    "save": "සුරකින්න",
+    "edit": "සංස්කරණය කරන්න",
+    "delete": "මකන්න",
+    "view": "බලන්න",
+    "loading": "පූරණය වෙමින්...",
+    "error": "දෝෂයකි",
+    "success": "සාර්ථකයි",
+    "back": "ආපසු",
+    "next": "ඊළඟ",
+    "previous": "පෙර"
+  },
+  "navigation": {
+    "student": "ශිෂ්‍යයා",
+    "teacher": "ගුරුවරයා",
+    "admin": "පරිපාලක",
+    "liveClasses": "සජීවී පන්ති",
+    "quizzes": "ප්‍රශ්නාවලිය",
+    "progress": "ප්‍රගතිය",
+    "recordings": "පටිගත කිරීම්",
+    "certificates": "සහතික",
+    "payments": "ගෙවීම්",
+    "rewards": "ත්‍යාග",
+    "students": "ශිෂ්‍යයින්",
+    "teachers": "ගුරුවරු",
+    "announcements": "නිවේදන",
+    "revenue": "ආදායම",
+    "management": "කළමනාකරණය",
+    "reports": "වාර්තා"
+  },
+  "auth": {
+    "emailPlaceholder": "ඔබේ විද්‍යුත් තැපෑල ඇතුළත් කරන්න",
+    "passwordPlaceholder": "ඔබේ මුරපදය ඇතුළත් කරන්න",
+    "forgotPassword": "මුරපදය අමතක ද?",
+    "rememberMe": "මතක තබා ගන්න",
+    "dontHaveAccount": "ගිණුමක් නැද්ද?",
+    "alreadyHaveAccount": "දැනටමත් ගිණුමක් තිබේද?",
+    "signUp": "ලියාපදිංචි වන්න",
+    "signIn": "පිවිසෙන්න",
+    "verifyOTP": "OTP තහවුරු කරන්න",
+    "resetPassword": "මුරපදය යළි පිහිටුවන්න",
+    "enterOTP": "OTP ඇතුළත් කරන්න",
+    "newPassword": "නව මුරපදය",
+    "confirmPassword": "මුරපදය තහවුරු කරන්න"
+  },
+  "home": {
+    "hero": {
+      "title": "සීමාවකින් තොරව ඉගෙන ගන්න",
+      "subtitle": "අපගේ පුළුල් මාර්ගගත ඉගෙනුම් වේදිකාව සමඟ ඔබේ අනාගතය සවිබල ගන්වන්න",
+      "cta": "ආරම්භ කරන්න"
+    },
+    "features": {
+      "title": "අප තෝරා ගන්නේ ඇයි",
+      "subtitle": "අප සමඟ ඉගෙනීමේ ප්‍රතිලාභ සොයා ගන්න"
+    }
+  },
+  "student": {
+    "dashboard": {
+      "title": "ශිෂ්‍ය උපකරණ පුවරුව",
+      "welcome": "නැවත සාදරයෙන් පිළිගනිමු",
+      "myCourses": "මගේ පාඨමාලා",
+      "upcomingClasses": "ළඟදී පැමිණීමට ඇති පන්ති",
+      "recentQuizzes": "මෑත ප්‍රශ්නාවලිය"
+    }
+  },
+  "teacher": {
+    "dashboard": {
+      "title": "ගුරු උපකරණ පුවරුව",
+      "welcome": "නැවත සාදරයෙන් පිළිගනිමු",
+      "myCourses": "මගේ පාඨමාලා",
+      "totalStudents": "සමස්ත ශිෂ්‍යයින්",
+      "upcomingClasses": "ළඟදී පැමිණීමට ඇති පන්ති"
+    }
+  },
+  "admin": {
+    "dashboard": {
+      "title": "පරිපාලක උපකරණ පුවරුව",
+      "overview": "දළ විශ්ලේෂණය",
+      "userManagement": "පරිශීලක කළමනාකරණය",
+      "courseManagement": "පාඨමාලා කළමනාකරණය",
+      "systemHealth": "පද්ධති සෞඛ්‍යය"
+    }
+  }
+}

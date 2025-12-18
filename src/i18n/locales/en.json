@@ -1,0 +1,103 @@
+{
+  "common": {
+    "welcome": "Welcome",
+    "home": "Home",
+    "about": "About",
+    "courses": "Courses",
+    "services": "Services",
+    "contact": "Contact",
+    "testimonials": "Testimonials",
+    "faq": "FAQ",
+    "gallery": "Gallery",
+    "login": "Login",
+    "register": "Register",
+    "logout": "Logout",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "settings": "Settings",
+    "search": "Search",
+    "submit": "Submit",
+    "cancel": "Cancel",
+    "save": "Save",
+    "edit": "Edit",
+    "delete": "Delete",
+    "view": "View",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous"
+  },
+  "navigation": {
+    "student": "Student",
+    "teacher": "Teacher",
+    "admin": "Admin",
+    "liveClasses": "Live Classes",
+    "quizzes": "Quizzes",
+    "progress": "Progress",
+    "recordings": "Recordings",
+    "certificates": "Certificates",
+    "payments": "Payments",
+    "rewards": "Rewards",
+    "students": "Students",
+    "teachers": "Teachers",
+    "announcements": "Announcements",
+    "revenue": "Revenue",
+    "management": "Management",
+    "reports": "Reports"
+  },
+  "auth": {
+    "emailPlaceholder": "Enter your email",
+    "passwordPlaceholder": "Enter your password",
+    "forgotPassword": "Forgot Password?",
+    "rememberMe": "Remember me",
+    "dontHaveAccount": "Don't have an account?",
+    "alreadyHaveAccount": "Already have an account?",
+    "signUp": "Sign Up",
+    "signIn": "Sign In",
+    "verifyOTP": "Verify OTP",
+    "resetPassword": "Reset Password",
+    "enterOTP": "Enter OTP",
+    "newPassword": "New Password",
+    "confirmPassword": "Confirm Password"
+  },
+  "home": {
+    "hero": {
+      "title": "Learn Without Limits",
+      "subtitle": "Empower your future with our comprehensive online learning platform",
+      "cta": "Get Started"
+    },
+    "features": {
+      "title": "Why Choose Us",
+      "subtitle": "Discover the benefits of learning with us"
+    }
+  },
+  "student": {
+    "dashboard": {
+      "title": "Student Dashboard",
+      "welcome": "Welcome back",
+      "myCourses": "My Courses",
+      "upcomingClasses": "Upcoming Classes",
+      "recentQuizzes": "Recent Quizzes"
+    }
+  },
+  "teacher": {
+    "dashboard": {
+      "title": "Teacher Dashboard",
+      "welcome": "Welcome back",
+      "myCourses": "My Courses",
+      "totalStudents": "Total Students",
+      "upcomingClasses": "Upcoming Classes"
+    }
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "overview": "Overview",
+      "userManagement": "User Management",
+      "courseManagement": "Course Management",
+      "systemHealth": "System Health"
+    }
+  }
+}
