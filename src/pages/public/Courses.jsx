@@ -120,17 +120,14 @@ const Courses = () => {
     const courseCards = containerRef.current?.querySelectorAll('[data-course-card]');
     const featureItems = containerRef.current?.querySelectorAll('[data-feature-item]');
 
-    // Header animation
     gsap.fromTo(headerTitle, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 1, ease: 'power2.out' });
 
-    // Subject buttons animation
     gsap.fromTo(
       subjectButtons,
       { opacity: 0, scale: 0.8 },
       { opacity: 1, scale: 1, duration: 0.6, stagger: 0.08, ease: 'back.out', delay: 0.2 }
     );
 
-    // Course cards animation
     gsap.fromTo(
       courseCards,
       { opacity: 0, y: 50, scale: 0.95 },
@@ -144,7 +141,6 @@ const Courses = () => {
       }
     );
 
-    // Feature items scroll animation
     gsap.fromTo(
       featureItems,
       { opacity: 0, x: -40 },
