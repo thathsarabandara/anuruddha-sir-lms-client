@@ -18,7 +18,6 @@ const Home = () => {
   const testimonialsRef = useRef(null);
 
   useEffect(() => {
-    // Hero section animations
     const heroTitle = containerRef.current?.querySelector('[data-hero-title]');
     const heroSubtitle = containerRef.current?.querySelector('[data-hero-subtitle]');
     const heroButtons = containerRef.current?.querySelectorAll('[data-hero-btn]');
@@ -29,7 +28,6 @@ const Home = () => {
     const subjectCards = containerRef.current?.querySelectorAll('[data-subject-card]');
     const testimonialCards = containerRef.current?.querySelectorAll('[data-testimonial-card]');
 
-    // Hero animations
     gsap.fromTo(
       heroTitle,
       { opacity: 0, y: 50 },
@@ -48,7 +46,6 @@ const Home = () => {
       { opacity: 1, y: 0, scale: 1, duration: 0.8, stagger: 0.15, ease: 'back.out', delay: 0.6 }
     );
 
-    // Stats cards animation on scroll
     gsap.fromTo(
       statsCards,
       { opacity: 0, scale: 0.8, y: 40 },
@@ -67,7 +64,6 @@ const Home = () => {
       }
     );
 
-    // Hero story animations
     gsap.fromTo(
       heroStory,
       { opacity: 0, x: -50 },
@@ -101,7 +97,6 @@ const Home = () => {
       }
     );
 
-    // Feature cards animation
     gsap.fromTo(
       featureCards,
       { opacity: 0, y: 50 },
@@ -119,7 +114,6 @@ const Home = () => {
       }
     );
 
-    // Subject cards animation with 3D effect
     gsap.fromTo(
       subjectCards,
       { opacity: 0, y: 40, rotationX: 20 },
@@ -138,7 +132,6 @@ const Home = () => {
       }
     );
 
-    // Testimonial cards animation
     gsap.fromTo(
       testimonialCards,
       { opacity: 0, y: 50 },
@@ -156,7 +149,6 @@ const Home = () => {
       }
     );
 
-    // YouTube video cards animation
     const youtubeCards = containerRef.current?.querySelectorAll('[data-youtube-card]');
     gsap.fromTo(
       youtubeCards,
@@ -176,7 +168,6 @@ const Home = () => {
       }
     );
 
-    // FAQ items animation
     const faqItems = containerRef.current?.querySelectorAll('[data-faq-item]');
     gsap.fromTo(
       faqItems,
@@ -195,7 +186,6 @@ const Home = () => {
       }
     );
 
-    // Why Choose Us cards animation
     const whyChooseCards = containerRef.current?.querySelectorAll('[data-why-choose-card]');
     gsap.fromTo(
       whyChooseCards,
@@ -215,7 +205,6 @@ const Home = () => {
       }
     );
 
-    // How It Works cards animation
     const howItWorksCards = containerRef.current?.querySelectorAll('[data-how-it-works-card]');
     gsap.fromTo(
       howItWorksCards,
@@ -234,7 +223,6 @@ const Home = () => {
       }
     );
 
-    // Animated decorative elements
     const decorElements = containerRef.current?.querySelectorAll('[data-decor-element]');
     decorElements?.forEach((element) => {
       gsap.to(element, {
@@ -251,12 +239,10 @@ const Home = () => {
     };
   }, []);
 
-  // Auto-scroll testimonials carousel (duplicates items for seamless loop)
   useEffect(() => {
     const el = testimonialsRef.current;
     if (!el) return;
 
-    // ensure not paused by default
     el._isPaused = false;
 
     const getGap = () => {
@@ -271,8 +257,6 @@ const Home = () => {
 
       const gap = getGap();
       const scrollAmount = card.offsetWidth + gap;
-
-      // If we've scrolled past the first half (original items), jump back
       if (el.scrollLeft >= el.scrollWidth / 2) {
         el.scrollLeft = el.scrollLeft - el.scrollWidth / 2;
       }
@@ -282,7 +266,6 @@ const Home = () => {
 
     const interval = setInterval(step, 3000);
 
-    // pause/resume on visibility change so it doesn't keep scrolling when not visible
     const onVisibility = () => { el._isPaused = document.hidden; };
     document.addEventListener('visibilitychange', onVisibility);
 
