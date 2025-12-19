@@ -75,10 +75,8 @@ const Services = () => {
     const benefits = container.querySelectorAll('[data-benefit-item]');
     const ctaBtns = container.querySelectorAll('[data-cta-btn]');
 
-    // Page fade-in
     gsap.fromTo(container, { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'power1.out' });
 
-    // Service cards entrance
     if (serviceCards?.length) {
       gsap.fromTo(
         serviceCards,
@@ -95,7 +93,6 @@ const Services = () => {
       );
     }
 
-    // How it works steps animation
     if (steps?.length) {
       gsap.fromTo(
         steps,
@@ -111,7 +108,6 @@ const Services = () => {
       );
     }
 
-    // Benefits items
     if (benefits?.length) {
       gsap.fromTo(
         benefits,
