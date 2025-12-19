@@ -18,12 +18,10 @@ const About = () => {
     const achievementCards = containerRef.current?.querySelectorAll('[data-achievement-card]');
     const philosophyItems = containerRef.current?.querySelectorAll('[data-philosophy-item]');
 
-    // Hero animations
     gsap.fromTo(heroText, { opacity: 0, x: -50 }, { opacity: 1, x: 0, duration: 1, ease: 'power2.out', delay: 0.2 });
     gsap.fromTo(heroImage, { opacity: 0, scale: 0.8, x: 50 }, { opacity: 1, scale: 1, x: 0, duration: 1, ease: 'back.out', delay: 0.4 });
     gsap.fromTo(heroBtn, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out', delay: 0.6 });
 
-    // Experience cards
     gsap.fromTo(
       experienceCards,
       { opacity: 0, y: 50 },
@@ -37,7 +35,6 @@ const About = () => {
       }
     );
 
-    // Achievement cards
     gsap.fromTo(
       achievementCards,
       { opacity: 0, scale: 0.9 },
@@ -51,7 +48,6 @@ const About = () => {
       }
     );
 
-    // Philosophy items
     gsap.fromTo(
       philosophyItems,
       { opacity: 0, x: -40 },
@@ -65,14 +61,12 @@ const About = () => {
       }
     );
 
-    // Page load fade-in
     gsap.fromTo(
       containerRef.current,
       { opacity: 0 },
       { opacity: 1, duration: 0.6, ease: 'power1.out' }
     );
 
-    // Stats items (animate on load with slight stagger)
     const statsItems = containerRef.current?.querySelectorAll('[data-stats-item]');
     if (statsItems?.length) {
       gsap.fromTo(
@@ -82,7 +76,6 @@ const About = () => {
       );
     }
 
-    // CTA buttons animation
     const ctaBtns = containerRef.current?.querySelectorAll('[data-cta-btn]');
     if (ctaBtns?.length) {
       gsap.fromTo(
