@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react';
 import { FaArrowUp } from 'react-icons/fa';
+import { useLocation } from 'react-router-dom';
 
 const ScrollToTop = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
+  const location = useLocation();
+
+  // Scroll to top on route change
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [location.pathname]);
 
   useEffect(() => {
     const handleScroll = () => {
