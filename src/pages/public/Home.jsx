@@ -466,59 +466,68 @@ const Home = () => {
                 title: 'Live Interactive Classes',
                 description: 'Fun Zoom sessions with real-time Q&A',
                 image: '/assets/images/home/features/features1.png',
-                color: 'bg-blue-500'
+                color: 'from-blue-500/80'
               },
               {
                 icon: PiVideoCamera,
                 title: 'Recorded Sessions',
                 description: 'Learn anytime, anywhere at your pace',
                 image: '/assets/images/home/features/features2.png',
-                color: 'bg-purple-500'
+                color: 'from-purple-500/80'
               },
               {
                 icon: PiNotebookBold,
                 title: 'Interactive Quizzes',
                 description: 'Gamified learning with instant feedback',
                 image: '/assets/images/home/features/features3.png',
-                color: 'bg-green-500'
+                color: 'from-green-500/80'
               },
               {
                 icon: PiChartBarBold,
                 title: 'Progress Tracking',
                 description: 'See improvement with fun analytics',
                 image: '/assets/images/home/features/features4.png',
-                color: 'bg-yellow-500'
+                color: 'from-yellow-500/80'
               },
               {
                 icon: PiGraduationCapBold,
                 title: 'Digital Certificates',
                 description: 'Earn badges and certificates',
                 image: '/assets/images/home/features/features5.png',
-                color: 'bg-red-500'
+                color: 'from-red-500/80'
               },
               {
                 icon: PiCreditCardBold,
                 title: 'Flexible Payments',
                 description: 'Easy, affordable payment options',
                 image: '/assets/images/home/features/features6.png',
-                color: 'bg-indigo-500'
+                color: 'from-indigo-500/80'
               },
             ].map((feature, index) => (
-              <div data-feature-card key={index} className="card hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer overflow-hidden group">
-                <div className="relative h-48 overflow-hidden">
-                  <img 
-                    src={feature.image} 
+              <div data-feature-card key={index} className=" hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer overflow-hidden group w- h-96 rounded-2xl">
+               <div className="relative h-full overflow-hidden">
+                  <img
+                    src={feature.image}
                     alt={feature.title}
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                   />
-                  <div className={`absolute inset-0 ${feature.color} opacity-0 group-hover:opacity-20 transition-opacity duration-300`}></div>
-                  <div className={`absolute top-4 right-4 ${feature.color} rounded-full p-3 shadow-lg`}>
+
+                  {/* Bottom-to-middle abstract gradient overlay (reveals on hover) */}
+                  <div
+                    className={`absolute bottom-0 left-0 right-0 h-2/3 opacity-0 group-hover:opacity-100 transition-all duration-300 bg-gradient-to-t ${feature.color} to-transparent`}
+                    aria-hidden
+                  />
+
+                  {/* Floating icon */}
+                  <div className={`absolute top-4 right-4 ${feature.color} rounded-full p-3 shadow-lg z-10`}>
                     <feature.icon className="text-2xl text-white" />
                   </div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
-                  <p className="text-gray-600 leading-relaxed">{feature.description}</p>
+
+                  {/* Overlay details shown on hover */}
+                  <div className="absolute bottom-8 left-4 right-4 text-white opacity-0 translate-y-4 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 z-20">
+                    <h3 className="text-lg font-bold drop-shadow-lg">{feature.title}</h3>
+                    <p className="text-sm drop-shadow-lg mt-1">{feature.description}</p>
+                  </div>
                 </div>
               </div>
             ))}
