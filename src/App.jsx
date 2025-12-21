@@ -5,6 +5,10 @@ import { ROUTES, ROLES } from './utils/constants';
 import PublicLayout from './components/layout/PublicLayout';
 import AuthenticatedLayout from './components/layout/AuthenticatedLayout';
 
+// Global Components
+import ScrollToTop from './components/common/ScrollToTop';
+import ChatBot from './components/common/ChatBot';
+
 // Route Guards
 import ProtectedRoute from './routes/ProtectedRoute';
 import PublicRoute from './routes/PublicRoute';
@@ -31,12 +35,15 @@ import StudentDashboard from './pages/student/Dashboard';
 import StudentCourses from './pages/student/Courses';
 import StudentLiveClasses from './pages/student/LiveClasses';
 import StudentQuizzes from './pages/student/Quizzes';
-import StudentProgress from './pages/student/Progress';
+import StudentQuizDetails from './pages/student/QuizDetails';
 import StudentRecordings from './pages/student/Recordings';
 import StudentCertificates from './pages/student/Certificates';
 import StudentPayments from './pages/student/Payments';
 import StudentRewards from './pages/student/Rewards';
 import StudentProfile from './pages/student/Profile';
+import StudentCart from './pages/student/Cart';
+import StudentCheckout from './pages/student/Checkout';
+import StudentCoursesView from './pages/student/CourseView';
 
 // Teacher Pages
 import TeacherDashboard from './pages/teacher/Dashboard';
@@ -73,6 +80,10 @@ import IntegrationStatus from './pages/developer/IntegrationStatus';
 function App() {
   return (
     <Router>
+      {/* Global Floating Components */}
+      <ScrollToTop />
+      <ChatBot />
+      
       <Routes>
         {/* Public Routes with TopNav */}
         <Route element={<PublicLayout />}>
@@ -87,8 +98,7 @@ function App() {
         </Route>
 
         {/* Auth Routes (No Layout) */}
-        <Route
-          path={ROUTES.LOGIN}
+        <Route path={ROUTES.LOGIN}
           element={
             <PublicRoute>
               <Login />
@@ -103,7 +113,8 @@ function App() {
             </PublicRoute>
           }
         />
-        <Route path={ROUTES.VERIFY_OTP} element={<VerifyOTP />} />
+        <Route path={ROUTES.VERIFY_OTP} element={
+          <PublicRoute><VerifyOTP /></PublicRoute>} />
         <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
         <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
 
@@ -119,12 +130,15 @@ function App() {
           <Route path={ROUTES.STUDENT_COURSES} element={<StudentCourses />} />
           <Route path={ROUTES.STUDENT_LIVE_CLASSES} element={<StudentLiveClasses />} />
           <Route path={ROUTES.STUDENT_QUIZZES} element={<StudentQuizzes />} />
-          <Route path={ROUTES.STUDENT_PROGRESS} element={<StudentProgress />} />
+          <Route path="/student/quiz/:quizId/details" element={<StudentQuizDetails />} />
           <Route path={ROUTES.STUDENT_RECORDINGS} element={<StudentRecordings />} />
           <Route path={ROUTES.STUDENT_CERTIFICATES} element={<StudentCertificates />} />
           <Route path={ROUTES.STUDENT_PAYMENTS} element={<StudentPayments />} />
           <Route path={ROUTES.STUDENT_REWARDS} element={<StudentRewards />} />
           <Route path={ROUTES.STUDENT_PROFILE} element={<StudentProfile />} />
+          <Route path={ROUTES.STUDENT_CART} element={<StudentCart />} />
+          <Route path={ROUTES.STUDENT_CHECKOUT} element={<StudentCheckout />} />
+          <Route path={ROUTES.STUDENT_COURSE_VIEW} element={<StudentCoursesView />} />
         </Route>
 
         {/* Teacher Routes with Sidebar */}
