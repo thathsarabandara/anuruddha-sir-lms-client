@@ -66,6 +66,10 @@ export const ROUTES = {
   STUDENT_PAYMENTS: '/student/payments',
   STUDENT_REWARDS: '/student/rewards',
   STUDENT_PROFILE: '/student/profile',
+  STUDENT_CART: '/student/cart',
+  STUDENT_CHECKOUT: '/student/checkout',
+  STUDENT_ORDER_CONFIRMATION: '/student/order-confirmation',
+  STUDENT_COURSE_VIEW: '/student/course/:courseId',
   
   // Teacher routes
   TEACHER_DASHBOARD: '/teacher/dashboard',
