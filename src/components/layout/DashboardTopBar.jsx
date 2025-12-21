@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { FaBell, FaUser, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { FaBell, FaUser, FaCog, FaSignOutAlt, FaShoppingCart } from 'react-icons/fa';
 import { FaGem } from 'react-icons/fa';
 import { logout } from '../../app/slices/authSlice';
 import { ROUTES } from '../../utils/constants';
@@ -98,9 +98,9 @@ const DashboardTopBar = ({ onMenuToggle }) => {
           )}
           </div>
 
-          {/* Right Side - Gems, Notifications & Profile */}
+          {/* Right Side - Cart, Gems, Notifications & Profile */}
           <div className="flex items-center gap-6">
-            {/* Gems Display */}
+                        {/* Gems Display */}
             <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200 hover:border-amber-300 transition-all">
               <FaGem className="text-lg text-amber-500 animate-pulse" />
               <span className="font-bold text-amber-900">560</span>
@@ -121,6 +121,17 @@ const DashboardTopBar = ({ onMenuToggle }) => {
                   {notifications}
                 </span>
               )}
+            </button>
+            {/* Shopping Cart Icon */}
+            <button
+              onClick={() => navigate('/student/cart')}
+              className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors group"
+              title="Shopping Cart"
+            >
+              <FaShoppingCart className="text-xl text-gray-600 group-hover:text-primary-600" />
+              <span className="absolute top-0 right-0 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                2
+              </span>
             </button>
 
             {/* Profile Dropdown */}
