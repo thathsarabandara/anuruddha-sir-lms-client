@@ -1,4 +1,5 @@
-import { FaStar, FaShoppingCart } from "react-icons/fa";
+import { FaStar, FaShoppingCart, FaBookOpen } from "react-icons/fa";
+import { IoTimeSharp } from "react-icons/io5";
 
 const NewCourseCard = ({ course }) => (
     <div className="bg-white rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all overflow-hidden group">
@@ -28,11 +29,11 @@ const NewCourseCard = ({ course }) => (
         <div className="space-y-3 mb-4">
           <div className="flex items-center justify-between text-sm">
             <span className="text-slate-600">Duration</span>
-            <span className="font-semibold text-slate-900">⏱️ {course.duration}</span>
+            <span className="font-semibold text-slate-900 flex items-center justify-center gap-2"><IoTimeSharp /> {course.duration}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-slate-600">Lessons</span>
-            <span className="font-semibold text-slate-900">📖 {course.lessons}</span>
+            <span className="font-semibold text-slate-900 flex items-center justify-center gap-2"><FaBookOpen /> {course.lessons}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-slate-600">Grade</span>
