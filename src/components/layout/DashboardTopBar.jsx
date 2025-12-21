@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaBell, FaUser, FaCog, FaSignOutAlt } from 'react-icons/fa';
+import { FaGem } from 'react-icons/fa';
 import { logout } from '../../app/slices/authSlice';
 import { ROUTES } from '../../utils/constants';
 import gsap from 'gsap';
@@ -97,8 +98,15 @@ const DashboardTopBar = ({ onMenuToggle }) => {
           )}
           </div>
 
-          {/* Right Side - Notifications & Profile */}
+          {/* Right Side - Gems, Notifications & Profile */}
           <div className="flex items-center gap-6">
+            {/* Gems Display */}
+            <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200 hover:border-amber-300 transition-all">
+              <FaGem className="text-lg text-amber-500 animate-pulse" />
+              <span className="font-bold text-amber-900">560</span>
+              <span className="text-xs text-amber-700 ml-1">Gems</span>
+            </div>
+
             {/* Notification Bell */}
             <button
               className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors group"
