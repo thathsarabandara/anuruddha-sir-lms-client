@@ -98,7 +98,8 @@ function App() {
         </Route>
 
         {/* Auth Routes (No Layout) */}
-        <Route path={ROUTES.LOGIN}
+        <Route
+          path={ROUTES.LOGIN}
           element={
             <PublicRoute>
               <Login />
@@ -113,10 +114,22 @@ function App() {
             </PublicRoute>
           }
         />
-        <Route path={ROUTES.VERIFY_OTP} element={
-          <PublicRoute><VerifyOTP /></PublicRoute>} />
-        <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
-        <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
+        <Route 
+          path={ROUTES.VERIFY_OTP} 
+          element={
+            <PublicRoute>
+              <VerifyOTP />
+            </PublicRoute>
+          } 
+        />
+        <Route 
+          path={ROUTES.FORGOT_PASSWORD} 
+          element={<ForgotPassword />} 
+        />
+        <Route 
+          path={ROUTES.RESET_PASSWORD} 
+          element={<ResetPassword />} 
+        />
 
         {/* Student Routes with Sidebar */}
         <Route
@@ -130,7 +143,7 @@ function App() {
           <Route path={ROUTES.STUDENT_COURSES} element={<StudentCourses />} />
           <Route path={ROUTES.STUDENT_LIVE_CLASSES} element={<StudentLiveClasses />} />
           <Route path={ROUTES.STUDENT_QUIZZES} element={<StudentQuizzes />} />
-          <Route path="/student/quiz/:quizId/details" element={<StudentQuizDetails />} />
+          <Route path={ROUTES.STUDENT_QUIZ_DETAILS} element={<StudentQuizDetails />} />
           <Route path={ROUTES.STUDENT_RECORDINGS} element={<StudentRecordings />} />
           <Route path={ROUTES.STUDENT_CERTIFICATES} element={<StudentCertificates />} />
           <Route path={ROUTES.STUDENT_PAYMENTS} element={<StudentPayments />} />
