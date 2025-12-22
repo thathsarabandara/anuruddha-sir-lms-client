@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaPhone, FaLock, FaEye, FaEyeSlash, FaGraduationCap, FaChalkboardTeacher, FaCheck, FaTimes } from 'react-icons/fa';
 import { authAPI } from '../../api';
-import { ROUTES } from '../../utils/constants';
+import { ROUTES, getAuthRoute } from '../../utils/constants';
 import { isValidEmail, isValidPhone } from '../../utils/helpers';
 
 const Register = () => {
@@ -631,7 +631,7 @@ const Register = () => {
               <p className="text-sm text-gray-600">
                 Already have an account?{' '}
                 <Link 
-                  to={`${ROUTES.LOGIN}?role=${formData.role.toLowerCase()}`}
+                  to={getAuthRoute('login', formData.role.toLowerCase())}
                   className="font-semibold text-gray-900 hover:text-gray-700 transition-colors"
                 >
                   Sign in instead
