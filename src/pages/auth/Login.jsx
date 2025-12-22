@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGraduationCap, FaChalkboardTeacher, FaUserShield, FaCode, FaCrown } from 'react-icons/fa';
 import { authAPI } from '../../api';
 import { loginSuccess, loginStart, loginFailure } from '../../app/slices/authSlice';
-import { ROUTES, ROLES } from '../../utils/constants';
+import { ROUTES, getDashboardRoute } from '../../utils/constants';
 
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const authState = useSelector(state => state.auth);
   const [searchParams] = useSearchParams();
   const roleParam = searchParams.get('role') || 'STUDENT';
   
@@ -20,6 +21,14 @@ const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Monitor Redux auth state changes
+  useEffect(() => {
+    console.log('Auth State Updated:', authState);
+    if (authState.isAuthenticated && authState.token && authState.user) {
+      console.log('User authenticated, navigating...');
+    }
+  }, [authState]);
 
   useEffect(() => {
     // Update role from URL parameter
@@ -102,21 +111,42 @@ const Login = () => {
 
     try {
       const response = await authAPI.login(formData);
-      const { token, user } = response.data;
-      dispatch(loginSuccess({ token, user }));
+      console.log('Login Response:', response.data); // Debug log
       
-      // Navigate based on role
-      const dashboardRoutes = {
-        [ROLES.STUDENT]: ROUTES.STUDENT_DASHBOARD,
-        [ROLES.TEACHER]: ROUTES.TEACHER_DASHBOARD,
-        [ROLES.ADMIN]: ROUTES.ADMIN_DASHBOARD,
-        [ROLES.SUPER_ADMIN]: ROUTES.ADMIN_DASHBOARD,
-        [ROLES.DEVELOPER]: ROUTES.DEVELOPER_DASHBOARD,
+      let { token, user } = response.data;
+      
+      // Validate response data
+      if (!token || !user) {
+        throw new Error('Invalid response: Missing token or user data');
+      }
+      
+      // Normalize user object from backend response
+      const normalizedUser = {
+        id: user.user_id || user.id,
+        email: user.email,
+        first_name: user.first_name,
+        last_name: user.last_name,
+        role: user.role.toUpperCase(),
+        phone_number: user.phone_number || null,
+        school_name: user.school_name || null,
+        grade: user.grade || null,
+        profile_picture: user.profile_picture || null,
+        is_active: user.is_active !== undefined ? user.is_active : true,
       };
       
-      navigate(dashboardRoutes[user.role] || ROUTES.HOME);
+      console.log('Normalized User:', normalizedUser); // Debug log
+      console.log('Dispatching loginSuccess with:', { token, user: normalizedUser }); // Debug log
+      dispatch(loginSuccess({ token, user: normalizedUser }));
+      
+      // Navigate based on role using helper function
+      const dashboardRoute = getDashboardRoute(normalizedUser.role);
+      
+      setTimeout(() => {
+        navigate(dashboardRoute);
+      }, 500);
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      console.error('Login Error:', err); // Debug log
+      const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
       dispatch(loginFailure(errorMessage));
     } finally {
