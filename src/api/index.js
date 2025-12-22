@@ -8,6 +8,7 @@ export const authAPI = {
   verifyOTP: (data) => axiosInstance.post(API_ENDPOINTS.AUTH.VERIFY_OTP, data),
   resendOTP: (data) => axiosInstance.post(API_ENDPOINTS.AUTH.RESEND_OTP, data),
   forgotPassword: (email) => axiosInstance.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email }),
+  verifyResetToken: (params) => axiosInstance.get(API_ENDPOINTS.AUTH.VERIFY_RESET_TOKEN, { params }),
   resetPassword: (data) => axiosInstance.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, data),
   logout: () => axiosInstance.post(API_ENDPOINTS.AUTH.LOGOUT),
   me: () => axiosInstance.get(API_ENDPOINTS.AUTH.ME),
