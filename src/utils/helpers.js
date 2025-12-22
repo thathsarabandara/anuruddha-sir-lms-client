@@ -1,14 +1,26 @@
 import { STORAGE_KEYS } from './constants';
 
 // Token management
-export const getToken = () => localStorage.getItem(STORAGE_KEYS.TOKEN);
+export const getToken = () => {
+  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+  return token && token !== 'undefined' ? token : null;
+};
 export const setToken = (token) => localStorage.setItem(STORAGE_KEYS.TOKEN, token);
 export const removeToken = () => localStorage.removeItem(STORAGE_KEYS.TOKEN);
 
 // User management
 export const getUser = () => {
-  const user = localStorage.getItem(STORAGE_KEYS.USER);
-  return user ? JSON.parse(user) : null;
+  try {
+    const user = localStorage.getItem(STORAGE_KEYS.USER);
+    if (!user || user === 'undefined') {
+      return null;
+    }
+    return JSON.parse(user);
+  } catch (error) {
+    console.error('Error parsing user from localStorage:', error);
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    return null;
+  }
 };
 
 export const setUser = (user) => {
