@@ -27,7 +27,16 @@
     "success": "සාර්ථකයි",
     "back": "ආපසු",
     "next": "ඊළඟ",
-    "previous": "පෙර"
+    "previous": "පෙර",
+    "student": "ශිෂ්‍යයා",
+    "teacher": "ගුරුවරයා",
+    "noAccount": "ගිණුමක් නැද්ද?",
+    "registerStudent": "ශිෂ්‍යයා ලෙස ලියාපදිංචි වන්න",
+    "registerTeacher": "ගුරුවරයා ලෙස ලියාපදිංචි වන්න",
+    "studentLogin": "ශිෂ්‍ය පිවිසුම",
+    "teacherLogin": "ගුරු පිවිසුම",
+    "studentPortal": "ශිෂ්‍ය පිටුවට ප්‍රවේශ වන්න",
+    "teacherPortal": "ගුරු පිටුවට ප්‍රවේශ වන්න"
   },
   "navigation": {
     "student": "ශිෂ්‍යයා",

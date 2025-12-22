@@ -27,7 +27,16 @@
     "success": "Success",
     "back": "Back",
     "next": "Next",
-    "previous": "Previous"
+    "previous": "Previous",
+    "student": "Student",
+    "teacher": "Teacher",
+    "noAccount": "Don't have an account?",
+    "registerStudent": "Register as Student",
+    "registerTeacher": "Register as Teacher",
+    "studentLogin": "Student Login",
+    "teacherLogin": "Teacher Login",
+    "studentPortal": "Access student portal",
+    "teacherPortal": "Access teacher portal"
   },
   "navigation": {
     "student": "Student",
