@@ -1,8 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ROUTES } from '../../utils/constants';
-import { FaGraduationCap, FaUser, FaSignInAlt, FaTimes, FaBars } from 'react-icons/fa';
+import { ROUTES, getAuthRoute } from '../../utils/constants';
+import { FaGraduationCap, FaUser, FaSignInAlt, FaTimes, FaBars, FaChevronDown } from 'react-icons/fa';
 import LanguageSwitcher from '../common/LanguageSwitcher';
 import gsap from 'gsap';
 
@@ -10,9 +10,11 @@ const TopNav = () => {
   const { t } = useTranslation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isRoleDropdownOpen, setIsRoleDropdownOpen] = useState(false);
   const location = useLocation();
   const navRef = useRef(null);
   const mobileMenuRef = useRef(null);
+  const roleDropdownRef = useRef(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -31,6 +33,16 @@ const TopNav = () => {
       );
     }
   }, [isMobileMenuOpen]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(e.target)) {
+        setIsRoleDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const navLinks = [
     { name: t('common.home'), path: ROUTES.HOME },
@@ -80,20 +92,67 @@ const TopNav = () => {
             {/* Auth Buttons - Minimalist */}
             <div className="hidden lg:flex items-center space-x-2">
               <LanguageSwitcher />
-              <Link 
-                to={ROUTES.LOGIN} 
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:text-primary-600 font-medium text-sm transition-colors duration-300"
-              >
-                <FaSignInAlt className="text-sm" />
-                <span>{t('common.login')}</span>
-              </Link>
-              <Link 
-                to={ROUTES.REGISTER} 
-                className="flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-primary-600 to-primary-700 text-white font-medium text-sm rounded-lg hover:shadow-lg hover:from-primary-700 hover:to-primary-800 transition-all duration-300 transform hover:scale-105"
-              >
-                <FaUser className="text-sm" />
-                <span>{t('common.register')}</span>
-              </Link>
+              
+              {/* Role-based Auth Dropdown */}
+              <div className="relative" ref={roleDropdownRef}>
+                <button
+                  onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium rounded-lg transition-colors duration-200"
+                >
+                  <FaSignInAlt size={16} />
+                  <span>{t('common.login')}</span>
+                  <FaChevronDown
+                    size={12}
+                    className={`transition-transform duration-200 ${
+                      isRoleDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                {/* Dropdown Menu */}
+                {isRoleDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-xl border border-gray-100 overflow-hidden z-50">
+                    <div className="p-3 border-b border-gray-100">
+                      <p className="text-xs font-semibold text-gray-600 uppercase">{t('common.login')}</p>
+                    </div>
+
+                    <Link
+                      to={getAuthRoute('login', 'student')}
+                      onClick={() => setIsRoleDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 text-gray-700 hover:text-blue-600 transition-colors"
+                    >
+                      <FaGraduationCap className="text-blue-500" />
+                      <div>
+                        <p className="font-medium text-sm">{t('common.student')}</p>
+                        <p className="text-xs text-gray-500">{t('common.studentPortal')}</p>
+                      </div>
+                    </Link>
+
+                    <Link
+                      to={getAuthRoute('login', 'teacher')}
+                      onClick={() => setIsRoleDropdownOpen(false)}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-purple-50 text-gray-700 hover:text-purple-600 transition-colors border-t border-gray-100"
+                    >
+                      <FaUser className="text-purple-500" />
+                      <div>
+                        <p className="font-medium text-sm">{t('common.teacher')}</p>
+                        <p className="text-xs text-gray-500">{t('common.teacherPortal')}</p>
+                      </div>
+                    </Link>
+
+                    <div className="border-t border-gray-100 p-3">
+                      <p className="text-xs text-gray-600 mb-2">{t('common.noAccount')}</p>
+                      <Link
+                        to={getAuthRoute('register', 'student')}
+                        onClick={() => setIsRoleDropdownOpen(false)}
+                        className="block w-full text-center px-3 py-2 bg-blue-600 text-white rounded font-medium text-sm hover:bg-blue-700 transition-colors"
+                      >
+                        {t('common.registerStudent')}
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Mobile Menu Button */}
@@ -136,21 +195,39 @@ const TopNav = () => {
                 <div className="flex justify-center">
                   <LanguageSwitcher />
                 </div>
+                <p className="px-4 text-sm font-semibold text-gray-700">{t('common.login')}</p>
                 <Link
-                  to={ROUTES.LOGIN}
-                  className="flex items-center justify-center gap-2 px-4 py-3 text-primary-600 hover:bg-primary-50 font-medium rounded-lg transition-all"
+                  to={getAuthRoute('login', 'student')}
+                  className="flex items-center justify-center gap-2 px-4 py-3 text-blue-600 hover:bg-blue-50 font-medium rounded-lg transition-all"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
-                  <FaSignInAlt className="text-sm" />
-                  {t('common.login')}
+                  <FaGraduationCap className="text-sm" />
+                  {t('common.student')}
                 </Link>
                 <Link
-                  to={ROUTES.REGISTER}
-                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-primary-600 to-primary-700 text-white w-full py-3 font-medium rounded-lg hover:shadow-lg transition-all"
+                  to={getAuthRoute('login', 'teacher')}
+                  className="flex items-center justify-center gap-2 px-4 py-3 text-purple-600 hover:bg-purple-50 font-medium rounded-lg transition-all"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   <FaUser className="text-sm" />
-                  {t('common.register')}
+                  {t('common.teacher')}
+                </Link>
+                <p className="px-4 text-sm font-semibold text-gray-700 mt-3">{t('common.register')}</p>
+                <Link
+                  to={getAuthRoute('register', 'student')}
+                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white w-full py-3 font-medium rounded-lg hover:shadow-lg transition-all"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <FaGraduationCap className="text-sm" />
+                  {t('common.registerStudent')}
+                </Link>
+                <Link
+                  to={getAuthRoute('register', 'teacher')}
+                  className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white w-full py-3 font-medium rounded-lg hover:shadow-lg transition-all"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  <FaUser className="text-sm" />
+                  {t('common.registerTeacher')}
                 </Link>
               </div>
             </div>
