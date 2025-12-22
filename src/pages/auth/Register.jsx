@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { FaUser, FaEnvelope, FaPhone, FaLock, FaEye, FaEyeSlash, FaGraduationCap, FaChalkboardTeacher } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaPhone, FaLock, FaEye, FaEyeSlash, FaGraduationCap, FaChalkboardTeacher, FaCheck, FaTimes } from 'react-icons/fa';
 import { authAPI } from '../../api';
 import { ROUTES } from '../../utils/constants';
 import { isValidEmail, isValidPhone } from '../../utils/helpers';
@@ -11,7 +11,8 @@ const Register = () => {
   const roleParam = searchParams.get('role') || 'STUDENT';
   
   const [formData, setFormData] = useState({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     password: '',
@@ -65,20 +66,143 @@ const Register = () => {
     'from-green-500 to-green-600': 'linear-gradient(to right, #10b981, #059669)',
   };
 
+  // Helper to get input state (valid/invalid/default)
+  const getInputState = (fieldName) => {
+    const value = formData[fieldName];
+    const error = fieldErrors[fieldName];
+    
+    if (!value) return 'default';
+    if (error) return 'invalid';
+    return 'valid';
+  };
+
+  const getInputClassName = (fieldName) => {
+    const state = getInputState(fieldName);
+    const baseClasses = 'block w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-offset-0 transition-all';
+    
+    if (state === 'invalid') {
+      return `${baseClasses} border-red-500 focus:ring-red-500 focus:border-transparent bg-red-50`;
+    }
+    if (state === 'valid') {
+      return `${baseClasses} border-green-500 focus:ring-green-500 focus:border-transparent bg-green-50`;
+    }
+    return `${baseClasses} border-gray-300 focus:ring-gray-900 focus:border-transparent`;
+  };
+
+  // Password strength calculator
+  const getPasswordStrength = (password) => {
+    if (!password) return { strength: 0, label: '', color: '' };
+    
+    let strength = 0;
+    const checks = {
+      length: password.length >= 8,
+      lowercase: /(?=.*[a-z])/.test(password),
+      uppercase: /(?=.*[A-Z])/.test(password),
+      number: /(?=.*\d)/.test(password),
+      special: /(?=.*[@$!%*?&#])/.test(password),
+    };
+    
+    strength = Object.values(checks).filter(Boolean).length;
+    
+    if (strength <= 2) return { strength, label: 'Weak', color: 'bg-red-500' };
+    if (strength === 3) return { strength, label: 'Fair', color: 'bg-yellow-500' };
+    if (strength === 4) return { strength, label: 'Good', color: 'bg-blue-500' };
+    return { strength, label: 'Strong', color: 'bg-green-500' };
+  };
+
   const handleChange = (e) => {
+    const { name, value } = e.target;
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
     setError('');
-    setFieldErrors({ ...fieldErrors, [e.target.name]: '' });
+    
+    // Live validation
+    validateField(name, value);
+  };
+
+  const validateField = (fieldName, value) => {
+    let error = '';
+
+    switch (fieldName) {
+      case 'firstName':
+        if (!value.trim()) {
+          error = 'First name is required';
+        } else if (value.trim().length < 2) {
+          error = 'First name must be at least 2 characters';
+        }
+        break;
+
+      case 'lastName':
+        if (!value.trim()) {
+          error = 'Last name is required';
+        } else if (value.trim().length < 2) {
+          error = 'Last name must be at least 2 characters';
+        }
+        break;
+
+      case 'email':
+        if (!value) {
+          error = 'Email is required';
+        } else if (!isValidEmail(value)) {
+          error = 'Please enter a valid email address';
+        }
+        break;
+
+      case 'phone':
+        if (!value) {
+          error = 'Phone number is required';
+        } else if (!isValidPhone(value)) {
+          error = 'Please enter a valid Sri Lankan phone number (e.g., 0771234567)';
+        }
+        break;
+
+      case 'password':
+        if (!value) {
+          error = 'Password is required';
+        } else if (value.length < 8) {
+          error = 'Password must be at least 8 characters';
+        } else if (!/(?=.*[a-z])/.test(value)) {
+          error = 'Password must contain at least one lowercase letter';
+        } else if (!/(?=.*[A-Z])/.test(value)) {
+          error = 'Password must contain at least one uppercase letter';
+        } else if (!/(?=.*\d)/.test(value)) {
+          error = 'Password must contain at least one number';
+        } else if (!/(?=.*[@$!%*?&#])/.test(value)) {
+          error = 'Password must contain at least one special character (@$!%*?&#)';
+        }
+        // Also validate confirm password if it has value
+        if (formData.confirmPassword) {
+          validateField('confirmPassword', formData.confirmPassword);
+        }
+        break;
+
+      case 'confirmPassword':
+        if (!value) {
+          error = 'Please confirm your password';
+        } else if (value !== formData.password) {
+          error = 'Passwords do not match';
+        }
+        break;
+
+      default:
+        break;
+    }
+
+    setFieldErrors(prev => ({ ...prev, [fieldName]: error }));
+    return error === '';
   };
 
   const validateForm = () => {
     const errors = {};
 
-    if (!formData.name.trim()) {
-      errors.name = 'Name is required';
+    if (!formData.firstName.trim()) {
+      errors.firstName = 'First name is required';
+    }
+
+    if (!formData.lastName.trim()) {
+      errors.lastName = 'Last name is required';
     }
 
     if (!isValidEmail(formData.email)) {
@@ -89,8 +213,16 @@ const Register = () => {
       errors.phone = 'Please enter a valid Sri Lankan phone number';
     }
 
-    if (formData.password.length < 6) {
-      errors.password = 'Password must be at least 6 characters';
+    if (formData.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters';
+    } else if (!/(?=.*[a-z])/.test(formData.password)) {
+      errors.password = 'Password must contain at least one lowercase letter';
+    } else if (!/(?=.*[A-Z])/.test(formData.password)) {
+      errors.password = 'Password must contain at least one uppercase letter';
+    } else if (!/(?=.*\d)/.test(formData.password)) {
+      errors.password = 'Password must contain at least one number';
+    } else if (!/(?=.*[@$!%*?&#])/.test(formData.password)) {
+      errors.password = 'Password must contain at least one special character';
     }
 
     if (formData.password !== formData.confirmPassword) {
@@ -113,6 +245,7 @@ const Register = () => {
     try {
       // eslint-disable-next-line no-unused-vars
       const { confirmPassword, ...registerData } = formData;
+      
       await authAPI.register(registerData);
 
       // Redirect to OTP verification
@@ -154,30 +287,78 @@ const Register = () => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-2">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaUser className="text-gray-400" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
+                    First Name
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FaUser className={getInputState('firstName') === 'invalid' ? 'text-red-400' : getInputState('firstName') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
+                    </div>
+                    <input
+                      id="firstName"
+                      name="firstName"
+                      type="text"
+                      required
+                      value={formData.firstName}
+                      onChange={handleChange}
+                      className={getInputClassName('firstName')}
+                      placeholder="John"
+                    />
+                    {formData.firstName && (
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        {getInputState('firstName') === 'valid' ? (
+                          <FaCheck className="text-green-500" />
+                        ) : getInputState('firstName') === 'invalid' ? (
+                          <FaTimes className="text-red-500" />
+                        ) : null}
+                      </div>
+                    )}
                   </div>
-                  <input
-                    id="name"
-                    name="name"
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={handleChange}
-                    className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-offset-0 focus:ring-gray-900 focus:border-transparent transition-all ${
-                      fieldErrors.name ? 'border-red-500' : 'border-gray-300'
-                    }`}
-                    placeholder="John Doe"
-                  />
+                  {fieldErrors.firstName && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                      <FaTimes className="flex-shrink-0" />
+                      {fieldErrors.firstName}
+                    </p>
+                  )}
                 </div>
-                {fieldErrors.name && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.name}</p>
-                )}
+
+                <div>
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
+                    Last Name
+                  </label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <FaUser className={getInputState('lastName') === 'invalid' ? 'text-red-400' : getInputState('lastName') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
+                    </div>
+                    <input
+                      id="lastName"
+                      name="lastName"
+                      type="text"
+                      required
+                      value={formData.lastName}
+                      onChange={handleChange}
+                      className={getInputClassName('lastName')}
+                      placeholder="Doe"
+                    />
+                    {formData.lastName && (
+                      <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                        {getInputState('lastName') === 'valid' ? (
+                          <FaCheck className="text-green-500" />
+                        ) : getInputState('lastName') === 'invalid' ? (
+                          <FaTimes className="text-red-500" />
+                        ) : null}
+                      </div>
+                    )}
+                  </div>
+                  {fieldErrors.lastName && (
+                    <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                      <FaTimes className="flex-shrink-0" />
+                      {fieldErrors.lastName}
+                    </p>
+                  )}
+                </div>
               </div>
 
               <div>
@@ -186,7 +367,7 @@ const Register = () => {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaEnvelope className="text-gray-400" />
+                    <FaEnvelope className={getInputState('email') === 'invalid' ? 'text-red-400' : getInputState('email') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
                   </div>
                   <input
                     id="email"
@@ -195,14 +376,24 @@ const Register = () => {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-offset-0 focus:ring-gray-900 focus:border-transparent transition-all ${
-                      fieldErrors.email ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={getInputClassName('email')}
                     placeholder="john@example.com"
                   />
+                  {formData.email && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      {getInputState('email') === 'valid' ? (
+                        <FaCheck className="text-green-500" />
+                      ) : getInputState('email') === 'invalid' ? (
+                        <FaTimes className="text-red-500" />
+                      ) : null}
+                    </div>
+                  )}
                 </div>
                 {fieldErrors.email && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.email}</p>
+                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                    <FaTimes className="flex-shrink-0" />
+                    {fieldErrors.email}
+                  </p>
                 )}
               </div>
 
@@ -212,7 +403,7 @@ const Register = () => {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaPhone className="text-gray-400" />
+                    <FaPhone className={getInputState('phone') === 'invalid' ? 'text-red-400' : getInputState('phone') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
                   </div>
                   <input
                     id="phone"
@@ -221,14 +412,24 @@ const Register = () => {
                     required
                     value={formData.phone}
                     onChange={handleChange}
-                    className={`block w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-offset-0 focus:ring-gray-900 focus:border-transparent transition-all ${
-                      fieldErrors.phone ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={getInputClassName('phone')}
                     placeholder="0771234567"
                   />
+                  {formData.phone && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      {getInputState('phone') === 'valid' ? (
+                        <FaCheck className="text-green-500" />
+                      ) : getInputState('phone') === 'invalid' ? (
+                        <FaTimes className="text-red-500" />
+                      ) : null}
+                    </div>
+                  )}
                 </div>
                 {fieldErrors.phone && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.phone}</p>
+                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                    <FaTimes className="flex-shrink-0" />
+                    {fieldErrors.phone}
+                  </p>
                 )}
               </div>
 
@@ -238,7 +439,7 @@ const Register = () => {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaLock className="text-gray-400" />
+                    <FaLock className={getInputState('password') === 'invalid' ? 'text-red-400' : getInputState('password') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
                   </div>
                   <input
                     id="password"
@@ -247,21 +448,119 @@ const Register = () => {
                     required
                     value={formData.password}
                     onChange={handleChange}
-                    className={`block w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-offset-0 focus:ring-gray-900 focus:border-transparent transition-all ${
-                      fieldErrors.password ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={getInputClassName('password')}
                     placeholder="••••••••"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center gap-2">
+                    {formData.password && getInputState('password') === 'valid' && (
+                      <FaCheck className="text-green-500" />
+                    )}
+                    {formData.password && getInputState('password') === 'invalid' && (
+                      <FaTimes className="text-red-500" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
                 </div>
+                
+                {/* Password Strength Indicator */}
+                {formData.password && (
+                  <div className="mt-2">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-gray-600">Password Strength:</span>
+                      <span className={`text-xs font-semibold ${
+                        getPasswordStrength(formData.password).strength <= 2 ? 'text-red-600' :
+                        getPasswordStrength(formData.password).strength === 3 ? 'text-yellow-600' :
+                        getPasswordStrength(formData.password).strength === 4 ? 'text-blue-600' :
+                        'text-green-600'
+                      }`}>
+                        {getPasswordStrength(formData.password).label}
+                      </span>
+                    </div>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map((bar) => (
+                        <div
+                          key={bar}
+                          className={`h-1.5 flex-1 rounded-full transition-colors ${
+                            bar <= getPasswordStrength(formData.password).strength
+                              ? getPasswordStrength(formData.password).color
+                              : 'bg-gray-200'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Password Requirements */}
+                {formData.password && (
+                  <div className="mt-3 space-y-1.5">
+                    <p className="text-xs font-medium text-gray-700">Password must contain:</p>
+                    <div className="space-y-1">
+                      <div className={`flex items-center gap-2 text-xs ${
+                        formData.password.length >= 8 ? 'text-green-600' : 'text-gray-500'
+                      }`}>
+                        {formData.password.length >= 8 ? (
+                          <FaCheck className="flex-shrink-0" />
+                        ) : (
+                          <div className="w-3 h-3 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                        )}
+                        <span>At least 8 characters</span>
+                      </div>
+                      <div className={`flex items-center gap-2 text-xs ${
+                        /(?=.*[a-z])/.test(formData.password) ? 'text-green-600' : 'text-gray-500'
+                      }`}>
+                        {/(?=.*[a-z])/.test(formData.password) ? (
+                          <FaCheck className="flex-shrink-0" />
+                        ) : (
+                          <div className="w-3 h-3 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                        )}
+                        <span>One lowercase letter (a-z)</span>
+                      </div>
+                      <div className={`flex items-center gap-2 text-xs ${
+                        /(?=.*[A-Z])/.test(formData.password) ? 'text-green-600' : 'text-gray-500'
+                      }`}>
+                        {/(?=.*[A-Z])/.test(formData.password) ? (
+                          <FaCheck className="flex-shrink-0" />
+                        ) : (
+                          <div className="w-3 h-3 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                        )}
+                        <span>One uppercase letter (A-Z)</span>
+                      </div>
+                      <div className={`flex items-center gap-2 text-xs ${
+                        /(?=.*\d)/.test(formData.password) ? 'text-green-600' : 'text-gray-500'
+                      }`}>
+                        {/(?=.*\d)/.test(formData.password) ? (
+                          <FaCheck className="flex-shrink-0" />
+                        ) : (
+                          <div className="w-3 h-3 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                        )}
+                        <span>One number (0-9)</span>
+                      </div>
+                      <div className={`flex items-center gap-2 text-xs ${
+                        /(?=.*[@$!%*?&#])/.test(formData.password) ? 'text-green-600' : 'text-gray-500'
+                      }`}>
+                        {/(?=.*[@$!%*?&#])/.test(formData.password) ? (
+                          <FaCheck className="flex-shrink-0" />
+                        ) : (
+                          <div className="w-3 h-3 rounded-full border-2 border-gray-300 flex-shrink-0" />
+                        )}
+                        <span>One special character (@$!%*?&#)</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {fieldErrors.password && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.password}</p>
+                  <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
+                    <FaTimes className="flex-shrink-0" />
+                    {fieldErrors.password}
+                  </p>
                 )}
               </div>
 
@@ -271,7 +570,7 @@ const Register = () => {
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FaLock className="text-gray-400" />
+                    <FaLock className={getInputState('confirmPassword') === 'invalid' ? 'text-red-400' : getInputState('confirmPassword') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
                   </div>
                   <input
                     id="confirmPassword"
@@ -280,21 +579,30 @@ const Register = () => {
                     required
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className={`block w-full pl-10 pr-10 py-3 border rounded-lg focus:ring-2 focus:ring-offset-0 focus:ring-gray-900 focus:border-transparent transition-all ${
-                      fieldErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                    }`}
+                    className={getInputClassName('confirmPassword')}
                     placeholder="••••••••"
                   />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
-                  >
-                    {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-                  </button>
+                  <div className="absolute inset-y-0 right-0 pr-3 flex items-center gap-2">
+                    {formData.confirmPassword && getInputState('confirmPassword') === 'valid' && (
+                      <FaCheck className="text-green-500" />
+                    )}
+                    {formData.confirmPassword && getInputState('confirmPassword') === 'invalid' && (
+                      <FaTimes className="text-red-500" />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
+                    </button>
+                  </div>
                 </div>
                 {fieldErrors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">{fieldErrors.confirmPassword}</p>
+                  <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
+                    <FaTimes className="flex-shrink-0" />
+                    {fieldErrors.confirmPassword}
+                  </p>
                 )}
               </div>
 
