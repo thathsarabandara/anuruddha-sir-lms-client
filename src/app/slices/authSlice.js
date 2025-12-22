@@ -1,24 +1,10 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { getToken, getUser, setToken, setUser, clearAuthData } from '../../utils/helpers';
 
-// Mock user for development/testing - Use SUPER_ADMIN to access all panels
-//   const mockUser = {
-//     id: '1',
-//     email: 'admin@example.com',
-//     first_name: 'Test',
-//     last_name: 'Admin',
-//     role: 'STUDENT', // Change to: STUDENT, TEACHER, ADMIN, SUPER_ADMIN, DEVELOPER
-//     phone_number: '+94771234567',
-//     school_name: 'Test School',
-//     grade: 'Grade 5',
-//     profile_picture: null,
-//     is_active: true,
-// };
-
 const initialState = {
-  user: getUser() ,
+  user: getUser(),
   token: getToken(),
-  isAuthenticated: false,
+  isAuthenticated: !!(getToken() && getUser()),
   loading: false,
   error: null,
 };
@@ -38,7 +24,6 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.error = null;
       
-      // Persist to localStorage
       setToken(action.payload.token);
       setUser(action.payload.user);
     },
