@@ -39,6 +39,20 @@ export const studentsAPI = {
   resetPassword: (id) => axiosInstance.post(`${API_ENDPOINTS.STUDENTS}/${id}/reset-password`),
 };
 
+// Teachers API
+export const teachersAPI = {
+  getAll: (params) => axiosInstance.get(API_ENDPOINTS.TEACHERS, { params }),
+  getStats: () => axiosInstance.get(`${API_ENDPOINTS.TEACHERS}/stats`),
+  getById: (id) => axiosInstance.get(`${API_ENDPOINTS.TEACHERS}/${id}`),
+  create: (data) => axiosInstance.post(`${API_ENDPOINTS.TEACHERS}/create`, data),
+  update: (id, data) => axiosInstance.put(`${API_ENDPOINTS.TEACHERS}/${id}/update`, data),
+  approve: (id) => axiosInstance.post(`${API_ENDPOINTS.TEACHERS}/${id}/approve`),
+  reject: (id, data) => axiosInstance.post(`${API_ENDPOINTS.TEACHERS}/${id}/reject`, data),
+  suspend: (id, data) => axiosInstance.post(`${API_ENDPOINTS.TEACHERS}/${id}/suspend`, data),
+  activate: (id) => axiosInstance.post(`${API_ENDPOINTS.TEACHERS}/${id}/activate`),
+  resetPassword: (id) => axiosInstance.post(`${API_ENDPOINTS.TEACHERS}/${id}/reset-password`),
+};
+
 // Quizzes API
 export const quizzesAPI = {
   getAll: (params) => axiosInstance.get(API_ENDPOINTS.QUIZZES, { params }),
@@ -82,6 +96,7 @@ export default {
   auth: authAPI,
   courses: coursesAPI,
   students: studentsAPI,
+  teachers: teachersAPI,
   quizzes: quizzesAPI,
   payments: paymentsAPI,
   recordings: recordingsAPI,
