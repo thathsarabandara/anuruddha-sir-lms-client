@@ -5,7 +5,7 @@ import { ROUTES } from '../utils/constants';
 const PublicRoute = ({ children }) => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  if (isAuthenticated) {
+  if (isAuthenticated && user?.role) {
     const dashboardRoutes = {
       STUDENT: ROUTES.STUDENT_DASHBOARD,
       TEACHER: ROUTES.TEACHER_DASHBOARD,
@@ -13,7 +13,8 @@ const PublicRoute = ({ children }) => {
       SUPER_ADMIN: ROUTES.ADMIN_DASHBOARD,
       DEVELOPER: ROUTES.DEVELOPER_DASHBOARD,
     };
-    return <Navigate to={dashboardRoutes[user?.role] || ROUTES.HOME} replace />;
+    console.log('Redirecting to:', dashboardRoutes[user.role]);
+    return <Navigate to={dashboardRoutes[user.role] || ROUTES.HOME} replace />;
   }
 
   return children;
