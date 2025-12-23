@@ -157,6 +157,11 @@ const Login = () => {
       
       dispatch(loginSuccess({ token, user: normalizedUser }));
       
+      // Store token expiry time (2 hours from now as per backend)
+      const tokenExpiryTime = Date.now() + (2 * 60 * 60 * 1000); // 2 hours
+      localStorage.setItem('lms_token_expiry', tokenExpiryTime.toString());
+      localStorage.setItem('lms_login_time', Date.now().toString());
+      
       // Navigate based on role using helper function
       const dashboardRoute = getDashboardRoute(normalizedUser.role);
       
