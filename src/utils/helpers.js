@@ -1,18 +1,38 @@
 import { STORAGE_KEYS } from './constants';
 
-// Token management
 export const getToken = () => {
-  const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-  return token && token !== 'undefined' ? token : null;
+  try {
+    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+    if (!token || token === 'undefined' || token === 'null' || token.trim() === '') {
+      return null;
+    }
+    return token;
+  } catch (error) {
+    console.error('Error getting token:', error);
+    return null;
+  }
 };
-export const setToken = (token) => localStorage.setItem(STORAGE_KEYS.TOKEN, token);
-export const removeToken = () => localStorage.removeItem(STORAGE_KEYS.TOKEN);
 
-// User management
+export const setToken = (token) => {
+  try {
+    localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+  } catch (error) {
+    console.error('Error setting token:', error);
+  }
+};
+
+export const removeToken = () => {
+  try {
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+  } catch (error) {
+    console.error('Error removing token:', error);
+  }
+};
+
 export const getUser = () => {
   try {
     const user = localStorage.getItem(STORAGE_KEYS.USER);
-    if (!user || user === 'undefined') {
+    if (!user || user === 'undefined' || user === 'null') {
       return null;
     }
     return JSON.parse(user);
@@ -24,21 +44,31 @@ export const getUser = () => {
 };
 
 export const setUser = (user) => {
-  localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+  try {
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
+  } catch (error) {
+    console.error('Error setting user:', error);
+  }
 };
 
 export const removeUser = () => {
-  localStorage.removeItem(STORAGE_KEYS.USER);
+  try {
+    localStorage.removeItem(STORAGE_KEYS.USER);
+  } catch (error) {
+    console.error('Error removing user:', error);
+  }
 };
 
-// Clear all auth data
 export const clearAuthData = () => {
-  removeToken();
-  removeUser();
-  localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+  try {
+    removeToken();
+    removeUser();
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+  } catch (error) {
+    console.error('Error clearing auth data:', error);
+  }
 };
 
-// Format date
 export const formatDate = (date) => {
   return new Date(date).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -47,7 +77,6 @@ export const formatDate = (date) => {
   });
 };
 
-// Format currency (LKR)
 export const formatCurrency = (amount) => {
   return `Rs. ${parseFloat(amount).toLocaleString('en-US', {
     minimumFractionDigits: 2,
@@ -55,7 +84,6 @@ export const formatCurrency = (amount) => {
   })}`;
 };
 
-// Debounce function
 export const debounce = (func, wait) => {
   let timeout;
   return function executedFunction(...args) {
@@ -68,7 +96,6 @@ export const debounce = (func, wait) => {
   };
 };
 
-// Get initials from name
 export const getInitials = (name) => {
   if (!name) return '';
   return name
@@ -79,26 +106,22 @@ export const getInitials = (name) => {
     .slice(0, 2);
 };
 
-// Validate email
 export const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 };
 
-// Validate phone number (Sri Lankan format)
 export const isValidPhone = (phone) => {
   const phoneRegex = /^(?:0|94|\+94)?(?:(11|21|23|24|25|26|27|31|32|33|34|35|36|37|38|41|45|47|51|52|54|55|57|63|65|66|67|81|91)(0|2|3|4|5|7|9)|7(0|1|2|4|5|6|7|8)\d)\d{6}$/;
   return phoneRegex.test(phone.replace(/\s/g, ''));
 };
 
-// Truncate text
 export const truncate = (text, length = 100) => {
   if (!text) return '';
   if (text.length <= length) return text;
   return text.substring(0, length) + '...';
 };
 
-// Get role display name
 export const getRoleDisplayName = (role) => {
   const roleNames = {
     STUDENT: 'Student',
