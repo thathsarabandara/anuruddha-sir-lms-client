@@ -1,13 +1,34 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { getToken, getUser, setToken, setUser, clearAuthData } from '../../utils/helpers';
 
-const initialState = {
-  user: getUser(),
-  token: getToken(),
-  isAuthenticated: !!(getToken() && getUser()),
-  loading: false,
-  error: null,
+const initializeAuthState = () => {
+  const token = getToken();
+  const user = getUser();
+  
+  const isAuthenticated = !!(token && user && user.role);
+  
+  if ((token && !user) || (!token && user)) {
+    console.log('Clearing corrupted auth data');
+    clearAuthData();
+    return {
+      user: null,
+      token: null,
+      isAuthenticated: false,
+      loading: false,
+      error: null,
+    };
+  }
+  
+  return {
+    user,
+    token,
+    isAuthenticated,
+    loading: false,
+    error: null,
+  };
 };
+
+const initialState = initializeAuthState();
 
 const authSlice = createSlice({
   name: 'auth',
