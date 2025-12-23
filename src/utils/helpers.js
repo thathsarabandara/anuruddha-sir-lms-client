@@ -64,6 +64,8 @@ export const clearAuthData = () => {
     removeToken();
     removeUser();
     localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
+    localStorage.removeItem(STORAGE_KEYS.LOGIN_TIME);
   } catch (error) {
     console.error('Error clearing auth data:', error);
   }
