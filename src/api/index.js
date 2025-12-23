@@ -27,9 +27,16 @@ export const coursesAPI = {
 // Students API
 export const studentsAPI = {
   getAll: (params) => axiosInstance.get(API_ENDPOINTS.STUDENTS, { params }),
+  getStats: () => axiosInstance.get(`${API_ENDPOINTS.STUDENTS}/stats`),
   getById: (id) => axiosInstance.get(`${API_ENDPOINTS.STUDENTS}/${id}`),
   getProgress: (id) => axiosInstance.get(`${API_ENDPOINTS.STUDENTS}/${id}/progress`),
-  update: (id, data) => axiosInstance.put(`${API_ENDPOINTS.STUDENTS}/${id}`, data),
+  create: (data) => axiosInstance.post(`${API_ENDPOINTS.STUDENTS}/create`, data),
+  update: (id, data) => axiosInstance.put(`${API_ENDPOINTS.STUDENTS}/${id}/update`, data),
+  approve: (id) => axiosInstance.post(`${API_ENDPOINTS.STUDENTS}/${id}/approve`),
+  reject: (id, data) => axiosInstance.post(`${API_ENDPOINTS.STUDENTS}/${id}/reject`, data),
+  suspend: (id, data) => axiosInstance.post(`${API_ENDPOINTS.STUDENTS}/${id}/suspend`, data),
+  activate: (id) => axiosInstance.post(`${API_ENDPOINTS.STUDENTS}/${id}/activate`),
+  resetPassword: (id) => axiosInstance.post(`${API_ENDPOINTS.STUDENTS}/${id}/reset-password`),
 };
 
 // Quizzes API
