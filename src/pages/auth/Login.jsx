@@ -121,21 +121,40 @@ const Login = () => {
       }
       
       // Normalize user object from backend response
+      // Handle all role types: STUDENT, TEACHER, ADMIN, DEVELOPER, SUPER_ADMIN
       const normalizedUser = {
+        // Core fields (all roles)
         id: user.user_id || user.id,
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
         role: user.role.toUpperCase(),
         phone_number: user.phone_number || null,
-        school_name: user.school_name || null,
-        grade: user.grade || null,
         profile_picture: user.profile_picture || null,
         is_active: user.is_active !== undefined ? user.is_active : true,
+        
+        // Student-specific fields
+        date_of_birth: user.date_of_birth || null,
+        grade_level: user.grade_level || null,
+        school: user.school || null,
+        address: user.address || null,
+        parent_name: user.parent_name || null,
+        parent_contact: user.parent_contact || null,
+        
+        // Teacher-specific fields
+        qualifications: user.qualifications || null,
+        subjects_taught: user.subjects_taught || null,
+        years_of_experience: user.years_of_experience || null,
+        bio: user.bio || null,
+        
+        // Language preference (both student & teacher)
+        language: user.language || null,
+        
+        // Admin/Developer/Super Admin fields (can be extended later)
+        permissions: user.permissions || null,
+        department: user.department || null,
       };
       
-      console.log('Normalized User:', normalizedUser); // Debug log
-      console.log('Dispatching loginSuccess with:', { token, user: normalizedUser }); // Debug log
       dispatch(loginSuccess({ token, user: normalizedUser }));
       
       // Navigate based on role using helper function
