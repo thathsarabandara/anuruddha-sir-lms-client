@@ -35,6 +35,8 @@ export const STORAGE_KEYS = {
   TOKEN: 'lms_token',
   USER: 'lms_user',
   REFRESH_TOKEN: 'lms_refresh_token',
+  TOKEN_EXPIRY: 'lms_token_expiry',
+  LOGIN_TIME: 'lms_login_time',
 };
 
 // Route paths
