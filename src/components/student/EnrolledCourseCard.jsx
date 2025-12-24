@@ -11,7 +11,7 @@ const EnrolledCourseCard = ({ course }) => {
             <h3 className="text-xl font-bold mb-1">{course.title}</h3>
             <p className="text-white/90 text-sm">{course.subject}</p>
           </div>
-          <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 p y-1 rounded-full">
+          <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
             <FaStar className="text-yellow-300 text-sm" />
             <span className="text-sm font-bold">{course.rating}</span>
           </div>
@@ -63,7 +63,7 @@ const EnrolledCourseCard = ({ course }) => {
         </div>
       </div>
     </div>
-  )}
-  ;
+  );
+};
 
 export default EnrolledCourseCard;
