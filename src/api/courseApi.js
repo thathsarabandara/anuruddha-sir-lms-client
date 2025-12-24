@@ -61,6 +61,7 @@ export const adminCourseAPI = {
   approveCourse: (courseId, action) => axiosInstance.post(`${API_BASE_URL}courses/admin/courses/${courseId}/approve/`, { action }),
   featureCourse: (courseId, isFeatured) => axiosInstance.post(`${API_BASE_URL}courses/admin/courses/${courseId}/feature/`, { is_featured: isFeatured }),
   setCommission: (courseId, commissionPercentage) => axiosInstance.put(`${API_BASE_URL}courses/admin/courses/${courseId}/commission/`, { commission_percentage: commissionPercentage }),
+  getDashboardStats: () => axiosInstance.get(`${API_BASE_URL}courses/admin/dashboard/`),
 };
 
 export const utilityAPI = {
