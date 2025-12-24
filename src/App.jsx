@@ -1,5 +1,8 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ROUTES, ROLES } from './utils/constants';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import useAuthExpiry from './hooks/useAuthExpiry';
 
 // Layouts
 import PublicLayout from './components/layout/PublicLayout';
@@ -33,6 +36,8 @@ import ResetPassword from './pages/auth/ResetPassword';
 // Student Pages
 import StudentDashboard from './pages/student/Dashboard';
 import StudentCourses from './pages/student/Courses';
+import StudentCoursesDiscover from './pages/student/CoursesDiscover';
+import StudentCourseLearning from './pages/student/CourseLearning';
 import StudentLiveClasses from './pages/student/LiveClasses';
 import StudentQuizzes from './pages/student/Quizzes';
 import StudentQuizDetails from './pages/student/QuizDetails';
@@ -48,6 +53,7 @@ import StudentCoursesView from './pages/student/CourseView';
 // Teacher Pages
 import TeacherDashboard from './pages/teacher/Dashboard';
 import TeacherCourses from './pages/teacher/Courses';
+import TeacherCourseDetail from './pages/teacher/CourseDetail';
 import TeacherLiveClasses from './pages/teacher/LiveClasses';
 import TeacherStudents from './pages/teacher/Students';
 import TeacherQuizzes from './pages/teacher/Quizzes';
@@ -62,6 +68,7 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminStudents from './pages/admin/Students';
 import AdminTeachers from './pages/admin/Teachers';
 import AdminCourses from './pages/admin/Courses';
+import AdminCourseModeration from './pages/admin/CourseModeration';
 import AdminPayments from './pages/admin/Payments';
 import AdminQuizzes from './pages/admin/Quizzes';
 import AdminCertificates from './pages/admin/Certificates';
@@ -78,6 +85,9 @@ import FeatureFlags from './pages/developer/FeatureFlags';
 import IntegrationStatus from './pages/developer/IntegrationStatus';
 
 function App() {
+  // Monitor token expiry and handle automatic logout
+  useAuthExpiry();
+
   return (
     <Router>
       {/* Global Floating Components */}
@@ -141,6 +151,9 @@ function App() {
         >
           <Route path={ROUTES.STUDENT_DASHBOARD} element={<StudentDashboard />} />
           <Route path={ROUTES.STUDENT_COURSES} element={<StudentCourses />} />
+          <Route path="/student/courses/discover" element={<StudentCoursesDiscover />} />
+          <Route path="/student/course/:courseId" element={<StudentCoursesDiscover />} />
+          <Route path="/student/course/:courseId/learn" element={<StudentCourseLearning />} />
           <Route path={ROUTES.STUDENT_LIVE_CLASSES} element={<StudentLiveClasses />} />
           <Route path={ROUTES.STUDENT_QUIZZES} element={<StudentQuizzes />} />
           <Route path={ROUTES.STUDENT_QUIZ_DETAILS} element={<StudentQuizDetails />} />
@@ -164,6 +177,7 @@ function App() {
         >
           <Route path={ROUTES.TEACHER_DASHBOARD} element={<TeacherDashboard />} />
           <Route path={ROUTES.TEACHER_COURSES} element={<TeacherCourses />} />
+          <Route path="/teacher/courses/:courseId" element={<TeacherCourseDetail />} />
           <Route path={ROUTES.TEACHER_LIVE_CLASSES} element={<TeacherLiveClasses />} />
           <Route path={ROUTES.TEACHER_STUDENTS} element={<TeacherStudents />} />
           <Route path={ROUTES.TEACHER_QUIZZES} element={<TeacherQuizzes />} />
@@ -186,6 +200,7 @@ function App() {
           <Route path={ROUTES.ADMIN_STUDENTS} element={<AdminStudents />} />
           <Route path={ROUTES.ADMIN_TEACHERS} element={<AdminTeachers />} />
           <Route path={ROUTES.ADMIN_COURSES} element={<AdminCourses />} />
+          <Route path="/admin/courses/moderation" element={<AdminCourseModeration />} />
           <Route path={ROUTES.ADMIN_PAYMENTS} element={<AdminPayments />} />
           <Route path={ROUTES.ADMIN_QUIZZES} element={<AdminQuizzes />} />
           <Route path={ROUTES.ADMIN_CERTIFICATES} element={<AdminCertificates />} />
@@ -210,6 +225,17 @@ function App() {
           <Route path={ROUTES.DEVELOPER_INTEGRATION_STATUS} element={<IntegrationStatus />} />
         </Route>
       </Routes>
+      <ToastContainer 
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </Router>
   );
 }
