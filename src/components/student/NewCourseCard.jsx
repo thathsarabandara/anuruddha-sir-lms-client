@@ -21,32 +21,42 @@ const NewCourseCard = ({ course }) => (
         <div className="flex items-center justify-between mb-4 pb-4 border-b border-slate-200">
           <div className="flex items-center gap-1">
             <FaStar className="text-yellow-400" />
-            <span className="font-semibold text-slate-900">{course.rating}</span>
-            <span className="text-xs text-slate-500">({course.students} students)</span>
+            <span className="font-semibold text-slate-900">{course.rating || 'N/A'}</span>
+            <span className="text-xs text-slate-500">({course.students || 0} students)</span>
           </div>
         </div>
 
         <div className="space-y-3 mb-4">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">Duration</span>
-            <span className="font-semibold text-slate-900 flex items-center justify-center gap-2"><IoTimeSharp /> {course.duration}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">Lessons</span>
-            <span className="font-semibold text-slate-900 flex items-center justify-center gap-2"><FaBookOpen /> {course.lessons}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">Grade</span>
-            <span className="font-semibold text-slate-900">Grade {course.grade}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">Type</span>
-            <span className="font-semibold text-slate-900">{course.type}</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-slate-600">Instructor</span>
-            <span className="font-semibold text-slate-900">{course.instructor}</span>
-          </div>
+          {course.duration && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600">Duration</span>
+              <span className="font-semibold text-slate-900 flex items-center justify-center gap-2"><IoTimeSharp /> {course.duration}</span>
+            </div>
+          )}
+          {course.lessons && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600">Lessons</span>
+              <span className="font-semibold text-slate-900 flex items-center justify-center gap-2"><FaBookOpen /> {course.lessons}</span>
+            </div>
+          )}
+          {course.grade && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600">Grade</span>
+              <span className="font-semibold text-slate-900">Grade {course.grade}</span>
+            </div>
+          )}
+          {course.type && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600">Type</span>
+              <span className="font-semibold text-slate-900">{course.type}</span>
+            </div>
+          )}
+          {course.instructor && (
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-slate-600">Instructor</span>
+              <span className="font-semibold text-slate-900">{course.instructor}</span>
+            </div>
+          )}
         </div>
 
         <div className="mb-4">
