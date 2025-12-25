@@ -15,6 +15,7 @@ const TeacherCourses = () => {
   const [subjects, setSubjects] = useState([]);
   const [gradeLevels, setGradeLevels] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
     title: '',
@@ -88,6 +89,7 @@ const TeacherCourses = () => {
         fetchCourses();
       }
     } catch (error) {
+      setIsSubmitting(false); 
       toast.error(error.response?.data?.message || 'Failed to create course');
       console.error(error);
     }
@@ -161,7 +163,7 @@ const TeacherCourses = () => {
           <p className="text-gray-600">Create and manage your courses</p>
         </div>
         <button 
-          onClick={() => setShowCreateModal(true)} 
+          onClick={() => { setShowCreateModal(true); }} 
           className="btn-primary px-6 flex items-center gap-2"
         >
           <FaPlus /> Create New Course
@@ -338,7 +340,7 @@ const TeacherCourses = () => {
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
               <h2 className="text-2xl font-bold text-gray-900">Create New Course</h2>
               <button 
-                onClick={() => { setShowCreateModal(false); resetForm(); }}
+                onClick={() => { setShowCreateModal(false); resetForm(); setIsSubmitting(false); }}
                 className="text-gray-500 hover:text-gray-700"
               >
                 ✕
@@ -499,9 +501,11 @@ const TeacherCourses = () => {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 btn-primary py-3 font-semibold"
+                  className="flex-1 btn-primary py-3 font-semibold justify-center flex items-center gap-2"
+                  onClick={() => setIsSubmitting(true)}
+                  disabled={isSubmitting}
                 >
-                  Create Course
+                  {isSubmitting ? <div className="flex items-center"><BiLoader className="inline-block mr-2 animate-spin" /><p>Creating...</p></div> : 'Create Course'}
                 </button>
               </div>
             </form>
@@ -528,10 +532,11 @@ const TeacherCourses = () => {
                 No, Cancel
               </button>
               <button
-                onClick={handleDeleteCourse}
+                onClick={() => { handleDeleteCourse(); setIsSubmitting(true); }}
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
+                disabled={isSubmitting}
               >
-                Yes, Delete
+                {isSubmitting ? <div className="flex items-center"><BiLoader className="inline-block mr-2 animate-spin" /><p>Deleting...</p></div> : 'Yes, Delete'}
               </button>
             </div>
           </div>
