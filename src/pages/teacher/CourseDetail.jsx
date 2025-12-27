@@ -60,6 +60,7 @@ const CourseDetail = () => {
     quiz_id: ''
   });
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchUtilityData = async () => {
@@ -69,7 +70,6 @@ const CourseDetail = () => {
           utilityAPI.getSubjects(),
           utilityAPI.getGradeLevels()
         ]);
-        // API response has nested structure: data.categories, data.subjects, data.grade_levels
         setCategories(categoriesRes.data.categories || categoriesRes.data);
         setSubjects(subjectsRes.data.subjects || subjectsRes.data);
         setGradeLevels(gradeLevelsRes.data.grade_levels || gradeLevelsRes.data);
@@ -82,13 +82,11 @@ const CourseDetail = () => {
     };
     fetchUtilityData();
     fetchCourseDetails();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId]);
 
   const fetchCourseDetails = async () => {
     try {
       const response = await teacherCourseAPI.getCourseDetails(courseId);
-      // Check if response has nested course structure or flat structure
       const courseData = response.data.course || response.data;
       setCourse(courseData);
       setCourseForm({
@@ -232,7 +230,6 @@ const CourseDetail = () => {
   const handleCreateLesson = async (e) => {
     e.preventDefault();
     try {
-      // Map frontend form data to backend API format
       const lessonData = {
         title: lessonForm.title,
         description: lessonForm.description,
@@ -249,8 +246,8 @@ const CourseDetail = () => {
       } else if (lessonForm.lesson_type === 'TEXT') {
         lessonData.text_content = lessonForm.text_content;
       } else if (lessonForm.lesson_type === 'ZOOM_CLASS') {
-        lessonData.zoom_class_id = lessonForm.zoom_meeting_id; // Store meeting ID as reference
-        lessonData.external_link = lessonForm.zoom_meeting_link; // Store link as well
+        lessonData.zoom_class_id = lessonForm.zoom_meeting_id;
+        lessonData.external_link = lessonForm.zoom_meeting_link;
         lessonData.text_content = JSON.stringify({
           scheduled_date: lessonForm.scheduled_date,
           scheduled_time: lessonForm.scheduled_time,
@@ -898,8 +895,9 @@ const CourseDetail = () => {
                   <button
                     type="submit"
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    onClick={()=>{setIsSubmitting(true)}}
                   >
-                    Save Changes
+                    {isSubmitting ? <div></div>: 'Save Changes'}
                   </button>
                 </div>
               </form>
