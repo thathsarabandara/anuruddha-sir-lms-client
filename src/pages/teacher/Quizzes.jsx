@@ -1,103 +1,182 @@
-import { useState } from 'react';
-import { FaArrowRight, FaAward, FaFilePdf, FaPencilAlt, FaTimes } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaAward, FaPencilAlt, FaPlus, FaEye, FaTrash, FaEdit, FaClock, FaUsers, FaClipboardCheck, FaBook, FaCheckCircle } from 'react-icons/fa';
+import { MdQuiz } from 'react-icons/md';
+import API from '../../api';
+import QuizFormModal from '../../components/teacher/QuizFormModal';
+import { BiLoader } from 'react-icons/bi';
+import quizApi from '../../api/quizApi';
 
 const TeacherQuizzes = () => {
+  const navigate = useNavigate();
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState('published');
+  const [selectedQuiz, setSelectedQuiz] = useState(null);
+  
+  const [quizzes, setQuizzes] = useState([]);
+  const [stats, setStats] = useState({
+    total: 0,
+    published: 0,
+    pending: 0,
+    avgScore: 0
+  });
+  const [loading, setLoading] = useState(true);
 
-  const quizzes = [
-    {
-      id: 1,
-      title: 'Mathematics Chapter 5 Quiz',
-      course: 'Mathematics Excellence',
-      questions: 20,
-      duration: 30,
-      submissions: 42,
-      avgScore: 85,
-      pending: 3,
-      dueDate: 'Dec 20, 2025',
-      status: 'published',
-    },
-    {
-      id: 2,
-      title: 'Sinhala Grammar Test',
-      course: 'Sinhala Language',
-      questions: 15,
-      duration: 25,
-      submissions: 35,
-      avgScore: 78,
-      pending: 8,
-      dueDate: 'Dec 22, 2025',
-      status: 'published',
-    },
-    {
-      id: 3,
-      title: 'Environment Unit 3 Assessment',
-      course: 'Complete Scholarship Package',
-      questions: 25,
-      duration: 35,
-      submissions: 0,
-      avgScore: 0,
-      pending: 0,
-      dueDate: 'Dec 25, 2025',
-      status: 'draft',
-    },
-  ];
+  useEffect(() => {
+    fetchQuizzes();
+  }, []);
 
-  const recentSubmissions = [
-    { id: 1, student: 'Kasun P.', quiz: 'Mathematics Chapter 5', score: 92, time: '2 hours ago' },
-    { id: 2, student: 'Nimal S.', quiz: 'Sinhala Grammar', score: 88, time: '3 hours ago' },
-    { id: 3, student: 'Saman W.', quiz: 'Mathematics Chapter 5', score: 85, time: '5 hours ago' },
-  ];
 
-  const publishedQuizzes = quizzes.filter((q) => q.status === 'published');
-  const draftQuizzes = quizzes.filter((q) => q.status === 'draft');
+  const fetchQuizzes = async () => {
+    setLoading(true);
+    try {
+      const stat = await quizApi.teacherQuizAPI.teacherStat();
+      const response = await quizApi.teacherQuizAPI.getTeacherAllQuizzes();
+      const quizzesData = response.data.quizzes || [];
+      setQuizzes(quizzesData);
+      const statsData = stat.data || {};
+      
+      // Calculate stats
+      const total = statsData.stats.total || 0;
+      const published = statsData.stats.published || 0;
+      const totalPending = statsData.stats.pending || 0;
+      const draft = statsData.stats.draft || 0;
+      
+      setStats({
+        total: total,
+        published,
+        pending: totalPending,
+        draft: draft
+      });
+
+    } catch (error) {
+      console.error('Error fetching quizzes:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateQuiz = () => {
+    setSelectedQuiz(null);
+    setShowCreateModal(true);
+  };
+
+  const handleEditQuiz = (quiz) => {
+    setSelectedQuiz(quiz);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteQuiz = async (quizId) => {
+    if (!confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
+      return;
+    }
+    
+    try {
+      await API.quiz.deleteQuiz(quizId);
+      fetchQuizzes();
+    } catch (error) {
+      console.error('Error deleting quiz:', error);
+      alert(error.response?.data?.message || 'Failed to delete quiz');
+    }
+  };
+
+  const handleQuizSaved = () => {
+    fetchQuizzes();
+  };
+
+  const handleManageQuestions = (quizId) => {
+    navigate(`/teacher/quizzes/${quizId}/questions`);
+  };
+
+  const handleViewResults = (quizId) => {
+    navigate(`/teacher/quizzes/${quizId}/results`);
+  };
+
+  const handleGradePending = (quizId) => {
+    navigate(`/teacher/quizzes/${quizId}/grade`);
+  };
+
+  // Ensure quizzes is an array before filtering
+  const quizzesArray = Array.isArray(quizzes) ? quizzes : [];
+  const publishedQuizzes = quizzesArray.filter((q) => q.visibility === 'PUBLISHED');
+  const draftQuizzes = quizzesArray.filter((q) => q.visibility === 'DRAFT');
+  if (loading) {
+    return (
+        <div className="flex items-center justify-center h-full">
+          <BiLoader className="animate-spin text-4xl text-primary-600" />
+          <span className="ml-3 text-gray-600">Loading Quizzes...</span>
+        </div>
+    );
+  }
 
   return (
     <div className="p-8">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Quiz Management</h1>
           <p className="text-gray-600">Create and grade quizzes for your students</p>
         </div>
-        <button onClick={() => setShowCreateModal(true)} className="btn-primary px-6">
-          + Create New Quiz
-        </button>
+        <div className="flex gap-3">
+          <button onClick={handleCreateQuiz} className="btn-primary px-6">
+            <FaPlus className="inline mr-2" /> Create Quiz
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Quizzes</div>
-          <div className="text-2xl font-bold text-gray-900">{quizzes.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Published</div>
-          <div className="text-2xl font-bold text-green-600">{publishedQuizzes.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Pending Grading</div>
-          <div className="text-2xl font-bold text-yellow-600">
-            {quizzes.reduce((sum, q) => sum + q.pending, 0)}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="card">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Total Quizzes</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
+                <p className="text-xs text-gray-500 mt-2">all quizzes</p>
+              </div>
+              <div className="bg-blue-100 text-blue-600 p-3 rounded-lg text-2xl">
+                <MdQuiz />
+              </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Published</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.published}</p>
+                <p className="text-xs text-gray-500 mt-2">approved quizzes</p>
+              </div>
+              <div className="bg-green-100 text-green-600 p-3 rounded-lg text-2xl">
+                <FaCheckCircle />
+              </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Pending Reviews</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.pending}</p>
+                <p className="text-xs text-gray-500 mt-2">manual grading</p>
+              </div>
+              <div className="bg-yellow-100 text-yellow-600 p-3 rounded-lg text-2xl">
+                <FaPencilAlt />
+              </div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600 mb-2">Drafts</p>
+                <p className="text-3xl font-bold text-gray-900">{stats.draft}</p>
+                <p className="text-xs text-gray-500 mt-2">unpublished quizzes</p>
+              </div>
+              <div className="bg-purple-100 text-purple-600 p-3 rounded-lg text-2xl">
+                <FaEdit />
+              </div>
+            </div>
           </div>
         </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Avg Score</div>
-          <div className="text-2xl font-bold text-primary-600">
-            {publishedQuizzes.length > 0
-              ? Math.round(
-                  publishedQuizzes.reduce((sum, q) => sum + q.avgScore, 0) / publishedQuizzes.length
-                )
-              : 0}
-            %
-          </div>
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="lg:col-span-2">
-          {/* Tabs */}
+        <div>
           <div className="flex space-x-4 mb-6 border-b">
             <button
               onClick={() => setSelectedTab('published')}
@@ -124,208 +203,197 @@ const TeacherQuizzes = () => {
           {/* Published Quizzes */}
           {selectedTab === 'published' && (
             <div className="space-y-4">
-              {publishedQuizzes.map((quiz) => (
-                <div key={quiz.id} className="card">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="text-lg font-bold text-gray-900">{quiz.title}</h3>
-                        {quiz.pending > 0 && (
-                          <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded">
-                            {quiz.pending} PENDING
+              {publishedQuizzes.length === 0 ? (
+                <div className="card text-center py-12">
+                  <FaClipboardCheck className="mx-auto text-gray-400 text-5xl mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Published Quizzes</h3>
+                  <p className="text-gray-600 mb-4">Create your first quiz to get started</p>
+                  <button onClick={handleCreateQuiz} className="btn-primary">
+                    Create Quiz
+                  </button>
+                </div>
+              ) : (
+                publishedQuizzes.map((quiz) => (
+                  <div key={quiz.id} className="card hover:shadow-lg transition-shadow">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className="text-lg font-bold text-gray-900">{quiz.title}</h3>
+                          {quiz.pending_manual_reviews > 0 && (
+                            <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded">
+                              {quiz.pending_manual_reviews} PENDING
+                            </span>
+                          )}
+                          <span className={`px-2 py-1 text-xs font-semibold rounded ${
+                            quiz.quiz_type === 'FINAL_EXAM' ? 'bg-red-100 text-red-700' :
+                            quiz.quiz_type === 'GRADED' ? 'bg-blue-100 text-blue-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {quiz.quiz_type.replace('_', ' ')}
                           </span>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-600 mb-3">{quiz.course}</p>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-                        <div>
-                          <span className="text-gray-600">Questions:</span>{' '}
-                          <span className="font-medium text-gray-900">{quiz.questions}</span>
                         </div>
-                        <div>
-                          <span className="text-gray-600">Duration:</span>{' '}
-                          <span className="font-medium text-gray-900">{quiz.duration} min</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Submissions:</span>{' '}
-                          <span className="font-medium text-gray-900">{quiz.submissions}</span>
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Avg Score:</span>{' '}
-                          <span className="font-medium text-gray-900">{quiz.avgScore}%</span>
-                        </div>
-                      </div>
-                      <div className="text-sm text-gray-600 mt-2">Due: {quiz.dueDate}</div>
-                    </div>
-                    <div className="flex flex-col space-y-2 ml-4">
-                      <button className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium">
-                        View Results
-                      </button>
-                      <button className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-                        Edit
-                      </button>
-                    </div>
-                  </div>
-                  {quiz.submissions > 0 && (
-                    <div className="pt-4 border-t">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="text-sm text-gray-600">Completion Rate:</div>
-                          <div className="flex items-center space-x-2">
-                            <div className="w-32 bg-gray-200 rounded-full h-2">
-                              <div className="bg-green-600 h-2 rounded-full" style={{ width: '93%' }} />
-                            </div>
-                            <span className="text-sm font-medium text-gray-900">93%</span>
+                        <p className="text-sm text-gray-600 mb-3">{quiz.description || 'No description'}</p>
+                        
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
+                          <div className="flex items-center gap-2">
+                            <FaClipboardCheck className="text-gray-400" />
+                            <span className="text-gray-600">Questions:</span>
+                            <span className="font-medium text-gray-900">{quiz.total_questions || 0}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FaClock className="text-gray-400" />
+                            <span className="text-gray-600">Duration:</span>
+                            <span className="font-medium text-gray-900">{quiz.time_limit_minutes} min</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FaUsers className="text-gray-400" />
+                            <span className="text-gray-600">Attempts:</span>
+                            <span className="font-medium text-gray-900">{quiz.total_attempts || 0}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FaAward className="text-gray-400" />
+                            <span className="text-gray-600">Avg Score:</span>
+                            <span className="font-medium text-gray-900">{Math.round(quiz.average_score || 0)}%</span>
                           </div>
                         </div>
-                        {quiz.pending > 0 && (
-                          <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                            Grade Pending →
-                          </button>
+                        
+                        {(quiz.start_date || quiz.end_date) && (
+                          <div className="text-sm text-gray-600">
+                            {quiz.start_date && <span>Starts: {new Date(quiz.start_date).toLocaleDateString()}</span>}
+                            {quiz.start_date && quiz.end_date && <span className="mx-2">•</span>}
+                            {quiz.end_date && <span>Ends: {new Date(quiz.end_date).toLocaleDateString()}</span>}
+                          </div>
                         )}
                       </div>
+                      
+                      <div className="flex flex-col space-y-2">
+                        <button 
+                          onClick={() => handleManageQuestions(quiz.id)}
+                          className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <FaEdit /> Manage Questions
+                        </button>
+                        <button 
+                          onClick={() => handleViewResults(quiz.id)}
+                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <FaEye /> View Results
+                        </button>
+                        {quiz.pending_manual_reviews > 0 && (
+                          <button 
+                            onClick={() => handleGradePending(quiz.id)}
+                            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                          >
+                            <FaPencilAlt /> Grade ({quiz.pending_manual_reviews})
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => handleEditQuiz(quiz)}
+                          className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm flex items-center justify-center gap-2"
+                        >
+                          <FaEdit /> Edit Quiz
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteQuiz(quiz.id)}
+                          className="px-4 py-2 border-2 border-red-300 text-red-600 rounded-lg hover:bg-red-50 text-sm flex items-center justify-center gap-2"
+                        >
+                          <FaTrash /> Delete
+                        </button>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))
+              )}
             </div>
           )}
 
           {/* Draft Quizzes */}
           {selectedTab === 'drafts' && (
             <div className="space-y-4">
-              {draftQuizzes.map((quiz) => (
-                <div key={quiz.id} className="card bg-gray-50">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="text-lg font-bold text-gray-900">{quiz.title}</h3>
-                        <span className="px-2 py-1 bg-gray-300 text-gray-700 text-xs font-semibold rounded">
-                          DRAFT
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-3">{quiz.course}</p>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <span className="text-gray-600">Questions:</span>{' '}
-                          <span className="font-medium text-gray-900">{quiz.questions}</span>
+              {draftQuizzes.length === 0 ? (
+                <div className="card text-center py-12">
+                  <FaEdit className="mx-auto text-gray-400 text-5xl mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Draft Quizzes</h3>
+                  <p className="text-gray-600">All your quizzes are published</p>
+                </div>
+              ) : (
+                draftQuizzes.map((quiz) => (
+                  <div key={quiz.id} className="card hover:shadow-lg transition-shadow opacity-75">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className="text-lg font-bold text-gray-900">{quiz.title}</h3>
+                          <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded">
+                            DRAFT
+                          </span>
                         </div>
-                        <div>
-                          <span className="text-gray-600">Duration:</span>{' '}
-                          <span className="font-medium text-gray-900">{quiz.duration} min</span>
+                        <p className="text-sm text-gray-600 mb-3">{quiz.description || 'No description'}</p>
+                        
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="flex items-center gap-2">
+                            <FaClipboardCheck className="text-gray-400" />
+                            <span className="text-gray-600">Questions:</span>
+                            <span className="font-medium text-gray-900">{quiz.total_questions || 0}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <FaClock className="text-gray-400" />
+                            <span className="text-gray-600">Duration:</span>
+                            <span className="font-medium text-gray-900">{quiz.time_limit_minutes} min</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex flex-col space-y-2 ml-4">
-                      <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium">
-                        Publish
-                      </button>
-                      <button className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-                        Edit
-                      </button>
+                      
+                      <div className="flex flex-col space-y-2">
+                        <button 
+                          onClick={() => handleManageQuestions(quiz.id)}
+                          className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2"
+                        >
+                          <FaEdit /> Add Questions
+                        </button>
+                        <button 
+                          onClick={() => handleEditQuiz(quiz)}
+                          className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm flex items-center justify-center gap-2"
+                        >
+                          <FaEdit /> Edit
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteQuiz(quiz.id)}
+                          className="px-4 py-2 border-2 border-red-300 text-red-600 rounded-lg hover:bg-red-50 text-sm flex items-center justify-center gap-2"
+                        >
+                          <FaTrash /> Delete
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
         </div>
 
-        {/* Sidebar */}
-        <div className="lg:col-span-1 space-y-6">
-          {/* Recent Submissions */}
-          <div className="card">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Recent Submissions</h3>
-            <div className="space-y-3">
-              {recentSubmissions.map((submission) => (
-                <div key={submission.id} className="p-3 bg-gray-50 rounded-lg">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-gray-900 text-sm">{submission.student}</span>
-                    <span className="text-lg font-bold text-green-600">{submission.score}%</span>
-                  </div>
-                  <div className="text-xs text-gray-600">{submission.quiz}</div>
-                  <div className="text-xs text-gray-500 mt-1">{submission.time}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Quiz Templates */}
-          <div className="card">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Quick Templates</h3>
-            <div className="space-y-2">
-              <button className="w-full text-left p-3 bg-blue-50 hover:bg-blue-100 rounded-lg text-sm transition-colors">
-                📝 Multiple Choice Quiz
-              </button>
-              <button className="w-full text-left p-3 bg-green-50 hover:bg-green-100 rounded-lg text-sm transition-colors">
-                ✍️ Short Answer Quiz
-              </button>
-              <button className="w-full text-left p-3 bg-purple-50 hover:bg-purple-100 rounded-lg text-sm transition-colors">
-                🎯 Mixed Format Quiz
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Create Modal */}
+      {/* Modals */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Create New Quiz</h2>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-            <form className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Title</label>
-                <input type="text" className="input-field" required />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Course</label>
-                <select className="input-field">
-                  <option>Mathematics Excellence</option>
-                  <option>Sinhala Language</option>
-                  <option>Complete Scholarship Package</option>
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Number of Questions</label>
-                  <input type="number" className="input-field" required />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Duration (minutes)</label>
-                  <input type="number" className="input-field" required />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Due Date</label>
-                <input type="date" className="input-field" required />
-              </div>
-              <div className="flex space-x-3 pt-4">
-                <button type="submit" className="flex-1 btn-primary">
-                  Create Quiz
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCreateModal(false)}
-                  className="flex-1 btn-outline"
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <QuizFormModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          onSave={handleQuizSaved}
+        />
+      )}
+
+      {showEditModal && selectedQuiz && (
+        <QuizFormModal
+          isOpen={showEditModal}
+          onClose={() => {
+            setShowEditModal(false);
+            setSelectedQuiz(null);
+          }}
+          onSave={handleQuizSaved}
+          quiz={selectedQuiz}
+        />
       )}
     </div>
   );
 };
 
 export default TeacherQuizzes;
+                          
