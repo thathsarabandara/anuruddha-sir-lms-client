@@ -41,6 +41,8 @@ import StudentCourseLearning from './pages/student/CourseLearning';
 import StudentLiveClasses from './pages/student/LiveClasses';
 import StudentQuizzes from './pages/student/Quizzes';
 import StudentQuizDetails from './pages/student/QuizDetails';
+import TakeQuiz from './pages/student/TakeQuiz';
+import QuizResults from './pages/student/QuizResults';
 import StudentRecordings from './pages/student/Recordings';
 import StudentCertificates from './pages/student/Certificates';
 import StudentPayments from './pages/student/Payments';
@@ -57,6 +59,9 @@ import TeacherCourseDetail from './pages/teacher/CourseDetail';
 import TeacherLiveClasses from './pages/teacher/LiveClasses';
 import TeacherStudents from './pages/teacher/Students';
 import TeacherQuizzes from './pages/teacher/Quizzes';
+import ManageQuestions from './pages/teacher/ManageQuestions';
+import GradeQuiz from './pages/teacher/GradeQuiz';
+import QuizResultsDashboard from './pages/teacher/QuizResultsDashboard';
 import TeacherRecordings from './pages/teacher/Recordings';
 import TeacherRevenue from './pages/teacher/Revenue';
 import TeacherRewards from './pages/teacher/Rewards';
@@ -157,6 +162,8 @@ function App() {
           <Route path={ROUTES.STUDENT_LIVE_CLASSES} element={<StudentLiveClasses />} />
           <Route path={ROUTES.STUDENT_QUIZZES} element={<StudentQuizzes />} />
           <Route path={ROUTES.STUDENT_QUIZ_DETAILS} element={<StudentQuizDetails />} />
+          <Route path="/student/quiz/:quizId/take" element={<TakeQuiz />} />
+          <Route path="/student/quiz/:quizId/results/:attemptId" element={<QuizResults />} />
           <Route path={ROUTES.STUDENT_RECORDINGS} element={<StudentRecordings />} />
           <Route path={ROUTES.STUDENT_CERTIFICATES} element={<StudentCertificates />} />
           <Route path={ROUTES.STUDENT_PAYMENTS} element={<StudentPayments />} />
@@ -181,6 +188,9 @@ function App() {
           <Route path={ROUTES.TEACHER_LIVE_CLASSES} element={<TeacherLiveClasses />} />
           <Route path={ROUTES.TEACHER_STUDENTS} element={<TeacherStudents />} />
           <Route path={ROUTES.TEACHER_QUIZZES} element={<TeacherQuizzes />} />
+          <Route path="/teacher/quizzes/:quizId/questions" element={<ManageQuestions />} />
+          <Route path="/teacher/quizzes/:quizId/grade" element={<GradeQuiz />} />
+          <Route path="/teacher/quizzes/:quizId/results" element={<QuizResultsDashboard />} />
           <Route path={ROUTES.TEACHER_RECORDINGS} element={<TeacherRecordings />} />
           <Route path={ROUTES.TEACHER_REVENUE} element={<TeacherRevenue />} />
           <Route path={ROUTES.TEACHER_REWARDS} element={<TeacherRewards />} />
