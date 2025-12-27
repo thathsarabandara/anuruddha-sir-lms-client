@@ -1,5 +1,6 @@
 import axiosInstance from './axios';
 import { API_ENDPOINTS } from '../utils/constants';
+import quizAPI from './quizApi';
 
 // Auth API calls
 export const authAPI = {
@@ -102,4 +103,5 @@ export default {
   recordings: recordingsAPI,
   rewards: rewardsAPI,
   notifications: notificationsAPI,
+  quiz: quizAPI,
 };
