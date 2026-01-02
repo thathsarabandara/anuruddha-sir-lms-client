@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaEdit, FaTrash, FaEye, FaBook, FaUsers, FaDollarSign, FaVideo, FaCheckCircle, FaClock, FaChartLine } from 'react-icons/fa';
 import { teacherCourseAPI, utilityAPI } from '../../api/courseApi';
-import { toast } from 'react-toastify';
+import { toast, ToastContainer } from 'react-toastify';
 import { BiLoader } from 'react-icons/bi';
+import CreateCourseForm from '../../components/teacher/CreateCourseForm';
 
 const TeacherCourses = () => {
   const navigate = useNavigate();
@@ -80,7 +81,9 @@ const TeacherCourses = () => {
       return;
     }
 
+    setIsSubmitting(true);
     try {
+      console.log(formData);
       const response = await teacherCourseAPI.createCourse(formData);
       if (response.data.success) {
         toast.success('Course created successfully!');
@@ -89,9 +92,10 @@ const TeacherCourses = () => {
         fetchCourses();
       }
     } catch (error) {
-      setIsSubmitting(false); 
       toast.error(error.response?.data?.message || 'Failed to create course');
       console.error(error);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -103,6 +107,7 @@ const TeacherCourses = () => {
   const handleDeleteCourse = async () => {
     if (!courseToDelete) return;
 
+    setIsSubmitting(true);
     try {
       const response = await teacherCourseAPI.deleteCourse(courseToDelete);
       if (response.data.success) {
@@ -113,6 +118,7 @@ const TeacherCourses = () => {
       toast.error('Failed to delete course');
       console.error(error);
     } finally {
+      setIsSubmitting(false);
       setShowDeleteModal(false);
       setCourseToDelete(null);
     }
@@ -147,9 +153,71 @@ const TeacherCourses = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <BiLoader className="animate-spin text-4xl text-primary-600" />
-        <span className="ml-3 text-gray-600">Loading courses...</span>
+      <div className="p-8">
+        {/* Header Skeleton */}
+        <ToastContainer position="top-right" autoClose={3000} />
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div className="flex-1">
+              <div className="h-10 w-48 bg-gray-200 rounded-lg animate-pulse mb-3"></div>
+              <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+            <div className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-lg border p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="h-3 w-24 bg-gray-200 rounded animate-pulse mb-3"></div>
+                  <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+                <div className="w-14 h-14 bg-gray-200 rounded-lg animate-pulse ml-4"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Courses Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="bg-white rounded-lg border overflow-hidden">
+              {/* Thumbnail Skeleton */}
+              <div className="h-48 w-full bg-gray-200 animate-pulse mb-4"></div>
+
+              {/* Content Skeleton */}
+              <div className="px-4 pb-4">
+                <div className="h-6 w-3/4 bg-gray-200 rounded animate-pulse mb-3"></div>
+                <div className="flex gap-2 mb-3">
+                  <div className="h-6 w-20 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-6 w-20 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+                <div className="space-y-2 mb-4">
+                  <div className="h-4 w-full bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-5/6 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+
+                {/* Stats Skeleton */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                </div>
+
+                {/* Buttons Skeleton */}
+                <div className="flex gap-2">
+                  <div className="flex-1 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                  <div className="flex-1 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                  <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -224,73 +292,91 @@ const TeacherCourses = () => {
       {/* Courses Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {courses.map((course) => (
-          <div key={course.id} className="bg-white hover:shadow-xl transition-shadow rounded-lg overflow-hidden border max-w-md">
+          <div key={course.id} className="bg-white rounded-xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 group">
             {/* Course Thumbnail */}
-            <div className="relative h-48 w-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-t-lg mb-4">
+            <div className="relative h-48 w-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 overflow-hidden">
               {course.thumbnail ? (
-                <img 
-                  src={course.thumbnail.startsWith('http') ? course.thumbnail : `http://localhost:8000${course.thumbnail}`} 
-                  alt={course.title}
-                  className="w-full h-full object-cover rounded-t-lg"
-                  onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.classList.add('flex', 'items-center', 'justify-center'); }}
-                />
+                <>
+                  <img 
+                    src={course.thumbnail.startsWith('http') ? course.thumbnail : `http://localhost:8000${course.thumbnail}`} 
+                    alt={course.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                    onError={(e) => { e.target.style.display = 'none'; e.target.parentElement.classList.add('flex', 'items-center', 'justify-center'); }}
+                  />
+                  <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
+                </>
               ) : (
-                <div className="flex items-center justify-center h-full text-white text-6xl">
+                <div className="flex items-center justify-center h-full text-white text-6xl group-hover:scale-110 transition-transform duration-300">
                   <FaBook />
                 </div>
               )}
               
               {/* Status Badge */}
-              <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-xs font-semibold ${
-                course.status === 'PUBLISHED' ? 'bg-green-500 text-white' :
-                course.status === 'DRAFT' ? 'bg-yellow-500 text-white' :
-                'bg-gray-500 text-white'
+              <div className={`absolute top-3 right-3 px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg backdrop-blur-sm ${
+                course.status === 'PUBLISHED' ? 'bg-green-500/90 text-white' :
+                course.status === 'DRAFT' ? 'bg-yellow-500/90 text-white' :
+                'bg-gray-500/90 text-white'
               }`}>
                 {course.status}
               </div>
 
               {/* Approval Badge */}
               {course.is_approved && (
-                <div className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold bg-blue-500 text-white flex items-center gap-1">
-                  <FaCheckCircle /> Approved
+                <div className="absolute top-3 left-3 px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-500/90 text-white flex items-center gap-1 shadow-lg backdrop-blur-sm">
+                  <FaCheckCircle className="text-xs" /> Approved
                 </div>
               )}
             </div>
 
             {/* Course Info */}
-            <div className="px-4 pb-4">
-              <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2">{course.title}</h3>
+            <div className="px-5 py-5">
+              <h3 className="font-bold text-lg text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition-colors">{course.title}</h3>
               
-              <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+              {/* Subject & Grade Badges */}
+              <div className="flex flex-wrap items-center gap-2 text-sm mb-3">
                 {course.subject && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-600 rounded">{course.subject}</span>
+                  <span className="px-3 py-1 bg-gradient-to-r from-blue-50 to-blue-100 text-blue-700 rounded-full font-medium text-xs border border-blue-200">{course.subject}</span>
                 )}
                 {course.grade_level && (
-                  <span className="px-2 py-1 bg-purple-100 text-purple-600 rounded">{course.grade_level}</span>
+                  <span className="px-3 py-1 bg-gradient-to-r from-purple-50 to-purple-100 text-purple-700 rounded-full font-medium text-xs border border-purple-200">{course.grade_level}</span>
                 )}
               </div>
 
-              <p className="text-gray-600 text-sm mb-4 line-clamp-2">{course.description}</p>
+              <p className="text-gray-600 text-sm mb-4 line-clamp-2 leading-relaxed">{course.description}</p>
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <FaUsers className="text-gray-400" />
-                  <span className="text-gray-700">{course.total_enrollments} students</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FaDollarSign className="text-gray-400" />
-                  <span className="text-gray-700">
-                    {course.price_type === 'FREE' ? 'Free' : `Rs. ${parseFloat(course.price).toLocaleString()}`}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FaChartLine className="text-gray-400" />
-                  <span className="text-gray-700">Rating: {parseFloat(course.average_rating).toFixed(1)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <FaClock className="text-gray-400" />
-                  <span className="text-gray-700">{new Date(course.created_at).toLocaleDateString()}</span>
+              {/* Stats - Enhanced */}
+              <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 mb-4 border border-gray-200">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex flex-col items-start">
+                    <span className="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wide">Students</span>
+                    <div className="flex items-center gap-2">
+                      <FaUsers className="text-blue-500 text-sm" />
+                      <span className="font-bold text-gray-900">{course.total_enrollments}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wide">Price</span>
+                    <div className="flex items-center gap-2">
+                      <FaDollarSign className="text-green-500 text-sm" />
+                      <span className="font-bold text-gray-900">
+                        {course.price_type === 'FREE' ? 'Free' : `Rs. ${parseFloat(course.price).toLocaleString()}`}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wide">Rating</span>
+                    <div className="flex items-center gap-2">
+                      <FaChartLine className="text-yellow-500 text-sm" />
+                      <span className="font-bold text-gray-900">{parseFloat(course.average_rating).toFixed(1)} ⭐</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-start">
+                    <span className="text-xs text-gray-500 font-semibold mb-1 uppercase tracking-wide">Date</span>
+                    <div className="flex items-center gap-2">
+                      <FaClock className="text-purple-500 text-sm" />
+                      <span className="font-bold text-gray-900 text-xs">{new Date(course.created_at).toLocaleDateString()}</span>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -298,21 +384,22 @@ const TeacherCourses = () => {
               <div className="flex gap-2">
                 <button
                   onClick={() => navigate(`/teacher/courses/${course.id}?mode=view`)}
-                  className="flex-1 btn-primary py-2 text-sm flex items-center justify-center gap-2"
+                  className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
-                  <FaEye /> View
+                  <FaEye className="text-xs" /> View
                 </button>
                 <button
                   onClick={() => navigate(`/teacher/courses/${course.id}?mode=edit`)}
-                  className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded-lg text-sm flex items-center justify-center gap-2 transition-colors"
+                  className="flex-1 bg-gradient-to-r from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600 text-white py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
-                  <FaEdit /> Edit
+                  <FaEdit className="text-xs" /> Edit
                 </button>
                 <button
                   onClick={() => confirmDelete(course.id)}
-                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm transition-colors"
+                  className="bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 shadow-md hover:shadow-lg"
+                  title="Delete course"
                 >
-                  <FaTrash />
+                  <FaTrash className="text-xs" />
                 </button>
               </div>
             </div>
@@ -346,169 +433,17 @@ const TeacherCourses = () => {
                 ✕
               </button>
             </div>
-
-            <form onSubmit={handleCreateCourse} className="p-6">
-              {/* Course Title */}
-              <div className="mb-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Course Title *
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleInputChange}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="e.g., Complete Mathematics for Grade 5"
-                  required
-                />
-              </div>
-
-              {/* Description */}
-              <div className="mb-4">
-                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Description *
-                </label>
-                <textarea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleInputChange}
-                  rows="4"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="Describe your course..."
-                  required
-                />
-              </div>
-
-              {/* Subject, Grade, Category */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Subject</label>
-                  <select
-                    name="subject_id"
-                    value={formData.subject_id}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Subject</option>
-                    {subjects.map(subject => (
-                      <option key={subject.id} value={subject.id}>{subject.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Grade Level</label>
-                  <select
-                    name="grade_level_id"
-                    value={formData.grade_level_id}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Grade</option>
-                    {gradeLevels.map(grade => (
-                      <option key={grade.id} value={grade.id}>{grade.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Category</label>
-                  <select
-                    name="category_id"
-                    value={formData.category_id}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="">Select Category</option>
-                    {categories.map(category => (
-                      <option key={category.id} value={category.id}>{category.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Price Type and Price */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Price Type</label>
-                  <select
-                    name="price_type"
-                    value={formData.price_type}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="FREE">Free</option>
-                    <option value="PAID">Paid</option>
-                  </select>
-                </div>
-
-                {formData.price_type === 'PAID' && (
-                  <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">Price (Rs.)</label>
-                    <input
-                      type="number"
-                      name="price"
-                      value={formData.price}
-                      onChange={handleInputChange}
-                      min="0"
-                      step="0.01"
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="0.00"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Status and Visibility */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
-                  <select
-                    name="status"
-                    value={formData.status}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="DRAFT">Draft</option>
-                    <option value="PUBLISHED">Published</option>
-                    <option value="ARCHIVED">Archived</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">Visibility</label>
-                  <select
-                    name="visibility"
-                    value={formData.visibility}
-                    onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="PUBLIC">Public</option>
-                    <option value="PRIVATE">Private</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Submit Buttons */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => { setShowCreateModal(false); resetForm(); }}
-                  className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="flex-1 btn-primary py-3 font-semibold justify-center flex items-center gap-2"
-                  onClick={() => setIsSubmitting(true)}
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? <div className="flex items-center"><BiLoader className="inline-block mr-2 animate-spin" /><p>Creating...</p></div> : 'Create Course'}
-                </button>
-              </div>
-            </form>
+            <CreateCourseForm
+              subjects={subjects}
+              gradeLevels={gradeLevels}
+              categories={categories}
+              formData={formData}
+              handleInputChange={handleInputChange}
+              handleCreateCourse={handleCreateCourse}
+              isSubmitting={isSubmitting}
+              setShowCreateModal={setShowCreateModal}
+              resetForm={resetForm}
+            />
           </div>
         </div>
       )}
@@ -532,7 +467,7 @@ const TeacherCourses = () => {
                 No, Cancel
               </button>
               <button
-                onClick={() => { handleDeleteCourse(); setIsSubmitting(true); }}
+                onClick={() => handleDeleteCourse()}
                 className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors"
                 disabled={isSubmitting}
               >
