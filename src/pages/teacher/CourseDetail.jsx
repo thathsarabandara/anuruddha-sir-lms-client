@@ -3,7 +3,11 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
 import { teacherCourseAPI, utilityAPI } from '../../api/courseApi';
 import { BiLoader } from 'react-icons/bi';
-import { FaEdit, FaStar } from 'react-icons/fa';
+import { FaEdit, FaStar, FaCheck, FaTimes, FaUser, FaEye } from 'react-icons/fa';
+import QuizSearchModal from '../../components/teacher/QuizSearchModal';
+import API from '../../api';
+import { getAbsoluteImageUrl } from '../../utils/helpers';
+import PDFViewer from '../../components/PDFViewer';
 
 const CourseDetail = () => {
   const { courseId } = useParams();
@@ -17,10 +21,17 @@ const CourseDetail = () => {
   const [categories, setCategories] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [gradeLevels, setGradeLevels] = useState([]);
+  const [enrolledStudents, setEnrolledStudents] = useState([]);
+  const [showStudentProfileModal, setShowStudentProfileModal] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSectionModal, setShowSectionModal] = useState(false);
   const [showLessonModal, setShowLessonModal] = useState(false);
+  const [showQuizSearchModal, setShowQuizSearchModal] = useState(false);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [showVideoPlayerModal, setShowVideoPlayerModal] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState(null);
   const [deleteConfirmData, setDeleteConfirmData] = useState({ type: null, id: null, name: '' });
   const [editingSection, setEditingSection] = useState(null);
   const [selectedSection, setSelectedSection] = useState(null);
@@ -35,7 +46,8 @@ const CourseDetail = () => {
     status: 'DRAFT',
     visibility: 'PUBLIC',
     language: 'SINHALA',
-    access_type: 'NORMAL'
+    access_type: 'NORMAL',
+    generate_certificates: false
   });
   const [sectionForm, setSectionForm] = useState({
     title: '',
@@ -61,6 +73,14 @@ const CourseDetail = () => {
   });
   const [uploadingFile, setUploadingFile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [quizVerification, setQuizVerification] = useState({
+    isLoading: false,
+    isValid: false,
+    quizData: null,
+    error: null
+  });
+  const [selectedPDF, setSelectedPDF] = useState(null);
+  const [showPDFViewerModal, setShowPDFViewerModal] = useState(false);
 
   useEffect(() => {
     const fetchUtilityData = async () => {
@@ -99,12 +119,16 @@ const CourseDetail = () => {
         status: courseData.status,
         visibility: courseData.visibility,
         language: courseData.language || 'SINHALA',
-        access_type: courseData.access_type || 'NORMAL'
+        access_type: courseData.access_type || 'NORMAL',
+        generate_certificates: courseData.generate_certificates || false
       });
       
       const sectionsData = courseData.sections || [];
       setSections(sectionsData);
       setLoading(false);
+      
+      // Fetch enrolled students
+      fetchEnrolledStudents();
     } catch (err) {
       toast.error('Failed to fetch course details');
       console.error(err);
@@ -115,8 +139,27 @@ const CourseDetail = () => {
     }
   };
 
+  const fetchEnrolledStudents = async () => {
+    try {
+      setLoadingStudents(true);
+      const response = await teacherCourseAPI.getEnrolledStudents(courseId);
+      if (response.data.success) {
+        setEnrolledStudents(response.data.students || []);
+      } else {
+        setEnrolledStudents(response.data.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch enrolled students:', err);
+      toast.error('Failed to load student list');
+      setEnrolledStudents([]);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
   const handleUpdateCourse = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       await teacherCourseAPI.updateCourse(courseId, courseForm);
       toast.success('Course updated successfully');
@@ -125,6 +168,8 @@ const CourseDetail = () => {
     } catch (err) {
       toast.error('Failed to update course');
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -172,6 +217,7 @@ const CourseDetail = () => {
 
   const handleCreateSection = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       await teacherCourseAPI.createSection(courseId, sectionForm);
       toast.success('Section created successfully');
@@ -181,11 +227,14 @@ const CourseDetail = () => {
     } catch (err) {
       toast.error('Failed to create section');
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleUpdateSection = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       await teacherCourseAPI.updateSection(editingSection.id, sectionForm);
       toast.success('Section updated successfully');
@@ -196,6 +245,8 @@ const CourseDetail = () => {
     } catch (err) {
       toast.error('Failed to update section');
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -208,7 +259,61 @@ const CourseDetail = () => {
     setShowDeleteConfirmModal(true);
   };
 
+  const verifyQuizId = async (quizId) => {
+    if (!quizId.trim()) {
+      setQuizVerification({
+        isLoading: false,
+        isValid: false,
+        quizData: null,
+        error: 'Please enter a quiz ID'
+      });
+      return;
+    }
+
+    setQuizVerification({
+      isLoading: true,
+      isValid: false,
+      quizData: null,
+      error: null
+    });
+
+    try {
+      const response = await teacherCourseAPI.verifyQuizId({
+        quiz_id: quizId,
+        check_ownership: false
+      });
+
+      if (response.data.success) {
+        setQuizVerification({
+          isLoading: false,
+          isValid: true,
+          quizData: response.data.quiz,
+          error: null
+        });
+        toast.success('Quiz verified successfully!');
+      } else {
+        setQuizVerification({
+          isLoading: false,
+          isValid: false,
+          quizData: null,
+          error: response.data.message || 'Failed to verify quiz'
+        });
+        toast.error(response.data.message || 'Failed to verify quiz');
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || 'Error verifying quiz';
+      setQuizVerification({
+        isLoading: false,
+        isValid: false,
+        quizData: null,
+        error: errorMessage
+      });
+      toast.error(errorMessage);
+    }
+  };
+
   const confirmDelete = async () => {
+    setIsSubmitting(true);
     try {
       if (deleteConfirmData.type === 'section') {
         await teacherCourseAPI.deleteSection(deleteConfirmData.id);
@@ -223,12 +328,20 @@ const CourseDetail = () => {
     } catch (err) {
       toast.error(`Failed to delete ${deleteConfirmData.type}`);
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  if(showPDFViewerModal && selectedPDF) {
+    return (
+      <PDFViewer pdfUrl={selectedPDF.url} title={selectedPDF.title} onClose={() => setShowPDFViewerModal(false)} />
+    );
+  }
 
   const handleCreateLesson = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
     try {
       const lessonData = {
         title: lessonForm.title,
@@ -256,6 +369,11 @@ const CourseDetail = () => {
           link: lessonForm.zoom_meeting_link
         });
       } else if (lessonForm.lesson_type === 'QUIZ') {
+        if (!quizVerification.isValid) {
+          toast.error('Please verify the quiz ID before creating the lesson');
+          setIsSubmitting(false);
+          return;
+        }
         lessonData.quiz_id = lessonForm.quiz_id;
       }
       
@@ -263,6 +381,12 @@ const CourseDetail = () => {
       toast.success('Lesson created successfully');
       setShowLessonModal(false);
       setSelectedSection(null);
+      setQuizVerification({
+        isLoading: false,
+        isValid: false,
+        quizData: null,
+        error: null
+      });
       setLessonForm({
         title: '',
         description: '',
@@ -284,6 +408,8 @@ const CourseDetail = () => {
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to create lesson');
       console.error(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -340,9 +466,109 @@ const CourseDetail = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <BiLoader className="animate-spin text-4xl text-primary-600" />
-        <span className="ml-3 text-gray-600">Loading course...</span>
+      <div className="p-6 max-w-7xl mx-auto animate-pulse" role="status" aria-live="polite">
+        <span className="sr-only">Loading course details...</span>
+
+        {/* Header Skeleton */}
+        <div className="mb-6 flex items-center justify-between">
+          <div className="flex items-center gap-4 flex-1">
+            <div className="h-5 w-12 bg-gray-200 rounded"></div>
+            <div className="flex-1">
+              <div className="h-8 w-1/3 bg-gray-200 rounded-lg mb-3"></div>
+              <div className="h-4 w-1/4 bg-gray-200 rounded"></div>
+            </div>
+          </div>
+          <div className="h-10 w-32 bg-gray-200 rounded-lg"></div>
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="border-b border-gray-200 mb-6">
+          <nav className="-mb-px flex space-x-8">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-4 w-20 bg-gray-200 rounded"></div>
+            ))}
+          </nav>
+        </div>
+
+        {/* Course Info Card Skeleton */}
+        <div className="bg-white rounded-lg shadow p-6 mb-6">
+          <div className="flex items-start gap-6">
+            {/* Thumbnail Skeleton */}
+            <div className="w-48 h-32 bg-gray-200 rounded-lg flex-shrink-0"></div>
+            
+            {/* Info Skeleton */}
+            <div className="flex-1">
+              <div className="h-6 w-1/2 bg-gray-200 rounded mb-3"></div>
+              <div className="space-y-2 mb-4">
+                <div className="h-4 w-full bg-gray-200 rounded"></div>
+                <div className="h-4 w-5/6 bg-gray-200 rounded"></div>
+              </div>
+              
+              {/* Grid Info Skeleton */}
+              <div className="grid grid-cols-2 gap-4">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="h-3 w-16 bg-gray-200 rounded"></div>
+                    <div className="h-4 w-24 bg-gray-200 rounded"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white rounded-lg shadow p-4">
+              <div className="h-4 w-20 bg-gray-200 rounded mb-3"></div>
+              <div className="h-8 w-16 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Content Section Skeleton */}
+        <div className="space-y-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white rounded-lg shadow overflow-hidden">
+              {/* Section Header */}
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-1">
+                    <div className="h-4 w-12 bg-gray-200 rounded"></div>
+                    <div className="h-6 w-1/4 bg-gray-200 rounded"></div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="h-8 w-24 bg-gray-200 rounded"></div>
+                    <div className="h-8 w-20 bg-gray-200 rounded"></div>
+                    <div className="h-8 w-24 bg-gray-200 rounded"></div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Lessons Skeleton */}
+              <div className="p-4 space-y-3">
+                {[...Array(2)].map((_, j) => (
+                  <div key={j} className="bg-gray-50 rounded-lg border border-gray-200 p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="h-4 w-6 bg-gray-200 rounded"></div>
+                        <div className="flex-1">
+                          <div className="h-5 w-1/3 bg-gray-200 rounded mb-2"></div>
+                          <div className="h-3 w-1/4 bg-gray-200 rounded"></div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="h-8 w-24 bg-gray-200 rounded"></div>
+                        <div className="h-8 w-20 bg-gray-200 rounded"></div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -474,12 +700,98 @@ const CourseDetail = () => {
             </div>
             <div className="bg-white rounded-lg shadow p-4">
               <div className="text-sm text-gray-500">Students Enrolled</div>
-              <div className="text-2xl font-bold text-gray-900">{course?.total_enrollments || 0}</div>
+              <div className="text-2xl font-bold text-gray-900">{enrolledStudents.length || 0}</div>
             </div>
             <div className="bg-white rounded-lg shadow p-4">
               <div className="text-sm text-gray-500">Average Rating</div>
               <div className="text-2xl font-bold text-gray-900">{course?.average_rating || 0}<FaStar className="inline text-yellow-400 ml-1" /></div>
             </div>
+          </div>
+
+          {/* Enrolled Students Section */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold mb-4">Enrolled Students</h2>
+            {loadingStudents ? (
+              <div className="flex items-center justify-center py-8">
+                <BiLoader className="animate-spin text-2xl text-blue-600 mr-2" />
+                <span className="text-gray-600">Loading students...</span>
+              </div>
+            ) : enrolledStudents.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b border-gray-200">
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Student Name</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Payment Method</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Payment Status</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Enrolled Date</th>
+                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {enrolledStudents.map((student) => (
+                      <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                              {student.image &&
+                                <img src={getAbsoluteImageUrl(student.image)} alt='student_image' className='rounded-full w-8 h-8'/>
+                              }
+                              {!student.image &&
+                                <FaUser className="text-blue-600 text-sm" />
+                              }
+                            </div>
+                            <span className="font-medium text-gray-900">{student.user?.name || student.name || 'N/A'}</span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-600">{student.user?.email || student.email || 'N/A'}</td>
+                        <td className="py-3 px-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            student.payment_method === 'CARD' ? 'bg-blue-100 text-blue-700' :
+                            student.payment_method === 'BANK_TRANSFER' ? 'bg-green-100 text-green-700' :
+                            student.payment_method === 'CASH' ? 'bg-yellow-100 text-yellow-700' :
+                            student.payment_method === 'FREE' ? 'bg-gray-100 text-gray-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {student.payment_method || 'N/A'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${
+                            student.payment_status === 'COMPLETED' || student.payment_status === 'PAID' ? 'bg-green-100 text-green-700' :
+                            student.payment_status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                            student.payment_status === 'FAILED' ? 'bg-red-100 text-red-700' :
+                            'bg-gray-100 text-gray-700'
+                          }`}>
+                            {student.payment_status === 'COMPLETED' || student.payment_status === 'PAID' ? <FaCheck className="text-xs" /> : null}
+                            {student.payment_status || 'FREE'}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-600">
+                          {student.enrolled_at ? new Date(student.enrolled_at).toLocaleDateString() : 'N/A'}
+                        </td>
+                        <td className="py-3 px-4">
+                          <button
+                            onClick={() => {
+                              setSelectedStudent(student);
+                              setShowStudentProfileModal(true);
+                            }}
+                            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1 transition-colors"
+                          >
+                            <FaEye className="text-xs" /> View Profile
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-gray-500">No students enrolled yet</p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -592,14 +904,19 @@ const CourseDetail = () => {
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium text-gray-900 truncate">{lesson.video_file.split('/').pop()}</p>
                                 </div>
-                                <a
-                                  href={`/api/v1/lessons/${lesson.id}/play/`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
+                                <button
+                                  onClick={() => {
+                                    setSelectedVideo({
+                                      id: lesson.id,
+                                      title: lesson.title,
+                                      url: lesson.video_file.startsWith('http') ? lesson.video_file : `http://localhost:8000${lesson.video_file}`
+                                    });
+                                    setShowVideoPlayerModal(true);
+                                  }}
                                   className="ml-2 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap"
                                 >
                                   Play Video
-                                </a>
+                                </button>
                               </div>
                               <label className="text-xs text-gray-600 cursor-pointer inline-block px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 whitespace-nowrap">
                                 Replace Video
@@ -620,6 +937,18 @@ const CourseDetail = () => {
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium text-gray-900 truncate">{lesson.pdf_file.split('/').pop()}</p>
                                 </div>
+                                <button onClick={() => {
+                                  setSelectedPDF({
+                                    id: lesson.id,
+                                    title: lesson.title,
+                                    url: lesson.pdf_file.startsWith('http') ? lesson.pdf_file : `http://localhost:8000${lesson.pdf_file}`
+                                  });
+                                  setShowPDFViewerModal(true);
+                                }}
+                                  className="ml-2 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap"
+                                >
+                                  View PDF
+                                </button>
                                 <a
                                   href={lesson.pdf_file.startsWith('http') ? lesson.pdf_file : `http://localhost:8000${lesson.pdf_file}`}
                                   download
@@ -766,6 +1095,32 @@ const CourseDetail = () => {
                 </div>
               </div>
             </div>
+
+            {/* Certificate Settings */}
+            <div className="border-t pt-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-4">Certificate Settings</h3>
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <label className="text-sm font-medium text-gray-700 block mb-1">Auto-Generate Certificates</label>
+                    <p className="text-xs text-gray-600">When enabled, students will receive a certificate upon course completion</p>
+                  </div>
+                  <label className="flex items-center cursor-pointer ml-4">
+                    <input
+                      type="checkbox"
+                      checked={courseForm.generate_certificates || false}
+                      onChange={(e) => {
+                        setCourseForm({ ...courseForm, generate_certificates: e.target.checked });
+                      }}
+                      className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
+                    />
+                    <span className={`ml-2 text-sm font-medium ${courseForm.generate_certificates ? 'text-green-600' : 'text-gray-600'}`}>
+                      {courseForm.generate_certificates ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </label>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
@@ -888,16 +1243,28 @@ const CourseDetail = () => {
                   <button
                     type="button"
                     onClick={() => setShowEditModal(false)}
-                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
+                    disabled={isSubmitting}
+                    className={`px-4 py-2 rounded-lg ${
+                      isSubmitting ? 'text-gray-500 bg-gray-100 cursor-not-allowed' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+                    }`}
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                    onClick={()=>{setIsSubmitting(true)}}
+                    disabled={isSubmitting}
+                    className={`px-4 py-2 rounded-lg text-white flex items-center gap-2 ${
+                      isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                   >
-                    {isSubmitting ? <div></div>: 'Save Changes'}
+                    {isSubmitting ? (
+                      <>
+                        <BiLoader className="inline-block animate-spin" />
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      'Save Changes'
+                    )}
                   </button>
                 </div>
               </form>
@@ -961,9 +1328,19 @@ const CourseDetail = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    disabled={isSubmitting}
+                    className={`px-4 py-2 rounded-lg text-white flex items-center gap-2 ${
+                      isSubmitting ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                   >
-                    {editingSection ? 'Update' : 'Create'}
+                    {isSubmitting ? (
+                      <>
+                        <BiLoader className="inline-block animate-spin" />
+                        <span>{editingSection ? 'Updating...' : 'Creating...'}</span>
+                      </>
+                    ) : (
+                      editingSection ? 'Update' : 'Create'
+                    )}
                   </button>
                 </div>
               </form>
@@ -987,15 +1364,28 @@ const CourseDetail = () => {
                   setShowDeleteConfirmModal(false);
                   setDeleteConfirmData({ type: null, id: null, name: '' });
                 }}
-                className="flex-1 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 font-medium"
+                disabled={isSubmitting}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium ${
+                  isSubmitting ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'text-gray-700 bg-gray-100 hover:bg-gray-200'
+                }`}
               >
                 Cancel
               </button>
               <button
                 onClick={confirmDelete}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+                disabled={isSubmitting}
+                className={`flex-1 px-4 py-2 rounded-lg font-medium text-white flex items-center justify-center gap-2 ${
+                  isSubmitting ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'
+                }`}
               >
-                Delete
+                {isSubmitting ? (
+                  <>
+                    <BiLoader className="inline-block animate-spin" />
+                    <span>Deleting...</span>
+                  </>
+                ) : (
+                  'Delete'
+                )}
               </button>
             </div>
           </div>
@@ -1167,15 +1557,73 @@ const CourseDetail = () => {
                 {lessonForm.lesson_type === 'QUIZ' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Quiz Code/ID</label>
-                    <input
-                      type="text"
-                      value={lessonForm.quiz_id}
-                      onChange={(e) => setLessonForm({ ...lessonForm, quiz_id: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter quiz code or ID"
-                      required
-                    />
-                    <p className="text-xs text-gray-500 mt-1">Enter the ID of an existing quiz to link to this lesson</p>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={lessonForm.quiz_id}
+                        onChange={(e) => {
+                          setLessonForm({ ...lessonForm, quiz_id: e.target.value });
+                          setQuizVerification({
+                            isLoading: false,
+                            isValid: false,
+                            quizData: null,
+                            error: null
+                          });
+                        }}
+                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter quiz code or ID"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => verifyQuizId(lessonForm.quiz_id)}
+                        disabled={quizVerification.isLoading || !lessonForm.quiz_id.trim()}
+                        className="px-4 py-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg whitespace-nowrap transition-colors"
+                      >
+                        {quizVerification.isLoading ? 'Verifying...' : 'Verify'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowQuizSearchModal(true)}
+                        className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 whitespace-nowrap"
+                      >
+                        Search Quiz
+                      </button>
+                    </div>
+                    
+                    {/* Verification Status */}
+                    {quizVerification.isValid && quizVerification.quizData && (
+                      <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <FaCheck className="text-green-600 mt-1 flex-shrink-0" />
+                          <div className="flex-1">
+                            <p className="font-medium text-green-800">Quiz Verified</p>
+                            <div className="mt-2 space-y-1 text-sm text-green-700">
+                              <p><strong>Title:</strong> {quizVerification.quizData.title}</p>
+                              <p><strong>Type:</strong> {quizVerification.quizData.quiz_type}</p>
+                              <p><strong>Questions:</strong> {quizVerification.quizData.total_questions}</p>
+                              <p><strong>Duration:</strong> {quizVerification.quizData.time_limit_minutes} minutes</p>
+                              <p><strong>Total Marks:</strong> {quizVerification.quizData.total_marks}</p>
+                              <p><strong>Teacher:</strong> {quizVerification.quizData.teacher.name}</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {quizVerification.error && (
+                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <div className="flex items-start gap-2">
+                          <FaTimes className="text-red-600 mt-1 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium text-red-800">Verification Failed</p>
+                            <p className="text-sm text-red-700 mt-1">{quizVerification.error}</p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <p className="text-xs text-gray-500 mt-2">Enter the ID of a published quiz to link to this lesson, then verify before saving</p>
                   </div>
                 )}
 
@@ -1211,6 +1659,12 @@ const CourseDetail = () => {
                     onClick={() => {
                       setShowLessonModal(false);
                       setSelectedSection(null);
+                      setQuizVerification({
+                        isLoading: false,
+                        isValid: false,
+                        quizData: null,
+                        error: null
+                      });
                       setLessonForm({
                         title: '',
                         description: '',
@@ -1226,12 +1680,207 @@ const CourseDetail = () => {
                   </button>
                   <button
                     type="submit"
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    disabled={isSubmitting || (lessonForm.lesson_type === 'QUIZ' && !quizVerification.isValid)}
+                    className={`px-4 py-2 rounded-lg text-white flex items-center gap-2 ${
+                      isSubmitting || (lessonForm.lesson_type === 'QUIZ' && !quizVerification.isValid)
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : 'bg-blue-600 hover:bg-blue-700'
+                    }`}
                   >
-                    Create Lesson
+                    {isSubmitting ? (
+                      <>
+                        <BiLoader className="inline-block animate-spin" />
+                        <span>Creating...</span>
+                      </>
+                    ) : (
+                      'Create Lesson'
+                    )}
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Quiz Search Modal */}
+      <QuizSearchModal
+        isOpen={showQuizSearchModal}
+        onClose={() => setShowQuizSearchModal(false)}
+        onSelect={(quiz) => {
+          setLessonForm({ ...lessonForm, quiz_id: quiz.id });
+          setShowQuizSearchModal(false);
+          // Auto-verify the selected quiz
+          setTimeout(() => {
+            verifyQuizId(quiz.id);
+          }, 100);
+        }}
+      />
+
+      {/* Student Profile Modal */}
+      {showStudentProfileModal && selectedStudent && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
+              <h2 className="text-2xl font-bold text-gray-900">Student Profile</h2>
+              <button
+                onClick={() => setShowStudentProfileModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Profile Header */}
+              <div className="flex items-start gap-6">
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
+                  {selectedStudent.image &&
+                    <img src={getAbsoluteImageUrl(selectedStudent.image)} alt='student_image' className='rounded-full w-24 h-24 object-cover'/>
+                  }
+                  {!selectedStudent.image &&
+                    <FaUser className="text-blue-600 text-sm" />
+                  }
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedStudent.user?.name || selectedStudent.name || 'N/A'}</h3>
+                  <p className="text-gray-600">{selectedStudent.user?.email || selectedStudent.email || 'N/A'}</p>
+                  <div className="mt-3 flex gap-4">
+                    <div>
+                      <span className="text-xs text-gray-500 uppercase tracking-wide">Status</span>
+                      <p className="font-semibold text-gray-900 mt-1">Active</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Enrollment Details */}
+              <div className="border-t pt-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Enrollment Details</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Enrolled Date</span>
+                    <p className="font-semibold text-gray-900 mt-1">
+                      {selectedStudent.enrolled_at ? new Date(selectedStudent.enrolled_at).toLocaleDateString() : 'N/A'}
+                    </p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Enrollment ID</span>
+                    <p className="font-semibold text-gray-900 mt-1">{selectedStudent.enrollment_id || selectedStudent.id || 'N/A'}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Details */}
+              <div className="border-t pt-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Payment Method</span>
+                    <div className="mt-2">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium inline-block ${
+                        selectedStudent.payment_method === 'CARD' ? 'bg-blue-100 text-blue-700' :
+                        selectedStudent.payment_method === 'BANK_TRANSFER' ? 'bg-green-100 text-green-700' :
+                        selectedStudent.payment_method === 'CASH' ? 'bg-yellow-100 text-yellow-700' :
+                        selectedStudent.payment_method === 'FREE' ? 'bg-gray-100 text-gray-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {selectedStudent.payment_method || 'N/A'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Payment Status</span>
+                    <div className="mt-2">
+                      <span className={`px-3 py-1 rounded-full text-sm font-medium inline-flex items-center gap-1 ${
+                        selectedStudent.payment_status === 'COMPLETED' || selectedStudent.payment_status === 'PAID' ? 'bg-green-100 text-green-700' :
+                        selectedStudent.payment_status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+                        selectedStudent.payment_status === 'FAILED' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-100 text-gray-700'
+                      }`}>
+                        {selectedStudent.payment_status === 'COMPLETED' || selectedStudent.payment_status === 'PAID' ? <FaCheck className="text-xs" /> : null}
+                        {selectedStudent.payment_status || 'FREE'}
+                      </span>
+                    </div>
+                  </div>
+                  {selectedStudent.amount_paid && (
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <span className="text-xs text-gray-500 uppercase tracking-wide">Amount Paid</span>
+                      <p className="font-semibold text-gray-900 mt-1">Rs. {selectedStudent.amount_paid}</p>
+                    </div>
+                  )}
+                  {selectedStudent.transaction_id && (
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <span className="text-xs text-gray-500 uppercase tracking-wide">Transaction ID</span>
+                      <p className="font-semibold text-gray-900 mt-1 text-sm break-all">{selectedStudent.transaction_id}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <div className="border-t pt-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h4>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Email</span>
+                    <p className="font-semibold text-gray-900 mt-1">{selectedStudent.user?.email || selectedStudent.email || 'N/A'}</p>
+                  </div>
+                  {selectedStudent.user?.phone && (
+                    <div className="bg-gray-50 p-4 rounded-lg">
+                      <span className="text-xs text-gray-500 uppercase tracking-wide">Phone</span>
+                      <p className="font-semibold text-gray-900 mt-1">{selectedStudent.user.phone}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Close Button */}
+              <div className="border-t pt-6 flex justify-end">
+                <button
+                  onClick={() => setShowStudentProfileModal(false)}
+                  className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Video Player Modal */}
+      {showVideoPlayerModal && selectedVideo && (
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+          <div className="bg-black rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+            {/* Header */}
+            <div className="bg-gray-900 px-6 py-4 flex justify-between items-center border-b border-gray-700">
+              <h2 className="text-xl font-bold text-white">{selectedVideo.title}</h2>
+              <button
+                onClick={() => {
+                  setShowVideoPlayerModal(false);
+                  setSelectedVideo(null);
+                }}
+                className="text-gray-300 hover:text-white text-2xl transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Video Container */}
+            <div className="flex-1 flex items-center justify-center bg-black overflow-hidden">
+              <video
+                key={selectedVideo.id}
+                controls
+                controlsList="nodownload"
+                className="w-full h-full max-w-full max-h-full object-contain"
+                onContextMenu={(e) => e.preventDefault()}
+                crossOrigin="anonymous"
+                preload="metadata"
+              >
+                <source src={selectedVideo.url} type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
             </div>
           </div>
         </div>
