@@ -28,6 +28,8 @@ const VideoPlayer = ({ videoUrl, onProgress, onComplete, isCompleted }) => {
   const [isSeeking, setIsSeeking] = useState(false);
   const [videoError, setVideoError] = useState(null);
   const [isMetadataLoaded, setIsMetadataLoaded] = useState(false);
+  const [speedMenuOpen, setSpeedMenuOpen] = useState(false);
+  const [qualityMenuOpen, setQualityMenuOpen] = useState(false);
   const controlsTimeoutRef = useRef(null);
   const [qualityOptions] = useState([
     { label: 'Auto', value: 'auto' },
@@ -36,6 +38,14 @@ const VideoPlayer = ({ videoUrl, onProgress, onComplete, isCompleted }) => {
     { label: '360p', value: '360p' },
   ]);
   const [selectedQuality, setSelectedQuality] = useState('auto');
+
+  // Log video URL when it changes
+  useEffect(() => {
+    console.log('VideoPlayer received URL:', videoUrl);
+    if (!videoUrl) {
+      setVideoError('No video URL provided');
+    }
+  }, [videoUrl]);
 
   // Auto-hide controls
   useEffect(() => {
@@ -317,7 +327,7 @@ const VideoPlayer = ({ videoUrl, onProgress, onComplete, isCompleted }) => {
             {/* Skip Backward 15s */}
             <button
               onClick={skipBackward}
-              className="p-2 hover:bg-white/20 rounded-lg transition-all text-white"
+              className="p-2 hover:bg-white/20 rounded-lg transition-all text-white flex items-center justify-center"
               title="Skip backward 15s"
               disabled={!isMetadataLoaded}
             >
@@ -328,7 +338,7 @@ const VideoPlayer = ({ videoUrl, onProgress, onComplete, isCompleted }) => {
             {/* Skip Forward 15s */}
             <button
               onClick={skipForward}
-              className="p-2 hover:bg-white/20 rounded-lg transition-all text-white"
+              className="p-2 hover:bg-white/20 rounded-lg transition-all text-white flex items-center justify-center"
               title="Skip forward 15s"
               disabled={!isMetadataLoaded}
             >
@@ -340,7 +350,7 @@ const VideoPlayer = ({ videoUrl, onProgress, onComplete, isCompleted }) => {
             <div className="flex items-center gap-2">
               <button
                 onClick={handleVolumeMute}
-                className="p-2 hover:bg-white/20 rounded-lg transition-all text-white"
+                className="p-2 hover:bg-white/20 rounded-lg transition-all text-white flex items-center justify-center"
                 title={isMuted ? 'Unmute' : 'Mute'}
               >
                 {isMuted || volume === 0 ? <FaVolumeMute size={20} /> : <FaVolumeUp size={20} />}
@@ -365,11 +375,15 @@ const VideoPlayer = ({ videoUrl, onProgress, onComplete, isCompleted }) => {
           <div className="flex items-center gap-2">
             {/* Playback Speed */}
             <div className="relative group">
-              <button className="p-2 hover:bg-white/20 rounded-lg transition-all text-white flex items-center gap-1">
+              <button 
+                className="p-2 hover:bg-white/20 rounded-lg transition-all text-white flex items-center gap-1"
+                onClick={() => setSpeedMenuOpen(!speedMenuOpen)}
+              >
                 <FaCog size={20} />
                 <span className="text-sm font-semibold">{playbackSpeed}x</span>
               </button>
-              <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-900 border border-white/20 rounded-lg overflow-hidden">
+              {speedMenuOpen && (
+                <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-900 border border-white/20 rounded-lg overflow-hidden">
                 {[0.5, 0.75, 1, 1.25, 1.5, 1.75, 2].map((speed) => (
                   <button
                     key={speed}
@@ -382,26 +396,36 @@ const VideoPlayer = ({ videoUrl, onProgress, onComplete, isCompleted }) => {
                   </button>
                 ))}
               </div>
+              )
+            }
+              
             </div>
 
             {/* Quality Selector */}
             <div className="relative group hidden md:block">
               <button className="p-2 hover:bg-white/20 rounded-lg transition-all text-white flex items-center gap-1">
-                <span className="text-sm font-semibold">{selectedQuality}</span>
+                <span 
+                  className="text-sm font-semibold"
+                  onClick={() => setQualityMenuOpen(!qualityMenuOpen)}
+                >
+                  {selectedQuality}
+                </span>
               </button>
-              <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-900 border border-white/20 rounded-lg overflow-hidden">
-                {qualityOptions.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => setSelectedQuality(option.value)}
-                    className={`block w-full px-4 py-2 text-left text-white hover:bg-white/20 ${
-                      selectedQuality === option.value ? 'bg-blue-600' : ''
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
+              {qualityMenuOpen && (
+                <div className="absolute bottom-full right-0 mb-2 hidden group-hover:block bg-gray-900 border border-white/20 rounded-lg overflow-hidden">
+                  {qualityOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => setSelectedQuality(option.value)}
+                      className={`block w-full px-4 py-2 text-left text-white hover:bg-white/20 ${
+                        selectedQuality === option.value ? 'bg-blue-600' : ''
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Fullscreen Toggle */}
