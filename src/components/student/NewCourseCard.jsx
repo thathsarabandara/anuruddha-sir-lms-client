@@ -1,5 +1,20 @@
 import { FaStar, FaShoppingCart, FaBookOpen } from "react-icons/fa";
 import { IoTimeSharp } from "react-icons/io5";
+import {cartAPI} from '../../api/cartApi';
+
+const handleAddCart = async (courseId) => {
+  try {
+    const response = await cartAPI.addToCart(courseId);
+    if (response.data.success) {
+      alert("Course added to cart successfully!");
+    } else {
+      alert(response.data.message || "Failed to add to cart");
+    }
+  } catch (error) {
+    console.error("Error adding to cart:", error);
+    alert(error.response?.data?.message || "Error adding to cart");
+  }
+}
 
 const NewCourseCard = ({ course }) => (
     <div className="bg-white rounded-2xl border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all overflow-hidden group">
@@ -64,7 +79,9 @@ const NewCourseCard = ({ course }) => (
           <div className="text-xs text-slate-500">per course</div>
         </div>
 
-        <button className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2">
+        <button className="w-full py-3 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold rounded-lg transition-all transform hover:scale-105 flex items-center justify-center gap-2"
+          onClick={() => handleAddCart(course.id)}
+        >
           <FaShoppingCart /> Add to Cart
         </button>
       </div>
