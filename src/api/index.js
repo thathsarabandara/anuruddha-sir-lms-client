@@ -1,19 +1,34 @@
 import axiosInstance from './axios';
 import { API_ENDPOINTS } from '../utils/constants';
 import quizAPI from './quizApi';
-import recordingApi from './recordingApi';
 
 // Auth API calls
 export const authAPI = {
-  login: (credentials) => axiosInstance.post(API_ENDPOINTS.AUTH.LOGIN, credentials),
+  // Core authentication
   register: (userData) => axiosInstance.post(API_ENDPOINTS.AUTH.REGISTER, userData),
-  verifyOTP: (data) => axiosInstance.post(API_ENDPOINTS.AUTH.VERIFY_OTP, data),
-  resendOTP: (data) => axiosInstance.post(API_ENDPOINTS.AUTH.RESEND_OTP, data),
-  forgotPassword: (email) => axiosInstance.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email }),
-  verifyResetToken: (params) => axiosInstance.get(API_ENDPOINTS.AUTH.VERIFY_RESET_TOKEN, { params }),
-  resetPassword: (data) => axiosInstance.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, data),
+  login: (credentials) => axiosInstance.post(API_ENDPOINTS.AUTH.LOGIN, credentials),
   logout: () => axiosInstance.post(API_ENDPOINTS.AUTH.LOGOUT),
-  me: () => axiosInstance.get(API_ENDPOINTS.AUTH.ME),
+  
+  // OTP verification for registration
+  verifyOTP: (data) => axiosInstance.post(API_ENDPOINTS.AUTH.VERIFY_OTP, data),
+  resendOTP: () => axiosInstance.post(API_ENDPOINTS.AUTH.RESEND_OTP),
+  
+  // Token management
+  verifyToken: () => axiosInstance.post(API_ENDPOINTS.AUTH.VERIFY_TOKEN),
+  refresh: () => axiosInstance.post(API_ENDPOINTS.AUTH.REFRESH),
+  
+  // Password reset flow
+  forgotPassword: (email) => axiosInstance.post(API_ENDPOINTS.AUTH.FORGOT_PASSWORD, { email }),
+  verifyResetToken: (token) => axiosInstance.get(API_ENDPOINTS.AUTH.VERIFY_RESET_TOKEN, { params: { token } }),
+  resetPassword: (data) => axiosInstance.post(API_ENDPOINTS.AUTH.RESET_PASSWORD, data),
+  
+  // Password management (authenticated)
+  changePassword: (data) => axiosInstance.post(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, data),
+  
+  // User data & security
+  getProfile: () => axiosInstance.get(API_ENDPOINTS.AUTH.ME),
+  getLoginHistory: (params) => axiosInstance.get(API_ENDPOINTS.AUTH.LOGIN_HISTORY, { params }),
+  verifyEmail: (data) => axiosInstance.post(API_ENDPOINTS.AUTH.VERIFY_EMAIL, data),
 };
 
 // Courses API
