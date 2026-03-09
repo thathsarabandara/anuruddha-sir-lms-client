@@ -316,7 +316,7 @@ const Home = () => {
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link 
                 data-hero-btn 
-                to={ROUTES.REGISTER} 
+                to={ROUTES.STUDENT_REGISTER} 
                 className="bg-white text-primary-600 hover:bg-yellow-300 hover:text-primary-700 font-bold py-4 px-10 rounded-full transition-all duration-300 transform hover:scale-105 shadow-xl"
               >
                 Start Learning Free
