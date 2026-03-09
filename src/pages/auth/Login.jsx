@@ -131,13 +131,12 @@ const Login = () => {
         role: user.role.toUpperCase(),
         phone_number: user.phone_number || null,
         profile_picture: user.profile_picture || null,
-        is_active: user.is_active !== undefined ? user.is_active : true,
+        address: user.address || null,
         
         // Student-specific fields
         date_of_birth: user.date_of_birth || null,
         grade_level: user.grade_level || null,
         school: user.school || null,
-        address: user.address || null,
         parent_name: user.parent_name || null,
         parent_contact: user.parent_contact || null,
         
@@ -146,7 +145,6 @@ const Login = () => {
         subjects_taught: user.subjects_taught || null,
         years_of_experience: user.years_of_experience || null,
         bio: user.bio || null,
-        
         // Language preference (both student & teacher)
         language: user.language || null,
         
