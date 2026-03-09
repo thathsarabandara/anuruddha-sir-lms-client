@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGraduationCap, FaChalkboardTeacher, FaUserShield, FaCode, FaCrown } from 'react-icons/fa';
 import { authAPI } from '../../api';
 import { loginSuccess, loginStart, loginFailure } from '../../app/slices/authSlice';
-import { ROUTES, getDashboardRoute } from '../../utils/constants';
+import { ROUTES, getDashboardRoute, normalizeRole } from '../../utils/constants';
 
 const Login = () => {
   const navigate = useNavigate();
@@ -111,27 +111,31 @@ const Login = () => {
 
     try {
       const response = await authAPI.login(formData);
-      console.log('Login Response:', response.data); // Debug log
+      console.log('Login Response:', response.data);
       
-      let { token, user } = response.data;
+      const { data } = response.data; // FIX: Destructure from response.data, not response
       
-      // Validate response data
-      if (!token || !user) {
-        throw new Error('Invalid response: Missing token or user data');
+      // Validate response has user data
+      // Tokens are in HttpOnly cookies automatically sent by browser
+      if (!data || !data.user) {
+        throw new Error('Invalid response: Missing user data');
       }
       
-      // Normalize user object from backend response
-      // Handle all role types: STUDENT, TEACHER, ADMIN, DEVELOPER, SUPER_ADMIN
+      const user = data.user;
+      const expiresIn = data.expires_in || 20000;
+
       const normalizedUser = {
         // Core fields (all roles)
         id: user.user_id || user.id,
         email: user.email,
         first_name: user.first_name,
         last_name: user.last_name,
-        role: user.role.toUpperCase(),
-        phone_number: user.phone_number || null,
+        role: normalizeRole(user.role),
+        phone_number: user.phone_number || user.phone || null,
         profile_picture: user.profile_picture || null,
         address: user.address || null,
+        username: user.username || null,
+        verified: user.verified || false,
         
         // Student-specific fields
         date_of_birth: user.date_of_birth || null,
@@ -145,20 +149,24 @@ const Login = () => {
         subjects_taught: user.subjects_taught || null,
         years_of_experience: user.years_of_experience || null,
         bio: user.bio || null,
-        // Language preference (both student & teacher)
-        language: user.language || null,
         
-        // Admin/Developer/Super Admin fields (can be extended later)
+        // Permissions and permissions fields
+        language: user.language || null,
         permissions: user.permissions || null,
         department: user.department || null,
       };
       
-      dispatch(loginSuccess({ token, user: normalizedUser }));
+      // Store user data in localStorage for app state
+      localStorage.setItem('lms_user', JSON.stringify(normalizedUser));
       
-      // Store token expiry time (2 hours from now as per backend)
-      const tokenExpiryTime = Date.now() + (2 * 60 * 60 * 1000); // 2 hours
+      // Store token expiry time using expires_in from response
+      const tokenExpiryTime = Date.now() + (expiresIn * 1000);
       localStorage.setItem('lms_token_expiry', tokenExpiryTime.toString());
       localStorage.setItem('lms_login_time', Date.now().toString());
+      
+      // Update Redux state - tokens are managed by browser cookies
+      // Only store user info and auth state, not the token
+      dispatch(loginSuccess({ user: normalizedUser }));
       
       // Navigate based on role using helper function
       const dashboardRoute = getDashboardRoute(normalizedUser.role);
@@ -167,7 +175,7 @@ const Login = () => {
         navigate(dashboardRoute);
       }, 500);
     } catch (err) {
-      console.error('Login Error:', err); // Debug log
+      console.error('Login Error:', err);
       const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
       dispatch(loginFailure(errorMessage));
