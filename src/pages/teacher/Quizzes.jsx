@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaAward, FaPencilAlt, FaPlus, FaEye, FaTrash, FaEdit, FaClock, FaUsers, FaClipboardCheck, FaBook, FaCheckCircle } from 'react-icons/fa';
+import { FaAward, FaPencilAlt, FaPlus, FaEye, FaTrash, FaEdit, FaClock, FaUsers, FaClipboardCheck, FaBook, FaCheckCircle, FaCopy } from 'react-icons/fa';
 import { MdQuiz } from 'react-icons/md';
+import { toast } from 'react-toastify';
 import API from '../../api';
 import QuizFormModal from '../../components/teacher/QuizFormModal';
 import { BiLoader } from 'react-icons/bi';
@@ -22,6 +23,7 @@ const TeacherQuizzes = () => {
     avgScore: 0
   });
   const [loading, setLoading] = useState(true);
+  const [copiedId, setCopiedId] = useState(null);
 
   useEffect(() => {
     fetchQuizzes();
@@ -97,16 +99,85 @@ const TeacherQuizzes = () => {
     navigate(`/teacher/quizzes/${quizId}/grade`);
   };
 
+  const handleCopyQuizId = (quizId) => {
+    navigator.clipboard.writeText(quizId);
+    setCopiedId(quizId);
+    toast.success('Quiz ID copied to clipboard!');
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
   // Ensure quizzes is an array before filtering
   const quizzesArray = Array.isArray(quizzes) ? quizzes : [];
   const publishedQuizzes = quizzesArray.filter((q) => q.visibility === 'PUBLISHED');
   const draftQuizzes = quizzesArray.filter((q) => q.visibility === 'DRAFT');
   if (loading) {
     return (
-        <div className="flex items-center justify-center h-full">
-          <BiLoader className="animate-spin text-4xl text-primary-600" />
-          <span className="ml-3 text-gray-600">Loading Quizzes...</span>
+      <div className="p-8">
+        {/* Header Skeleton */}
+        <div className="mb-6">
+          <div className="h-10 bg-gray-200 rounded-lg w-1/3 mb-2 animate-pulse"></div>
+          <div className="h-4 bg-gray-200 rounded-lg w-1/4 animate-pulse"></div>
         </div>
+
+        {/* Stats Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          {[...Array(4)].map((_, idx) => (
+            <div key={idx} className="card">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <div className="h-4 bg-gray-200 rounded-lg w-1/2 mb-3 animate-pulse"></div>
+                  <div className="h-8 bg-gray-200 rounded-lg w-2/3 mb-2 animate-pulse"></div>
+                  <div className="h-3 bg-gray-200 rounded-lg w-1/3 animate-pulse"></div>
+                </div>
+                <div className="w-12 h-12 bg-gray-200 rounded-lg animate-pulse flex-shrink-0"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs Skeleton */}
+        <div className="flex space-x-4 mb-6 border-b border-gray-200">
+          {[...Array(2)].map((_, idx) => (
+            <div key={idx} className="h-10 bg-gray-200 rounded-lg w-32 animate-pulse"></div>
+          ))}
+        </div>
+
+        {/* Quiz Cards Skeleton */}
+        <div className="space-y-4">
+          {[...Array(3)].map((_, idx) => (
+            <div key={idx} className="card">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  {/* Title */}
+                  <div className="h-6 bg-gray-200 rounded-lg w-1/2 mb-3 animate-pulse"></div>
+                  {/* Description */}
+                  <div className="h-4 bg-gray-200 rounded-lg w-3/4 mb-3 animate-pulse"></div>
+                  
+                  {/* Stats Grid */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    {[...Array(4)].map((_, statIdx) => (
+                      <div key={statIdx}>
+                        <div className="h-4 bg-gray-200 rounded-lg w-2/3 mb-2 animate-pulse"></div>
+                        <div className="h-5 bg-gray-200 rounded-lg w-1/2 animate-pulse"></div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Date info */}
+                  <div className="h-3 bg-gray-200 rounded-lg w-1/3 animate-pulse"></div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex flex-col space-y-2 ml-4">
+                  {[...Array(5)].map((_, btnIdx) => (
+                    <div key={btnIdx} className="h-10 w-40 bg-gray-200 rounded-lg animate-pulse flex-shrink-0"></div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
@@ -264,6 +335,25 @@ const TeacherQuizzes = () => {
                             {quiz.end_date && <span>Ends: {new Date(quiz.end_date).toLocaleDateString()}</span>}
                           </div>
                         )}
+                        
+                        {/* Quiz ID for copying */}
+                        <div className="mt-3 p-2 bg-gray-100 rounded-lg flex items-center justify-between">
+                          <div>
+                            <p className="text-xs text-gray-600 mb-1">Quiz ID:</p>
+                            <code className="text-xs font-mono text-gray-700 break-all">{quiz.id}</code>
+                          </div>
+                          <button
+                            onClick={() => handleCopyQuizId(quiz.id)}
+                            className={`ml-2 p-2 rounded transition-colors ${
+                              copiedId === quiz.id
+                                ? 'bg-green-500 text-white'
+                                : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
+                            }`}
+                            title="Copy Quiz ID"
+                          >
+                            <FaCopy size={14} />
+                          </button>
+                        </div>
                       </div>
                       
                       <div className="flex flex-col space-y-2">
