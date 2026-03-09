@@ -28,6 +28,32 @@ export const API_ENDPOINTS = {
   RECORDINGS: '/recordings',
   REWARDS: '/rewards',
   NOTIFICATIONS: '/notifications',
+  REWARDS_ENDPOINTS: {
+    STUDENT: {
+      GEMS: '/rewards/student/gems',
+      TRANSACTIONS: '/rewards/student/transactions',
+      COUPONS: '/rewards/student/coupons',
+    },
+    TEACHER: {
+      PENDING: '/rewards/teacher/pending-rewards',
+      APPROVE: '/rewards/reward/approve',
+      REJECT: '/rewards/reward/reject',
+    },
+    ADMIN: {
+      SEND_REWARD: '/rewards/admin/send-reward',
+      CREATE_COUPON: '/rewards/admin/create-coupon',
+      DEDUCT_GEMS: '/rewards/admin/deduct-gems',
+    },
+    COUPON: {
+      CREATE: '/rewards/coupon/create',
+      USE: '/rewards/coupon/use',
+      ALL: '/rewards/coupon/all',
+    },
+    PUBLIC: {
+      LEADERBOARD: '/rewards/leaderboard',
+    },
+    REQUEST: '/rewards/reward/request',
+  },
 };
 
 // Local storage keys
@@ -53,24 +79,24 @@ export const ROUTES = {
   
   // Auth routes (role-based)
   LOGIN: '/login',
-  LOGIN_STUDENT: '/login?role=student',
-  LOGIN_TEACHER: '/login?role=teacher',
-  LOGIN_ADMIN: '/login?role=admin',
-  LOGIN_DEVELOPER: '/login?role=developer',
   
   REGISTER: '/register',
-  REGISTER_STUDENT: '/register?role=student',
-  REGISTER_TEACHER: '/register?role=teacher',
   
   VERIFY_OTP: '/verify-otp',
+
+  RESEND_OTP: '/resend-otp',
   
   FORGOT_PASSWORD: '/forgot-password',
-  FORGOT_PASSWORD_STUDENT: '/forgot-password?role=student',
-  FORGOT_PASSWORD_TEACHER: '/forgot-password?role=teacher',
-  FORGOT_PASSWORD_ADMIN: '/forgot-password?role=admin',
-  FORGOT_PASSWORD_DEVELOPER: '/forgot-password?role=developer',
   
   RESET_PASSWORD: '/reset-password',
+
+  VERIFY_TOKEN: '/verify-token',
+
+  LOGOUT: '/logout',
+
+  LOGIN_HISTORY: '/login-history',
+
+  VERIFY_EMAIL: '/verify-email',
   
   // Student routes
   STUDENT_DASHBOARD: '/student/dashboard',
@@ -83,6 +109,7 @@ export const ROUTES = {
   STUDENT_CERTIFICATES: '/student/certificates',
   STUDENT_PAYMENTS: '/student/payments',
   STUDENT_REWARDS: '/student/rewards',
+  STUDENT_REWARDS_LEADERBOARD: '/student/rewards/leaderboard',
   STUDENT_PROFILE: '/student/profile',
   STUDENT_CART: '/student/cart',
   STUDENT_CHECKOUT: '/student/checkout',
@@ -98,6 +125,7 @@ export const ROUTES = {
   TEACHER_RECORDINGS: '/teacher/recordings',
   TEACHER_REVENUE: '/teacher/revenue',
   TEACHER_REWARDS: '/teacher/rewards',
+  TEACHER_REWARD_APPROVALS: '/teacher/rewards/approvals',
   TEACHER_ANNOUNCEMENTS: '/teacher/announcements',
   TEACHER_PROFILE: '/teacher/profile',
   
@@ -109,6 +137,7 @@ export const ROUTES = {
   ADMIN_PAYMENTS: '/admin/payments',
   ADMIN_QUIZZES: '/admin/quizzes',
   ADMIN_CERTIFICATES: '/admin/certificates',
+  ADMIN_REWARDS: '/admin/rewards',
   ADMIN_MANAGEMENT: '/admin/management',
   ADMIN_REPORTS: '/admin/reports',
   ADMIN_SETTINGS: '/admin/settings',
