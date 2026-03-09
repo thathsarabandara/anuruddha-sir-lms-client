@@ -1,16 +1,24 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowRight, FaCheck, FaGraduationCap, FaTrophy, FaSearch, FaClock, FaClipboardCheck, FaExclamationCircle, FaCheckCircle, FaHourglassHalf } from 'react-icons/fa';
+import { FaArrowRight, FaCheck, FaGraduationCap, FaTrophy, FaSearch, FaClock, FaClipboardCheck, FaExclamationCircle, FaCheckCircle, FaHourglassHalf, FaTimes, FaCalendarTimes } from 'react-icons/fa';
 import API from '../../api';
+import { studentQuizAPI } from '../../api/quizApi';
 
 const StudentQuizzes = () => {
   const navigate = useNavigate();
   const [filter, setFilter] = useState('available');
   const [searchTerm, setSearchTerm] = useState('');
+  const [courseSearchTerm, setCourseSearchTerm] = useState('');
   const [courseFilter, setCourseFilter] = useState('all');
+  const [showCourseDropdown, setShowCourseDropdown] = useState(false);
+  
+  const [availableQuizzes, setAvailableQuizzes] = useState([]);
+  const [completedQuizzes, setCompletedQuizzes] = useState([]);
+  const [missedQuizzes, setMissedQuizzes] = useState([]);
+  const [upcomingQuizzes, setUpcomingQuizzes] = useState([]);
+  const [expiredQuizzes, setExpiredQuizzes] = useState([]);
   
   const [courses, setCourses] = useState([]);
-  const [quizzes, setQuizzes] = useState([]);
   const [stats, setStats] = useState({
     completed: 0,
     avgScore: 0,
@@ -23,6 +31,12 @@ const StudentQuizzes = () => {
     fetchStudentData();
   }, []);
 
+  useEffect(() => {
+    if (!loading) {
+      performSearch();
+    }
+  }, [searchTerm, courseFilter, filter, loading]);
+
   const fetchStudentData = async () => {
     setLoading(true);
     try {
@@ -30,27 +44,56 @@ const StudentQuizzes = () => {
       const coursesRes = await API.quiz.getStudentCourses();
       setCourses(coursesRes.data.courses || []);
       
-      // Fetch all quizzes
-      const quizzesRes = await API.quiz.getStudentQuizzes();
-      setQuizzes(quizzesRes.data.quizzes || []);
+      // Fetch available quizzes
+      const availRes = await studentQuizAPI.getStudentAvailableQuizzes('');
+      setAvailableQuizzes(availRes.data.quizzes || []);
       
-      // Calculate stats
-      const completedQuizzes = quizzesRes.data.quizzes.filter(q => q.user_best_score !== null);
-      const scores = completedQuizzes.map(q => q.user_best_score || 0);
-      const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : 0;
-      const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
-      const totalAttempts = quizzesRes.data.quizzes.reduce((sum, q) => sum + (q.user_attempts || 0), 0);
+      // Fetch completed quizzes
+      const compRes = await studentQuizAPI.getStudentCompletedQuizzesDetailed('');
+      setCompletedQuizzes(compRes.data.quizzes || []);
       
-      setStats({
-        completed: completedQuizzes.length,
-        avgScore: Math.round(avgScore),
-        bestScore: Math.round(bestScore),
-        totalAttempts
-      });
+      // Fetch expired, upcoming, and unavailable quizzes
+      const expRes = await studentQuizAPI.getStudentExpiredUpcomingQuizzes('', 'all');
+      const allData = expRes.data.quizzes || [];
+      
+      setExpiredQuizzes(allData.filter(q => q.status_type === 'expired'));
+      setUpcomingQuizzes(allData.filter(q => q.status_type === 'upcoming'));
+      setMissedQuizzes(allData.filter(q => q.status_type === 'expired'));
+      
+      // Fetch stats from API
+      const statsRes = await studentQuizAPI.getStudentQuizStats();
+      if (statsRes.data.success) {
+        setStats(statsRes.data.stats);
+      }
     } catch (error) {
       console.error('Error fetching student data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const performSearch = async () => {
+    if (!searchTerm) return;
+
+    try {
+      if (filter === 'available') {
+        const availRes = await studentQuizAPI.getStudentAvailableQuizzes(searchTerm);
+        setAvailableQuizzes(availRes.data.quizzes || []);
+      } else if (filter === 'completed') {
+        const compRes = await studentQuizAPI.getStudentCompletedQuizzesDetailed(searchTerm);
+        setCompletedQuizzes(compRes.data.quizzes || []);
+      } else if (filter === 'expired') {
+        const expRes = await studentQuizAPI.getStudentExpiredUpcomingQuizzes(searchTerm, 'expired');
+        setExpiredQuizzes(expRes.data.quizzes || []);
+      } else if (filter === 'upcoming') {
+        const upRes = await studentQuizAPI.getStudentExpiredUpcomingQuizzes(searchTerm, 'upcoming');
+        setUpcomingQuizzes(upRes.data.quizzes || []);
+      } else if (filter === 'missed') {
+        const missRes = await studentQuizAPI.getStudentExpiredUpcomingQuizzes(searchTerm, 'expired');
+        setMissedQuizzes(missRes.data.quizzes || []);
+      }
+    } catch (error) {
+      console.error('Error searching quizzes:', error);
     }
   };
 
@@ -75,22 +118,144 @@ const StudentQuizzes = () => {
     return { text: 'Available', color: 'green', icon: FaCheckCircle };
   };
 
-  // Filter quizzes
-  const filterQuizzes = (quizzesList) => {
+  // Filter quizzes based on course filter
+  const getFilteredQuizzes = (quizzesList) => {
     return quizzesList.filter(quiz => {
-      const matchesSearch = quiz.title.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCourse = courseFilter === 'all' || quiz.course_id === courseFilter;
-      return matchesSearch && matchesCourse;
+      return matchesCourse;
     });
   };
 
-  const availableQuizzes = filterQuizzes(
-    quizzes.filter(q => q.user_attempts < q.max_attempts && q.visibility === 'PUBLISHED')
+  // Filter courses for dropdown
+  const filteredCourses = courses.filter(course =>
+    course.title.toLowerCase().includes(courseSearchTerm.toLowerCase())
   );
-  
-  const completedQuizzes = filterQuizzes(
-    quizzes.filter(q => q.user_best_score !== null)
-  );
+
+  const getCourseCount = (courseId) => {
+    let count = 0;
+    if (filter === 'available') {
+      count = availableQuizzes.filter(q => q.course_id === courseId).length;
+    } else if (filter === 'completed') {
+      count = completedQuizzes.filter(q => q.course_id === courseId).length;
+    } else if (filter === 'expired') {
+      count = expiredQuizzes.filter(q => q.course_id === courseId).length;
+    } else if (filter === 'upcoming') {
+      count = upcomingQuizzes.filter(q => q.course_id === courseId).length;
+    } else if (filter === 'missed') {
+      count = missedQuizzes.filter(q => q.course_id === courseId).length;
+    }
+    return count;
+  };
+
+  const filteredAvailable = getFilteredQuizzes(availableQuizzes);
+  const filteredCompleted = getFilteredQuizzes(completedQuizzes);
+  const filteredExpired = getFilteredQuizzes(expiredQuizzes);
+  const filteredUpcoming = getFilteredQuizzes(upcomingQuizzes);
+  const filteredMissed = getFilteredQuizzes(missedQuizzes);
+
+  const renderQuizCard = (quiz, type = 'available') => {
+    const status = getQuizStatus(quiz);
+    const StatusIcon = status.icon;
+    
+    return (
+      <div key={quiz.id} className="card hover:shadow-lg transition-shadow">
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <div className="flex items-center space-x-2 mb-2 flex-wrap gap-2">
+              <h3 className="text-lg font-bold text-gray-900">{quiz.title}</h3>
+              <span className={`px-3 py-1 bg-${status.color}-100 text-${status.color}-700 text-xs font-semibold rounded-full flex items-center gap-1`}>
+                <StatusIcon className="text-xs" /> {status.text}
+              </span>
+              <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                quiz.quiz_type === 'FINAL_EXAM' ? 'bg-red-100 text-red-700' :
+                quiz.quiz_type === 'GRADED' ? 'bg-blue-100 text-blue-700' :
+                'bg-gray-100 text-gray-700'
+              }`}>
+                {quiz.quiz_type.replace('_', ' ')}
+              </span>
+            </div>
+            <p className="text-sm text-primary-600 font-medium mb-3">{quiz.course_title}</p>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
+              <div className="flex items-center gap-2">
+                <FaClipboardCheck className="text-blue-500" />
+                <div>
+                  <span className="text-gray-600">Questions:</span>
+                  <span className="ml-1 font-medium text-gray-900">{quiz.total_questions || 0}</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaClock className="text-orange-500" />
+                <div>
+                  <span className="text-gray-600">Duration:</span>
+                  <span className="ml-1 font-medium text-gray-900">{quiz.time_limit_minutes} min</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaCheck className="text-green-500" />
+                <div>
+                  <span className="text-gray-600">Passing:</span>
+                  <span className="ml-1 font-medium text-gray-900">{quiz.passing_score}%</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <FaTrophy className="text-yellow-500" />
+                <div>
+                  <span className="text-gray-600">Attempts:</span>
+                  <span className="ml-1 font-medium text-gray-900">{quiz.user_attempts}/{quiz.max_attempts}</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-4 text-sm flex-wrap gap-3">
+              {quiz.user_best_score !== null && (
+                <span className="text-gray-600">
+                  Best Score: <span className="font-medium text-green-600">{Math.round(quiz.user_best_score)}%</span>
+                </span>
+              )}
+              {quiz.end_date && (
+                <span className="text-gray-600">
+                  Due: <span className="font-medium text-gray-900">{new Date(quiz.end_date).toLocaleDateString()}</span>
+                </span>
+              )}
+            </div>
+          </div>
+          
+          <div className="ml-4">
+            {type === 'available' && quiz.user_attempts < quiz.max_attempts && status.text === 'Available' ? (
+              <button 
+                onClick={() => handleStartQuiz(quiz.id)}
+                className="btn-primary px-6"
+              >
+                {quiz.user_attempts > 0 ? 'Retry Quiz' : 'Start Quiz'}
+              </button>
+            ) : type === 'completed' ? (
+              <div className="flex flex-col gap-2">
+                <button 
+                  onClick={() => handleViewResults(quiz.id, quiz.last_attempt_id)}
+                  className="btn-primary px-6"
+                >
+                  View Results
+                </button>
+                {quiz.user_attempts < quiz.max_attempts && (
+                  <button 
+                    onClick={() => handleStartQuiz(quiz.id)}
+                    className="btn-secondary px-6"
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
+            ) : (
+              <button className="btn-secondary px-6" disabled>
+                {status.text}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="p-8">
@@ -136,153 +301,165 @@ const StudentQuizzes = () => {
       ) : (
         <div>
           {/* Tabs */}
-          <div className="flex space-x-4 mb-6 border-b">
-            <button
-              onClick={() => setFilter('available')}
-              className={`pb-3 px-4 font-medium transition-colors ${
-                filter === 'available'
-                  ? 'text-primary-600 border-b-2 border-primary-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Available ({availableQuizzes.length})
-            </button>
-            <button
-              onClick={() => setFilter('completed')}
-              className={`pb-3 px-4 font-medium transition-colors ${
-                filter === 'completed'
-                  ? 'text-primary-600 border-b-2 border-primary-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Completed ({completedQuizzes.length})
-            </button>
+          <div className="flex flex-wrap gap-2 mb-6 border-b">
+            {[
+              { id: 'available', label: 'Available', icon: FaHourglassHalf, count: filteredAvailable.length },
+              { id: 'completed', label: 'Completed', icon: FaCheckCircle, count: filteredCompleted.length },
+              { id: 'missed', label: 'Missed', icon: FaCalendarTimes, count: filteredMissed.length },
+              { id: 'upcoming', label: 'Upcoming', icon: FaClock, count: filteredUpcoming.length },
+              { id: 'expired', label: 'Expired', icon: FaExclamationCircle, count: filteredExpired.length },
+            ].map((tab) => {
+              const TabIcon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setFilter(tab.id)}
+                  className={`pb-3 px-4 font-medium transition-colors flex items-center gap-2 ${
+                    filter === tab.id
+                      ? 'text-primary-600 border-b-2 border-primary-600'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  <TabIcon />
+                  {tab.label} ({tab.count})
+                </button>
+              );
+            })}
           </div>
 
           {/* Search and Filter Section */}
           <div className="mb-6 space-y-4">
-            {/* Search Bar */}
+            {/* Search Bar - Search by title, course, or ID */}
             <div className="relative">
               <FaSearch className="absolute left-3 top-3 text-gray-400" />
               <input
                 type="text"
-                placeholder="Search quizzes by title..."
+                placeholder="Search quizzes by title, course, or ID..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
               />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                >
+                  <FaTimes />
+                </button>
+              )}
             </div>
 
-            {/* Course Filter */}
+            {/* Course Filter Dropdown */}
             {courses.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={() => setCourseFilter('all')}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    courseFilter === 'all'
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                  }`}
+              <div className="relative">
+                <div 
+                  onClick={() => setShowCourseDropdown(!showCourseDropdown)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white cursor-pointer hover:border-primary-600 transition-colors"
                 >
-                  All Courses
-                </button>
-                {courses.map((course) => (
-                  <button
-                    key={course.id}
-                    onClick={() => setCourseFilter(course.id)}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                      courseFilter === course.id
-                        ? 'bg-primary-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                    }`}
-                  >
-                    {course.title}
-                  </button>
-                ))}
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">
+                      {courseFilter === 'all' 
+                        ? 'All Courses' 
+                        : courses.find(c => c.id === courseFilter)?.title || 'Select Course'
+                      }
+                    </span>
+                    <FaSearch className="text-gray-400" />
+                  </div>
+                </div>
+
+                {showCourseDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-20">
+                    {/* Course Search Input */}
+                    <div className="p-3 border-b border-gray-200">
+                      <input
+                        type="text"
+                        placeholder="Search courses..."
+                        value={courseSearchTerm}
+                        onChange={(e) => setCourseSearchTerm(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-600"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    {/* Course Options */}
+                    <div className="max-h-48 overflow-y-auto">
+                      <button
+                        onClick={() => {
+                          setCourseFilter('all');
+                          setShowCourseDropdown(false);
+                          setCourseSearchTerm('');
+                        }}
+                        className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors ${
+                          courseFilter === 'all' ? 'bg-primary-50 text-primary-600 font-medium' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>All Courses</span>
+                          <span className="text-sm text-gray-500">{availableQuizzes.length + completedQuizzes.length}</span>
+                        </div>
+                      </button>
+
+                      {filteredCourses.map((course) => (
+                        <button
+                          key={course.id}
+                          onClick={() => {
+                            setCourseFilter(course.id);
+                            setShowCourseDropdown(false);
+                            setCourseSearchTerm('');
+                          }}
+                          className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors border-b border-gray-100 ${
+                            courseFilter === course.id ? 'bg-primary-50 text-primary-600 font-medium' : 'text-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{course.title}</span>
+                            <span className="text-sm text-gray-500">{getCourseCount(course.id)}</span>
+                          </div>
+                        </button>
+                      ))}
+
+                      {filteredCourses.length === 0 && courseSearchTerm && (
+                        <div className="px-4 py-3 text-center text-gray-500">
+                          No courses found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
+
+            {/* Active Filters Display */}
+            <div className="flex flex-wrap gap-2 items-center">
+              {searchTerm && (
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-2">
+                  Search: {searchTerm}
+                  <button onClick={() => setSearchTerm('')} className="hover:text-blue-900">
+                    <FaTimes />
+                  </button>
+                </span>
+              )}
+              {courseFilter !== 'all' && (
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium flex items-center gap-2">
+                  Course: {courses.find(c => c.id === courseFilter)?.title}
+                  <button onClick={() => setCourseFilter('all')} className="hover:text-green-900">
+                    <FaTimes />
+                  </button>
+                </span>
+              )}
+            </div>
           </div>
 
           {/* Available Quizzes */}
           {filter === 'available' && (
             <div className="space-y-4">
-              {availableQuizzes.length > 0 ? (
-                availableQuizzes.map((quiz) => {
-                  const status = getQuizStatus(quiz);
-                  const StatusIcon = status.icon;
-                  
-                  return (
-                    <div key={quiz.id} className="card hover:shadow-lg transition-shadow">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-2">
-                            <h3 className="text-lg font-bold text-gray-900">{quiz.title}</h3>
-                            <span className={`px-2 py-1 bg-${status.color}-100 text-${status.color}-700 text-xs font-semibold rounded flex items-center gap-1`}>
-                              <StatusIcon className="text-xs" /> {status.text}
-                            </span>
-                            <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                              quiz.quiz_type === 'FINAL_EXAM' ? 'bg-red-100 text-red-700' :
-                              quiz.quiz_type === 'GRADED' ? 'bg-blue-100 text-blue-700' :
-                              'bg-gray-100 text-gray-700'
-                            }`}>
-                              {quiz.quiz_type.replace('_', ' ')}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-600 mb-3">{quiz.course_title}</p>
-                          
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm mb-3">
-                            <div className="flex items-center gap-2">
-                              <FaClipboardCheck className="text-gray-400" />
-                              <span className="text-gray-600">Questions:</span>
-                              <span className="font-medium text-gray-900">{quiz.total_questions || 0}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <FaClock className="text-gray-400" />
-                              <span className="text-gray-600">Duration:</span>
-                              <span className="font-medium text-gray-900">{quiz.time_limit_minutes} min</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <FaCheck className="text-gray-400" />
-                              <span className="text-gray-600">Passing:</span>
-                              <span className="font-medium text-gray-900">{quiz.passing_score}%</span>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center space-x-4 text-sm">
-                            <span className="text-gray-600">
-                              Attempts: <span className="font-medium text-gray-900">{quiz.user_attempts}/{quiz.max_attempts}</span>
-                            </span>
-                            {quiz.user_best_score !== null && (
-                              <span className="text-gray-600">
-                                Best Score: <span className="font-medium text-green-600">{Math.round(quiz.user_best_score)}%</span>
-                              </span>
-                            )}
-                            {quiz.end_date && (
-                              <span className="text-gray-600">
-                                Due: <span className="font-medium text-gray-900">{new Date(quiz.end_date).toLocaleDateString()}</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="ml-4">
-                          {quiz.user_attempts < quiz.max_attempts && status.text === 'Available' ? (
-                            <button 
-                              onClick={() => handleStartQuiz(quiz.id)}
-                              className="btn-primary px-6"
-                            >
-                              {quiz.user_attempts > 0 ? 'Retry Quiz' : 'Start Quiz'}
-                            </button>
-                          ) : (
-                            <button className="btn-secondary px-6" disabled>
-                              {status.text}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })
+              {filteredAvailable.length > 0 ? (
+                <div>
+                  <p className="text-sm text-gray-600 mb-3 font-medium">
+                    Showing {filteredAvailable.length} available {filteredAvailable.length === 1 ? 'quiz' : 'quizzes'}
+                  </p>
+                  {filteredAvailable.map((quiz) => renderQuizCard(quiz, 'available'))}
+                </div>
               ) : (
                 <div className="card text-center py-12">
                   <FaClipboardCheck className="mx-auto text-gray-400 text-5xl mb-4" />
@@ -296,71 +473,78 @@ const StudentQuizzes = () => {
           {/* Completed Quizzes */}
           {filter === 'completed' && (
             <div className="space-y-4">
-              {completedQuizzes.length > 0 ? (
-                completedQuizzes.map((quiz) => (
-                  <div key={quiz.id} className="card hover:shadow-lg transition-shadow">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-lg font-bold text-gray-900">{quiz.title}</h3>
-                          <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded flex items-center gap-1">
-                            <FaCheckCircle /> Completed
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-3">{quiz.course_title}</p>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-3">
-                          <div>
-                            <span className="text-gray-600">Best Score:</span>
-                            <span className={`ml-2 font-bold ${
-                              quiz.user_best_score >= quiz.passing_score ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {Math.round(quiz.user_best_score)}%
-                            </span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Attempts:</span>
-                            <span className="ml-2 font-medium text-gray-900">{quiz.user_attempts}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Questions:</span>
-                            <span className="ml-2 font-medium text-gray-900">{quiz.total_questions || 0}</span>
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Status:</span>
-                            <span className={`ml-2 font-medium ${
-                              quiz.user_best_score >= quiz.passing_score ? 'text-green-600' : 'text-red-600'
-                            }`}>
-                              {quiz.user_best_score >= quiz.passing_score ? 'Passed' : 'Failed'}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="ml-4 flex flex-col gap-2">
-                        <button 
-                          onClick={() => handleViewResults(quiz.id, quiz.last_attempt_id)}
-                          className="btn-primary px-6"
-                        >
-                          View Results
-                        </button>
-                        {quiz.user_attempts < quiz.max_attempts && (
-                          <button 
-                            onClick={() => handleStartQuiz(quiz.id)}
-                            className="btn-secondary px-6"
-                          >
-                            Retry
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                ))
+              {filteredCompleted.length > 0 ? (
+                <div>
+                  <p className="text-sm text-gray-600 mb-3 font-medium">
+                    Showing {filteredCompleted.length} completed {filteredCompleted.length === 1 ? 'quiz' : 'quizzes'}
+                  </p>
+                  {filteredCompleted.map((quiz) => renderQuizCard(quiz, 'completed'))}
+                </div>
               ) : (
                 <div className="card text-center py-12">
                   <FaTrophy className="mx-auto text-gray-400 text-5xl mb-4" />
                   <h3 className="text-lg font-semibold text-gray-900 mb-2">No Completed Quizzes</h3>
                   <p className="text-gray-600">Start taking quizzes to see your results here</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Missed Quizzes */}
+          {filter === 'missed' && (
+            <div className="space-y-4">
+              {filteredMissed.length > 0 ? (
+                <div>
+                  <p className="text-sm text-gray-600 mb-3 font-medium">
+                    Showing {filteredMissed.length} missed {filteredMissed.length === 1 ? 'quiz' : 'quizzes'}
+                  </p>
+                  {filteredMissed.map((quiz) => renderQuizCard(quiz, 'missed'))}
+                </div>
+              ) : (
+                <div className="card text-center py-12">
+                  <FaCalendarTimes className="mx-auto text-gray-400 text-5xl mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Missed Quizzes</h3>
+                  <p className="text-gray-600">Great! You haven't missed any quizzes</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Upcoming Quizzes */}
+          {filter === 'upcoming' && (
+            <div className="space-y-4">
+              {filteredUpcoming.length > 0 ? (
+                <div>
+                  <p className="text-sm text-gray-600 mb-3 font-medium">
+                    Showing {filteredUpcoming.length} upcoming {filteredUpcoming.length === 1 ? 'quiz' : 'quizzes'}
+                  </p>
+                  {filteredUpcoming.map((quiz) => renderQuizCard(quiz, 'upcoming'))}
+                </div>
+              ) : (
+                <div className="card text-center py-12">
+                  <FaClock className="mx-auto text-gray-400 text-5xl mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Upcoming Quizzes</h3>
+                  <p className="text-gray-600">All scheduled quizzes have started</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Expired Quizzes */}
+          {filter === 'expired' && (
+            <div className="space-y-4">
+              {filteredExpired.length > 0 ? (
+                <div>
+                  <p className="text-sm text-gray-600 mb-3 font-medium">
+                    Showing {filteredExpired.length} expired {filteredExpired.length === 1 ? 'quiz' : 'quizzes'}
+                  </p>
+                  {filteredExpired.map((quiz) => renderQuizCard(quiz, 'expired'))}
+                </div>
+              ) : (
+                <div className="card text-center py-12">
+                  <FaExclamationCircle className="mx-auto text-gray-400 text-5xl mb-4" />
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Expired Quizzes</h3>
+                  <p className="text-gray-600">All your quizzes are still active</p>
                 </div>
               )}
             </div>
