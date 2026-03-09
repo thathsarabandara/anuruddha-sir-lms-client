@@ -5,6 +5,8 @@ export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localho
 export const teacherQuizAPI = { 
     teacherStat: () => axiosInstance.get(`${API_BASE_URL}quiz/teacher/stats/`),
     getTeacherAllQuizzes: () => axiosInstance.get(`${API_BASE_URL}quiz/teacher/quizzes/`),
+    searchPublishedQuizzes: (query) => axiosInstance.get(`${API_BASE_URL}quiz/teacher/quizzes/search/`, { params: { q: query } }),
+    getPublishedQuizById: (quizId) => axiosInstance.get(`${API_BASE_URL}quiz/teacher/quizzes/${quizId}/get-published/`),
     getTeacherQuizDetail: (quizId) => axiosInstance.get(`${API_BASE_URL}quiz/teacher/quizzes/${quizId}/`),
     createQuiz: (quizData) => axiosInstance.post(`${API_BASE_URL}quiz/teacher/quizzes/create/`, quizData),
     updateQuiz: (quizId, quizData) => axiosInstance.put(`${API_BASE_URL}quiz/teacher/quizzes/${quizId}/`, quizData),
@@ -25,11 +27,18 @@ export const teacherQuizAPI = {
     }),
     getQuizAnalytics: (quizId) => axiosInstance.get(`${API_BASE_URL}quiz/teacher/quizzes/${quizId}/analytics/`),
     getQuizAttempts: (quizId) => axiosInstance.get(`${API_BASE_URL}quiz/teacher/quizzes/${quizId}/attempts/`),
+    verifyQuizId: (data) => axiosInstance.post(`${API_BASE_URL}quiz/verify-quiz-id/`, data),
 };
 
 export const studentQuizAPI = {
     getStudentCourseQuizzes: (courseId) => axiosInstance.get(`${API_BASE_URL}quiz/student/courses/${courseId}/quizzes/`),
     getStudentAllQuizzes: () => axiosInstance.get(`${API_BASE_URL}quiz/student/quizzes/`),
+    getStudentAvailableQuizzes: (search) => axiosInstance.get(`${API_BASE_URL}quiz/student/quizzes/available/`, { params: { search } }),
+    getStudentCompletedQuizzes: () => axiosInstance.get(`${API_BASE_URL}quiz/student/quizzes/completed/`),
+    getStudentCompletedQuizzesDetailed: (search) => axiosInstance.get(`${API_BASE_URL}quiz/student/quizzes/completed-detailed/`, { params: { search } }),
+    getStudentExpiredUpcomingQuizzes: (search, type = 'all') => axiosInstance.get(`${API_BASE_URL}quiz/student/quizzes/expired-upcoming/`, { params: { search, type } }),
+    getStudentQuizStats: () => axiosInstance.get(`${API_BASE_URL}quiz/student/quizzes/stats/`),
+    searchStudentQuizzes: (query) => axiosInstance.get(`${API_BASE_URL}quiz/student/quizzes/search/`, { params: { q: query } }),
     getStudentQuizDetail: (quizId) => axiosInstance.get(`${API_BASE_URL}quiz/student/quizzes/${quizId}/`),
     startQuizAttempt: (quizId) => axiosInstance.post(`${API_BASE_URL}quiz/student/quizzes/${quizId}/start/`),
     getQuizAttemptDetail: (attemptId) => axiosInstance.get(`${API_BASE_URL}quiz/student/attempts/${attemptId}/`),
@@ -56,4 +65,10 @@ export default {
   studentQuizAPI,
   teacherQuizAPI,
   adminQuizAPI,
+};
+
+export const quizAPI = {
+    ...teacherQuizAPI,
+    ...studentQuizAPI,
+    ...adminQuizAPI,
 };
