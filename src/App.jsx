@@ -35,6 +35,7 @@ import ResetPassword from './pages/auth/ResetPassword';
 
 // Student Pages
 import StudentDashboard from './pages/student/Dashboard';
+import StudentDashboardModern from './pages/student/DashboardModern';
 import StudentCourses from './pages/student/Courses';
 import StudentCoursesDiscover from './pages/student/CoursesDiscover';
 import StudentCourseLearning from './pages/student/CourseLearning';
@@ -50,10 +51,13 @@ import StudentRewards from './pages/student/Rewards';
 import StudentProfile from './pages/student/Profile';
 import StudentCart from './pages/student/Cart';
 import StudentCheckout from './pages/student/Checkout';
+import BankTransferPending from './pages/student/BankTransferPending';
+import CashPaymentPending from './pages/student/CashPaymentPending';
 import StudentCoursesView from './pages/student/CourseView';
 
 // Teacher Pages
 import TeacherDashboard from './pages/teacher/Dashboard';
+import TeacherDashboardModern from './pages/teacher/DashboardModern';
 import TeacherCourses from './pages/teacher/Courses';
 import TeacherCourseDetail from './pages/teacher/CourseDetail';
 import TeacherLiveClasses from './pages/teacher/LiveClasses';
@@ -69,6 +73,7 @@ import TeacherAnnouncements from './pages/teacher/Announcements';
 import TeacherProfile from './pages/teacher/Profile';
 
 // Admin Pages
+import AdminDashboardModern from './pages/admin/DashboardModern';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminStudents from './pages/admin/Students';
 import AdminTeachers from './pages/admin/Teachers';
@@ -82,6 +87,7 @@ import AdminReports from './pages/admin/Reports';
 import AdminSettings from './pages/admin/Settings';
 
 // Developer Pages
+import DeveloperDashboardModern from './pages/developer/DashboardModern';
 import DeveloperDashboard from './pages/developer/Dashboard';
 import SystemHealth from './pages/developer/SystemHealth';
 import APILogs from './pages/developer/APILogs';
@@ -90,17 +96,14 @@ import FeatureFlags from './pages/developer/FeatureFlags';
 import IntegrationStatus from './pages/developer/IntegrationStatus';
 
 function App() {
-  // Monitor token expiry and handle automatic logout
   useAuthExpiry();
 
   return (
     <Router>
-      {/* Global Floating Components */}
       <ScrollToTop />
       <ChatBot />
       
       <Routes>
-        {/* Public Routes with TopNav */}
         <Route element={<PublicLayout />}>
           <Route path={ROUTES.HOME} element={<Home />} />
           <Route path={ROUTES.ABOUT} element={<About />} />
@@ -112,7 +115,6 @@ function App() {
           <Route path={ROUTES.GALLERY} element={<Gallery />} />
         </Route>
 
-        {/* Auth Routes (No Layout) */}
         <Route
           path={ROUTES.LOGIN}
           element={
@@ -146,7 +148,6 @@ function App() {
           element={<ResetPassword />} 
         />
 
-        {/* Student Routes with Sidebar */}
         <Route
           element={
             <ProtectedRoute allowedRoles={[ROLES.STUDENT]}>
@@ -154,7 +155,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path={ROUTES.STUDENT_DASHBOARD} element={<StudentDashboard />} />
+          <Route path={ROUTES.STUDENT_DASHBOARD} element={<StudentDashboardModern />} />
           <Route path={ROUTES.STUDENT_COURSES} element={<StudentCourses />} />
           <Route path="/student/courses/discover" element={<StudentCoursesDiscover />} />
           <Route path="/student/course/:courseId" element={<StudentCoursesDiscover />} />
@@ -171,6 +172,8 @@ function App() {
           <Route path={ROUTES.STUDENT_PROFILE} element={<StudentProfile />} />
           <Route path={ROUTES.STUDENT_CART} element={<StudentCart />} />
           <Route path={ROUTES.STUDENT_CHECKOUT} element={<StudentCheckout />} />
+          <Route path="/checkout/bank-transfer-pending" element={<BankTransferPending />} />
+          <Route path="/checkout/cash-payment-pending" element={<CashPaymentPending />} />
           <Route path={ROUTES.STUDENT_COURSE_VIEW} element={<StudentCoursesView />} />
         </Route>
 
@@ -182,7 +185,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path={ROUTES.TEACHER_DASHBOARD} element={<TeacherDashboard />} />
+          <Route path={ROUTES.TEACHER_DASHBOARD} element={<TeacherDashboardModern />} />
           <Route path={ROUTES.TEACHER_COURSES} element={<TeacherCourses />} />
           <Route path="/teacher/courses/:courseId" element={<TeacherCourseDetail />} />
           <Route path={ROUTES.TEACHER_LIVE_CLASSES} element={<TeacherLiveClasses />} />
@@ -206,7 +209,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboard />} />
+          <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboardModern />} />
           <Route path={ROUTES.ADMIN_STUDENTS} element={<AdminStudents />} />
           <Route path={ROUTES.ADMIN_TEACHERS} element={<AdminTeachers />} />
           <Route path={ROUTES.ADMIN_COURSES} element={<AdminCourses />} />
@@ -227,7 +230,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path={ROUTES.DEVELOPER_DASHBOARD} element={<DeveloperDashboard />} />
+          <Route path={ROUTES.DEVELOPER_DASHBOARD} element={<DeveloperDashboardModern />} />
           <Route path={ROUTES.DEVELOPER_SYSTEM_HEALTH} element={<SystemHealth />} />
           <Route path={ROUTES.DEVELOPER_API_LOGS} element={<APILogs />} />
           <Route path={ROUTES.DEVELOPER_ERROR_MONITORING} element={<ErrorMonitoring />} />
