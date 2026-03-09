@@ -8,54 +8,48 @@ import { isValidEmail, isValidPhone } from '../../utils/helpers';
 const Register = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const roleParam = searchParams.get('role') || 'STUDENT';
+  const roleParam = searchParams.get('role') || 'student';
+  const isValidRole = ['student', 'teacher'].includes(roleParam?.toLowerCase());
   
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
+    first_name: '',
+    last_name: '',
     email: '',
     phone: '',
     password: '',
     confirmPassword: '',
-    role: roleParam.toUpperCase(),
-    // Profile picture
-    profilePicture: null,
+    role: isValidRole ? roleParam.toLowerCase() : 'student',
+    profile_picture: null,
     profilePicturePreview: null,
-    // Teacher-specific fields
     qualifications: '',
-    subjectsTaught: '',
-    yearsOfExperience: '',
+    subjects_taught: '',
+    years_of_experience: '',
     bio: '',
     address: '',
-    language: '',
-    // Student-specific fields
-    dateOfBirth: '',
-    gradeLevel: '',
+    date_of_birth: '',
+    grade_level: '',
     school: '',
-    parentName: '',
-    parentContact: '',
+    parent_name: '',
+    parent_contact: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [fieldErrors, setFieldErrors] = useState({});
-  const [currentTab, setCurrentTab] = useState(1); // Tab 1: Basic Info, Tab 2: Security, Tab 3: Teacher Info (if teacher)
+  const [currentTab, setCurrentTab] = useState(1); 
 
   useEffect(() => {
-    const role = roleParam.toUpperCase();
-    if (['STUDENT', 'TEACHER'].includes(role)) {
-      setFormData(prev => ({ ...prev, role }));
-    } else {
+    if (!isValidRole) {
       navigate(`${ROUTES.REGISTER}?role=student`, { replace: true });
     }
-  }, [roleParam, navigate]);
+  }, [roleParam, isValidRole, navigate]);
 
 
 
   const roles = [
     { 
-      value: 'STUDENT', 
+      value: 'student', 
       label: 'Student', 
       icon: FaGraduationCap, 
       gradient: 'from-blue-500 to-blue-600',
@@ -64,7 +58,7 @@ const Register = () => {
       subtitle: 'Join thousands of successful students'
     },
     { 
-      value: 'TEACHER', 
+      value: 'teacher', 
       label: 'Teacher', 
       icon: FaChalkboardTeacher, 
       gradient: 'from-green-500 to-green-600',
@@ -81,7 +75,6 @@ const Register = () => {
     'from-green-500 to-green-600': 'linear-gradient(to right, #10b981, #059669)',
   };
 
-  // Helper to get input state (valid/invalid/default)
   const getInputState = (fieldName) => {
     const value = formData[fieldName];
     const error = fieldErrors[fieldName];
@@ -104,7 +97,6 @@ const Register = () => {
     return `${baseClasses} border-gray-300 focus:ring-gray-900 focus:border-transparent`;
   };
 
-  // Password strength calculator
   const getPasswordStrength = (password) => {
     if (!password) return { strength: 0, label: '', color: '' };
     
@@ -140,13 +132,11 @@ const Register = () => {
   const handleProfilePictureChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Validate file size (max 5MB)
       if (file.size > 5 * 1024 * 1024) {
         setFieldErrors(prev => ({ ...prev, profilePicture: 'File size must be less than 5MB' }));
         return;
       }
       
-      // Validate file type
       if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
         setFieldErrors(prev => ({ ...prev, profilePicture: 'Only image files are allowed' }));
         return;
@@ -169,7 +159,7 @@ const Register = () => {
     let error = '';
 
     switch (fieldName) {
-      case 'firstName':
+      case 'first_name':
         if (!value.trim()) {
           error = 'First name is required';
         } else if (value.trim().length < 2) {
@@ -177,7 +167,7 @@ const Register = () => {
         }
         break;
 
-      case 'lastName':
+      case 'last_name':
         if (!value.trim()) {
           error = 'Last name is required';
         } else if (value.trim().length < 2) {
@@ -215,7 +205,6 @@ const Register = () => {
         } else if (!/(?=.*[@$!%*?&#])/.test(value)) {
           error = 'Password must contain at least one special character (@$!%*?&#)';
         }
-        // Also validate confirm password if it has value
         if (formData.confirmPassword) {
           validateField('confirmPassword', formData.confirmPassword);
         }
@@ -230,21 +219,21 @@ const Register = () => {
         break;
 
       case 'qualifications':
-        if (formData.role === 'TEACHER' && !value.trim()) {
+        if (formData.role === 'teacher' && !value.trim()) {
           error = 'Qualifications are required for teachers';
         } else if (value.trim().length > 0 && value.trim().length < 5) {
           error = 'Qualifications must be at least 5 characters';
         }
         break;
 
-      case 'subjectsTaught':
-        if (formData.role === 'TEACHER' && !value.trim()) {
+      case 'subjects_taught':
+        if (formData.role === 'teacher' && !value.trim()) {
           error = 'Please specify the subjects you teach';
         }
         break;
 
-      case 'yearsOfExperience':
-        if (formData.role === 'TEACHER' && value) {
+      case 'years_of_experience':
+        if (formData.role === 'teacher' && value) {
           const experience = parseInt(value);
           if (isNaN(experience) || experience < 0 || experience > 70) {
             error = 'Please enter a valid number of years (0-70)';
@@ -253,47 +242,47 @@ const Register = () => {
         break;
 
       case 'bio':
-        if (formData.role === 'TEACHER' && value.trim().length > 0 && value.trim().length < 10) {
+        if (formData.role === 'teacher' && value.trim().length > 0 && value.trim().length < 10) {
           error = 'Bio must be at least 10 characters';
         }
         break;
 
       case 'address':
-        if (formData.role === 'TEACHER' && value.trim().length > 0 && value.trim().length < 5) {
+        if (formData.role === 'teacher' && value.trim().length > 0 && value.trim().length < 5) {
           error = 'Address must be at least 5 characters';
-        } else if (formData.role === 'STUDENT' && !value.trim()) {
+        } else if (formData.role === 'student' && !value.trim()) {
           error = 'Address is required';
         }
         break;
 
-      case 'dateOfBirth':
-        if (formData.role === 'STUDENT' && !value) {
+      case 'date_of_birth':
+        if (formData.role === 'student' && !value) {
           error = 'Date of birth is required';
         }
         break;
 
-      case 'gradeLevel':
-        if (formData.role === 'STUDENT' && !value.trim()) {
+      case 'grade_level':
+        if (formData.role === 'student' && !value.trim()) {
           error = 'Grade level is required';
         }
         break;
 
       case 'school':
-        if (formData.role === 'STUDENT' && !value.trim()) {
+        if (formData.role === 'student' && !value.trim()) {
           error = 'School is required';
         }
         break;
 
-      case 'parentName':
-        if (formData.role === 'STUDENT' && !value.trim()) {
+      case 'parent_name':
+        if (formData.role === 'student' && !value.trim()) {
           error = 'Parent name is required';
         }
         break;
 
-      case 'parentContact':
-        if (formData.role === 'STUDENT' && !value.trim()) {
+      case 'parent_contact':
+        if (formData.role === 'student' && !value.trim()) {
           error = 'Parent contact is required';
-        } else if (formData.role === 'STUDENT' && value && !isValidPhone(value)) {
+        } else if (formData.role === 'student' && value && !isValidPhone(value)) {
           error = 'Please enter a valid phone number';
         }
         break;
@@ -309,12 +298,12 @@ const Register = () => {
   const validateForm = () => {
     const errors = {};
 
-    if (!formData.firstName.trim()) {
-      errors.firstName = 'First name is required';
+    if (!formData.first_name.trim()) {
+      errors.first_name = 'First name is required';
     }
 
-    if (!formData.lastName.trim()) {
-      errors.lastName = 'Last name is required';
+    if (!formData.last_name.trim()) {
+      errors.last_name = 'Last name is required';
     }
 
     if (!isValidEmail(formData.email)) {
@@ -341,25 +330,23 @@ const Register = () => {
       errors.confirmPassword = 'Passwords do not match';
     }
 
-    // Profile picture validation
     if (!formData.profilePicture) {
       errors.profilePicture = 'Profile picture is required';
     }
 
-    // Teacher-specific validation
-    if (formData.role === 'TEACHER') {
+    if (formData.role === 'teacher') {
       if (!formData.qualifications.trim()) {
         errors.qualifications = 'Qualifications are required';
       }
-      if (!formData.subjectsTaught.trim()) {
-        errors.subjectsTaught = 'Subjects taught are required';
+      if (!formData.subjects_taught.trim()) {
+        errors.subjects_taught = 'Subjects taught are required';
       }
-      if (!formData.yearsOfExperience) {
-        errors.yearsOfExperience = 'Years of experience is required';
+      if (!formData.years_of_experience) {
+        errors.years_of_experience = 'Years of experience is required';
       } else {
-        const experience = parseInt(formData.yearsOfExperience);
+        const experience = parseInt(formData.years_of_experience);
         if (isNaN(experience) || experience < 0 || experience > 70) {
-          errors.yearsOfExperience = 'Please enter a valid number of years';
+          errors.years_of_experience = 'Please enter a valid number of years';
         }
       }
       if (!formData.bio.trim()) {
@@ -368,18 +355,14 @@ const Register = () => {
       if (!formData.address.trim()) {
         errors.address = 'Address is required';
       }
-      if (!formData.language) {
-        errors.language = 'Language is required';
-      }
     }
 
-    // Student-specific validation
-    if (formData.role === 'STUDENT') {
-      if (!formData.dateOfBirth) {
-        errors.dateOfBirth = 'Date of birth is required';
+    if (formData.role === 'student') {
+      if (!formData.date_of_birth) {
+        errors.date_of_birth = 'Date of birth is required';
       }
-      if (!formData.gradeLevel.trim()) {
-        errors.gradeLevel = 'Grade level is required';
+      if (!formData.grade_level.trim()) {
+        errors.grade_level = 'Grade level is required';
       }
       if (!formData.school.trim()) {
         errors.school = 'School is required';
@@ -387,16 +370,13 @@ const Register = () => {
       if (!formData.address.trim()) {
         errors.address = 'Address is required';
       }
-      if (!formData.parentName.trim()) {
-        errors.parentName = 'Parent name is required';
+      if (!formData.parent_name.trim()) {
+        errors.parent_name = 'Parent name is required';
       }
-      if (!formData.parentContact.trim()) {
-        errors.parentContact = 'Parent contact is required';
-      } else if (!isValidPhone(formData.parentContact)) {
-        errors.parentContact = 'Please enter a valid phone number';
-      }
-      if (!formData.language) {
-        errors.language = 'Language is required';
+      if (!formData.parent_contact.trim()) {
+        errors.parent_contact = 'Parent contact is required';
+      } else if (!isValidPhone(formData.parent_contact)) {
+        errors.parent_contact = 'Please enter a valid phone number';
       }
     }
 
@@ -414,15 +394,13 @@ const Register = () => {
     setLoading(true);
 
     try {
-      // Create FormData to handle file upload
       const formDataToSend = new FormData();
       
-      // Add all form fields except confirmPassword and profilePicturePreview
       Object.keys(formData).forEach(key => {
         if (key !== 'confirmPassword' && key !== 'profilePicturePreview') {
-          if (key === 'profilePicture' && formData[key]) {
+          if (key === 'profile_picture' && formData[key]) {
             formDataToSend.append(key, formData[key]);
-          } else if (key !== 'profilePicture') {
+          } else if (key !== 'profile_picture') {
             formDataToSend.append(key, formData[key]);
           }
         }
@@ -430,8 +408,7 @@ const Register = () => {
       
       await authAPI.register(formDataToSend);
 
-      // Redirect to OTP verification
-      navigate(`${ROUTES.VERIFY_OTP}?email=${formData.email}&role=${formData.role.toLowerCase()}`);
+      navigate(`${ROUTES.VERIFY_OTP}?email=${formData.email}&role=${formData.role}`);
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -443,21 +420,17 @@ const Register = () => {
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
       <div className="max-w-7xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
         <div className="grid grid-cols-1 lg:grid-cols-2 min-h-[700px]">
-          {/* Form Section */}
           <div className="register-form p-8 lg:p-12 flex flex-col justify-center overflow-y-auto ">
-            {/* Logo */}
             <Link to={ROUTES.HOME} className="inline-flex items-center gap-2 mb-6 group">
               <img src='/assets/images/logo.png' alt='logo' className='w-10 h-10'/>
               <span className="font-bold text-xl text-gray-900">Anuruddha Sir</span>
             </Link>
 
-            {/* Title */}
             <div className="mb-6">
               <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">{currentRole.title}</h1>
               <p className="text-gray-600">{currentRole.subtitle}</p>
             </div>
 
-            {/* Error Message */}
             {error && (
               <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
                 <svg className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
@@ -467,9 +440,7 @@ const Register = () => {
               </div>
             )}
 
-            {/* Form with Tabs */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Tab Navigation */}
               <div className="flex border-b border-gray-200 gap-2">
                 <button
                   type="button"
@@ -493,7 +464,7 @@ const Register = () => {
                 >
                   Security
                 </button>
-                {formData.role === 'TEACHER' && (
+                {formData.role === 'teacher' && (
                   <button
                     type="button"
                     onClick={() => setCurrentTab(3)}
@@ -506,7 +477,7 @@ const Register = () => {
                     Professional
                   </button>
                 )}
-                {formData.role === 'STUDENT' && (
+                {formData.role === 'student' && (
                   <button
                     type="button"
                     onClick={() => setCurrentTab(3)}
@@ -521,10 +492,8 @@ const Register = () => {
                 )}
               </div>
 
-              {/* Tab 1: Basic Information */}
               {currentTab === 1 && (
                 <div className="space-y-4">
-                  {/* Profile Picture Upload */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-3">
                       Profile Picture <span className="text-red-500">*</span>
@@ -578,29 +547,29 @@ const Register = () => {
                           <FaUser className={getInputState('firstName') === 'invalid' ? 'text-red-400' : getInputState('firstName') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
                         </div>
                         <input
-                          id="firstName"
-                          name="firstName"
+                          id="first_name"
+                          name="first_name"
                           type="text"
                           required
-                          value={formData.firstName}
+                          value={formData.first_name}
                           onChange={handleChange}
                           className={getInputClassName('firstName')}
                           placeholder="John"
                         />
-                        {formData.firstName && (
+                        {formData.first_name && (
                           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            {getInputState('firstName') === 'valid' ? (
+                            {getInputState('first_name') === 'valid' ? (
                               <FaCheck className="text-green-500" />
-                            ) : getInputState('firstName') === 'invalid' ? (
+                            ) : getInputState('first_name') === 'invalid' ? (
                               <FaTimes className="text-red-500" />
                             ) : null}
                           </div>
                         )}
                       </div>
-                      {fieldErrors.firstName && (
+                      {fieldErrors.first_name && (
                         <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                           <FaTimes className="flex-shrink-0" />
-                          {fieldErrors.firstName}
+                          {fieldErrors.first_name}
                         </p>
                       )}
                     </div>
@@ -614,29 +583,29 @@ const Register = () => {
                           <FaUser className={getInputState('lastName') === 'invalid' ? 'text-red-400' : getInputState('lastName') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
                         </div>
                         <input
-                          id="lastName"
-                          name="lastName"
+                          id="last_name"
+                          name="last_name"
                           type="text"
                           required
-                          value={formData.lastName}
+                          value={formData.last_name}
                           onChange={handleChange}
                           className={getInputClassName('lastName')}
                           placeholder="Doe"
                         />
-                        {formData.lastName && (
+                        {formData.last_name && (
                           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            {getInputState('lastName') === 'valid' ? (
+                            {getInputState('last_name') === 'valid' ? (
                               <FaCheck className="text-green-500" />
-                            ) : getInputState('lastName') === 'invalid' ? (
+                            ) : getInputState('last_name') === 'invalid' ? (
                               <FaTimes className="text-red-500" />
                             ) : null}
                           </div>
                         )}
                       </div>
-                      {fieldErrors.lastName && (
+                      {fieldErrors.last_name && (
                         <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                           <FaTimes className="flex-shrink-0" />
-                          {fieldErrors.lastName}
+                          {fieldErrors.last_name}
                         </p>
                       )}
                     </div>
@@ -680,7 +649,7 @@ const Register = () => {
 
                   <div>
                     <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-2">
-                      Phone Number
+                      Phone Number (Whatsapp)
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -754,7 +723,6 @@ const Register = () => {
                       </div>
                     </div>
                     
-                    {/* Password Strength Indicator */}
                     {formData.password && (
                       <div className="mt-2">
                         <div className="flex items-center justify-between mb-1">
@@ -783,7 +751,6 @@ const Register = () => {
                       </div>
                     )}
 
-                    {/* Password Requirements */}
                     {formData.password && (
                       <div className="mt-3 space-y-1.5">
                         <p className="text-xs font-medium text-gray-700">Password must contain:</p>
@@ -895,7 +862,7 @@ const Register = () => {
               )}
 
               {/* Tab 3: Professional Information (Teacher Only) */}
-              {formData.role === 'TEACHER' && currentTab === 3 && (
+              {formData.role === 'teacher' && currentTab === 3 && (
                 <div className="space-y-4">
                   <div>
                     <label htmlFor="qualifications" className="block text-sm font-medium text-gray-700 mb-2">
@@ -935,93 +902,74 @@ const Register = () => {
                   </div>
 
                   <div>
-                    <label htmlFor="subjectsTaught" className="block text-sm font-medium text-gray-700 mb-2">
+                    <label htmlFor="subjects_taught" className="block text-sm font-medium text-gray-700 mb-2">
                       Subjects Taught <span className="text-red-500">*</span>
                     </label>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <FaBook className={getInputState('subjectsTaught') === 'invalid' ? 'text-red-400' : getInputState('subjectsTaught') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
+                        <FaBook className={getInputState('subjects_taught') === 'invalid' ? 'text-red-400' : getInputState('subjects_taught') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
                       </div>
                       <input
-                        id="subjectsTaught"
-                        name="subjectsTaught"
+                        id="subjects_taught"
+                        name="subjects_taught"
                         type="text"
                         required
-                        value={formData.subjectsTaught}
+                        value={formData.subjects_taught}
                         onChange={handleChange}
-                        className={getInputClassName('subjectsTaught')}
+                        className={getInputClassName('subjects_taught')}
                         placeholder="e.g., Mathematics, Science, English (comma-separated)"
                       />
-                      {formData.subjectsTaught && (
+                      {formData.subjects_taught && (
                         <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                          {getInputState('subjectsTaught') === 'valid' ? (
+                          {getInputState('subjects_taught') === 'valid' ? (
                             <FaCheck className="text-green-500" />
-                          ) : getInputState('subjectsTaught') === 'invalid' ? (
+                          ) : getInputState('subjects_taught') === 'invalid' ? (
                             <FaTimes className="text-red-500" />
                           ) : null}
                         </div>
                       )}
                     </div>
-                    {fieldErrors.subjectsTaught && (
+                    {fieldErrors.subjects_taught && (
                       <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                         <FaTimes className="flex-shrink-0" />
-                        {fieldErrors.subjectsTaught}
+                        {fieldErrors.subjects_taught}
                       </p>
                     )}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="yearsOfExperience" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="years_of_experience" className="block text-sm font-medium text-gray-700 mb-2">
                         Years of Experience
                       </label>
                       <div className="relative">
                         <input
-                          id="yearsOfExperience"
-                          name="yearsOfExperience"
+                          id="years_of_experience"
+                          name="years_of_experience"
                           type="number"
                           min="0"
                           max="70"
-                          value={formData.yearsOfExperience}
+                          value={formData.years_of_experience}
                           onChange={handleChange}
-                          className={getInputClassName('yearsOfExperience')}
+                          className={getInputClassName('years_of_experience')}
                           placeholder="e.g., 10"
                         />
-                        {formData.yearsOfExperience && (
+                        {formData.years_of_experience && (
                           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            {getInputState('yearsOfExperience') === 'valid' ? (
+                            {getInputState('years_of_experience') === 'valid' ? (
                               <FaCheck className="text-green-500" />
-                            ) : getInputState('yearsOfExperience') === 'invalid' ? (
+                            ) : getInputState('years_of_experience') === 'invalid' ? (
                               <FaTimes className="text-red-500" />
                             ) : null}
                           </div>
                         )}
                       </div>
-                      {fieldErrors.yearsOfExperience && (
+                      {fieldErrors.years_of_experience && (
                         <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                           <FaTimes className="flex-shrink-0" />
-                          {fieldErrors.yearsOfExperience}
+                          {fieldErrors.years_of_experience}
                         </p>
                       )}
-                    </div>
-
-                    <div>
-                      <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-2">
-                        Language of Instruction
-                      </label>
-                      <select
-                        id="language"
-                        name="language"
-                        value={formData.language}
-                        onChange={handleChange}
-                        className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                      >
-                        <option value="">Select Language</option>
-                        <option value="Sinhala">Sinhala</option>
-                        <option value="English">English</option>
-                        <option value="Tamil">Tamil</option>
-                        <option value="Multiple">Multiple Languages</option>
-                      </select>
                     </div>
                   </div>
 
@@ -1074,54 +1022,54 @@ const Register = () => {
               )}
 
               {/* Tab 3: Student Academic Information */}
-              {formData.role === 'STUDENT' && currentTab === 3 && (
+              {formData.role === 'student' && currentTab === 3 && (
                 <div className="space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="dateOfBirth" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="date_of_birth" className="block text-sm font-medium text-gray-700 mb-2">
                         Date of Birth <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <FaCalendar className={getInputState('dateOfBirth') === 'invalid' ? 'text-red-400' : getInputState('dateOfBirth') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
+                          <FaCalendar className={getInputState('date_of_birth') === 'invalid' ? 'text-red-400' : getInputState('date_of_birth') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
                         </div>
                         <input
-                          id="dateOfBirth"
-                          name="dateOfBirth"
+                          id="date_of_birth"
+                          name="date_of_birth"
                           type="date"
                           required
-                          value={formData.dateOfBirth}
+                          value={formData.date_of_birth}
                           onChange={handleChange}
-                          className={getInputClassName('dateOfBirth')}
+                          className={getInputClassName('date_of_birth')}
                         />
-                        {formData.dateOfBirth && (
+                        {formData.date_of_birth && (
                           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            {getInputState('dateOfBirth') === 'valid' ? (
+                            {getInputState('date_of_birth') === 'valid' ? (
                               <FaCheck className="text-green-500" />
-                            ) : getInputState('dateOfBirth') === 'invalid' ? (
+                            ) : getInputState('date_of_birth') === 'invalid' ? (
                               <FaTimes className="text-red-500" />
                             ) : null}
                           </div>
                         )}
                       </div>
-                      {fieldErrors.dateOfBirth && (
+                      {fieldErrors.date_of_birth && (
                         <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                           <FaTimes className="flex-shrink-0" />
-                          {fieldErrors.dateOfBirth}
+                          {fieldErrors.date_of_birth}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label htmlFor="gradeLevel" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="grade_level" className="block text-sm font-medium text-gray-700 mb-2">
                         Grade Level <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <select
-                          id="gradeLevel"
-                          name="gradeLevel"
+                          id="grade_level"
+                          name="grade_level"
                           required
-                          value={formData.gradeLevel}
+                          value={formData.grade_level}
                           onChange={handleChange}
                           className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
                         >
@@ -1133,10 +1081,10 @@ const Register = () => {
                           <option value="Grade 5">Grade 5</option>
                         </select>
                       </div>
-                      {fieldErrors.gradeLevel && (
+                      {fieldErrors.grade_level && (
                         <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                           <FaTimes className="flex-shrink-0" />
-                          {fieldErrors.gradeLevel}
+                          {fieldErrors.grade_level}
                         </p>
                       )}
                     </div>
@@ -1204,101 +1152,76 @@ const Register = () => {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="parentName" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="parent_name" className="block text-sm font-medium text-gray-700 mb-2">
                         Parent/Guardian Name <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <FaUser className={getInputState('parentName') === 'invalid' ? 'text-red-400' : getInputState('parentName') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
+                          <FaUser className={getInputState('parent_name') === 'invalid' ? 'text-red-400' : getInputState('parent_name') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
                         </div>
                         <input
-                          id="parentName"
-                          name="parentName"
+                          id="parent_name"
+                          name="parent_name"
                           type="text"
                           required
-                          value={formData.parentName}
+                          value={formData.parent_name}
                           onChange={handleChange}
-                          className={getInputClassName('parentName')}
+                          className={getInputClassName('parent_name')}
                           placeholder="Parent or guardian name"
                         />
-                        {formData.parentName && (
+                        {formData.parent_name && (
                           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            {getInputState('parentName') === 'valid' ? (
+                            {getInputState('parent_name') === 'valid' ? (
                               <FaCheck className="text-green-500" />
-                            ) : getInputState('parentName') === 'invalid' ? (
+                            ) : getInputState('parent_name') === 'invalid' ? (
                               <FaTimes className="text-red-500" />
                             ) : null}
                           </div>
                         )}
                       </div>
-                      {fieldErrors.parentName && (
+                      {fieldErrors.parent_name && (
                         <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                           <FaTimes className="flex-shrink-0" />
-                          {fieldErrors.parentName}
+                          {fieldErrors.parent_name}
                         </p>
                       )}
                     </div>
 
                     <div>
-                      <label htmlFor="parentContact" className="block text-sm font-medium text-gray-700 mb-2">
+                      <label htmlFor="parent_contact" className="block text-sm font-medium text-gray-700 mb-2">
                         Parent Contact <span className="text-red-500">*</span>
                       </label>
                       <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <FaPhone className={getInputState('parentContact') === 'invalid' ? 'text-red-400' : getInputState('parentContact') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
+                          <FaPhone className={getInputState('parent_contact') === 'invalid' ? 'text-red-400' : getInputState('parent_contact') === 'valid' ? 'text-green-400' : 'text-gray-400'} />
                         </div>
                         <input
-                          id="parentContact"
-                          name="parentContact"
+                          id="parent_contact"
+                          name="parent_contact"
                           type="tel"
                           required
-                          value={formData.parentContact}
+                          value={formData.parent_contact}
                           onChange={handleChange}
-                          className={getInputClassName('parentContact')}
+                          className={getInputClassName('parent_contact')}
                           placeholder="0771234567"
                         />
-                        {formData.parentContact && (
+                        {formData.parent_contact && (
                           <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            {getInputState('parentContact') === 'valid' ? (
+                            {getInputState('parent_contact') === 'valid' ? (
                               <FaCheck className="text-green-500" />
-                            ) : getInputState('parentContact') === 'invalid' ? (
+                            ) : getInputState('parent_contact') === 'invalid' ? (
                               <FaTimes className="text-red-500" />
                             ) : null}
                           </div>
                         )}
                       </div>
-                      {fieldErrors.parentContact && (
+                      {fieldErrors.parent_contact && (
                         <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
                           <FaTimes className="flex-shrink-0" />
-                          {fieldErrors.parentContact}
+                          {fieldErrors.parent_contact}
                         </p>
                       )}
                     </div>
-                  </div>
-
-                  <div>
-                    <label htmlFor="language" className="block text-sm font-medium text-gray-700 mb-2">
-                      Preferred Language <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="language"
-                      name="language"
-                      required
-                      value={formData.language}
-                      onChange={handleChange}
-                      className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-gray-900 focus:border-transparent"
-                    >
-                      <option value="">Select Language</option>
-                      <option value="Sinhala">Sinhala</option>
-                      <option value="English">English</option>
-                      <option value="Tamil">Tamil</option>
-                    </select>
-                    {fieldErrors.language && (
-                      <p className="mt-1 text-sm text-red-600 flex items-center gap-1">
-                        <FaTimes className="flex-shrink-0" />
-                        {fieldErrors.language}
-                      </p>
-                    )}
                   </div>
                 </div>
               )}
@@ -1351,7 +1274,7 @@ const Register = () => {
               <p className="text-sm text-gray-600">
                 Already have an account?{' '}
                 <Link 
-                  to={getAuthRoute('login', formData.role.toLowerCase())}
+                  to={getAuthRoute('login', formData.role)}
                   className="font-semibold text-gray-900 hover:text-gray-700 transition-colors"
                 >
                   Sign in instead
