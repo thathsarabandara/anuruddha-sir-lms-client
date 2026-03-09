@@ -33,8 +33,8 @@ const ResetPassword = () => {
       }
 
       try {
-        const response = await authAPI.verifyResetToken({ token });
-        if (response.data.valid) {
+        const response = await authAPI.verifyResetToken(token);
+        if (response.status === 200) {
           setTokenValid(true);
         } else {
           setTokenValid(false);
