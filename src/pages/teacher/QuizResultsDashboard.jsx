@@ -78,10 +78,53 @@ const QuizResultsDashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading results...</p>
+      <div className="p-8">
+        {/* Header Skeleton */}
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <div className="h-10 w-56 bg-gray-200 rounded-lg animate-pulse mb-3"></div>
+            <div className="h-4 w-80 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+          <div className="h-10 w-28 bg-gray-200 rounded-lg animate-pulse"></div>
+        </div>
+
+        {/* Stats Grid Skeleton */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-white border rounded-lg p-6">
+              <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mb-3"></div>
+              <div className="h-8 w-24 bg-gray-200 rounded-lg animate-pulse"></div>
+            </div>
+          ))}
+        </div>
+
+        {/* Filters Skeleton */}
+        <div className="bg-white border rounded-lg p-4 mb-6">
+          <div className="flex gap-3">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-10 w-32 bg-gray-200 rounded-lg animate-pulse"></div>
+            ))}
+          </div>
+        </div>
+
+        {/* Results Table Skeleton */}
+        <div className="bg-white border rounded-lg">
+          <div className="p-4 border-b">
+            <div className="flex gap-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+              ))}
+            </div>
+          </div>
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="p-4 border-b">
+              <div className="flex gap-4">
+                {[...Array(5)].map((_, j) => (
+                  <div key={j} className="h-4 w-24 bg-gray-200 rounded animate-pulse"></div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );
