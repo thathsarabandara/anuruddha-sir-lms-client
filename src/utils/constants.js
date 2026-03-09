@@ -17,8 +17,12 @@ export const API_ENDPOINTS = {
     FORGOT_PASSWORD: '/auth/forgot-password',
     VERIFY_RESET_TOKEN: '/auth/verify-reset-token',
     RESET_PASSWORD: '/auth/reset-password',
+    CHANGE_PASSWORD: '/auth/change-password',
+    REFRESH: '/auth/refresh',
+    LOGIN_HISTORY: '/auth/login-history',
     LOGOUT: '/auth/logout',
-    ME: '/auth/me',
+    ME: '/auth/verify-token',
+    VERIFY_EMAIL: '/auth/verify-email',
   },
   COURSES: '/courses',
   STUDENTS: '/students',
@@ -63,6 +67,7 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'lms_refresh_token',
   TOKEN_EXPIRY: 'lms_token_expiry',
   LOGIN_TIME: 'lms_login_time',
+  VERIFICATION_TOKEN: 'lms_verification_token',
 };
 
 // Route paths
@@ -164,11 +169,27 @@ export const getAuthRoute = (authType, role) => {
   }
 };
 
+// Helper function to normalize backend roles to frontend format
+// Backend returns: "student", "teacher", "admin", "superadmin" (lowercase, no underscore)
+// Frontend expects: "STUDENT", "TEACHER", "ADMIN", "SUPER_ADMIN", "DEVELOPER"
+export const normalizeRole = (backendRole) => {
+  if (!backendRole) return 'STUDENT';
+  
+  const normalizedRole = backendRole.toUpperCase();
+  
+  // Handle backend "superadmin" -> frontend "SUPER_ADMIN"
+  if (normalizedRole === 'SUPERADMIN') {
+    return 'SUPER_ADMIN';
+  }
+  
+  return normalizedRole;
+};
+
 // Helper function to get dashboard route by role
 export const getDashboardRoute = (role) => {
-  const roleUpperCase = role?.toUpperCase();
+  const normalizedRole = normalizeRole(role);
   
-  switch (roleUpperCase) {
+  switch (normalizedRole) {
     case ROLES.STUDENT:
       return ROUTES.STUDENT_DASHBOARD;
     case ROLES.TEACHER:
