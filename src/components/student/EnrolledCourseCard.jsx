@@ -53,7 +53,7 @@ const EnrolledCourseCard = ({ course }) => {
 
         <div className="flex gap-3">
           <button 
-            onClick={() => navigate(`/student/course/${course.id}`)}
+            onClick={() => navigate(`/student/course/${course.id}/learn`)}
             className="flex-1 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg transition-all">
             Continue Learning
           </button>
