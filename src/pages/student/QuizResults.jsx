@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaTimes, FaTrophy, FaClock, FaClipboardCheck, FaExclamationCircle } from 'react-icons/fa';
 import API from '../../api';
+import { getAbsoluteImageUrl } from '../../utils/helpers';
 
 const QuizResults = () => {
   const { quizId, attemptId } = useParams();
@@ -30,10 +31,37 @@ const QuizResults = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading results...</p>
+      <div className="p-8 min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+        {/* Header Skeleton */}
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-8">
+            <div className="h-10 w-64 bg-gray-200 rounded-lg animate-pulse mb-3"></div>
+            <div className="h-4 w-80 bg-gray-200 rounded animate-pulse"></div>
+          </div>
+
+          {/* Results Stats Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white border rounded-lg p-6">
+                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mb-3"></div>
+                <div className="h-8 w-24 bg-gray-200 rounded-lg animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Questions Skeleton */}
+          <div className="space-y-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white border rounded-lg p-6">
+                <div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse mb-4"></div>
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, j) => (
+                    <div key={j} className="h-4 w-full bg-gray-100 rounded animate-pulse"></div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -157,11 +185,11 @@ const QuizResults = () => {
                         {question.question_text}
                       </h3>
                     </div>
-                    {question.question_image && (
+                    {question.image && (
                       <img 
-                        src={question.question_image} 
+                        src={getAbsoluteImageUrl(question.image)} 
                         alt="Question" 
-                        className="max-w-md h-auto rounded-lg mt-2"
+                        className="max-w-md h-auto rounded-lg mt-2 border border-gray-200"
                       />
                     )}
                   </div>
