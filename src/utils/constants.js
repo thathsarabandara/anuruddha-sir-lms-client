@@ -79,24 +79,19 @@ export const ROUTES = {
   
   // Auth routes (role-based)
   LOGIN: '/login',
-  
   REGISTER: '/register',
-  
   VERIFY_OTP: '/verify-otp',
-
   RESEND_OTP: '/resend-otp',
-  
   FORGOT_PASSWORD: '/forgot-password',
-  
   RESET_PASSWORD: '/reset-password',
-
   VERIFY_TOKEN: '/verify-token',
-
   LOGOUT: '/logout',
-
   LOGIN_HISTORY: '/login-history',
-
   VERIFY_EMAIL: '/verify-email',
+  STUDENT_REGISTER: '/register?role=student',
+  STUDENT_LOGIN: '/login?role=student',
+  TEACHER_LOGIN: '/login?role=teacher',
+  TEACHER_REGISTER: '/register?role=teacher',
   
   // Student routes
   STUDENT_DASHBOARD: '/student/dashboard',
