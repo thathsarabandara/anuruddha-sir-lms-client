@@ -176,6 +176,7 @@ const ResetPassword = () => {
       await authAPI.resetPassword({
         token,
         password: formData.password,
+        confirm_password: formData.confirmPassword,
       });
 
       // Redirect to login with success message
