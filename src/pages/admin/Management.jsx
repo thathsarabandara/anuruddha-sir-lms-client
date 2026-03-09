@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FaBook, FaCalendar,  FaChartBar, FaCheckCircle, FaFilePdf, FaGraduationCap, FaTimes, FaUserGraduate } from 'react-icons/fa';
+import PulseLoader from '../../components/common/PulseLoader';
 
 const AdminManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
