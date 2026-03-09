@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getToken, clearAuthData } from '../utils/helpers';
+import { clearAuthData } from '../utils/helpers';
 import { API_ENDPOINTS } from '../utils/constants';
 
 // Create axios instance
@@ -9,17 +9,12 @@ const axiosInstance = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
-  withCredentials: true,
+  withCredentials: true, // CRITICAL: Enable automatic cookie sending
 });
 
-// Request interceptor - add token to requests
+// Request interceptor - handle FormData
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = getToken();
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-    
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
     }
