@@ -112,10 +112,43 @@ const GradeQuiz = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading reviews...</p>
+      <div className="p-8">
+        {/* Header Skeleton */}
+        <div className="mb-8">
+          <div className="h-10 w-56 bg-gray-200 rounded-lg animate-pulse mb-3"></div>
+          <div className="h-4 w-72 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+
+        {/* Progress Bar Skeleton */}
+        <div className="mb-8 bg-white rounded-lg border p-6">
+          <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-3"></div>
+          <div className="h-3 w-full bg-gray-200 rounded-full animate-pulse"></div>
+        </div>
+
+        {/* Review Card Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2">
+            <div className="bg-white rounded-lg border border-gray-200 p-8">
+              <div className="h-6 w-1/2 bg-gray-200 rounded-lg animate-pulse mb-6"></div>
+              <div className="space-y-4 mb-8">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                ))}
+              </div>
+              <div className="h-32 bg-gray-100 rounded-lg animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg border border-gray-200 p-4">
+                <div className="h-4 w-20 bg-gray-200 rounded animate-pulse mb-3"></div>
+                <div className="h-8 w-16 bg-gray-200 rounded-lg animate-pulse"></div>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
