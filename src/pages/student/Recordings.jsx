@@ -1,96 +1,87 @@
-import { useState } from 'react';
-import { FaBook, FaCalendar,  FaCheck, FaGraduationCap } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { FaBook, FaCalendar, FaCheck, FaGraduationCap, FaSearch, FaTimes } from 'react-icons/fa';
+import API from '../../api';
+import { studentRecordingAPI } from '../../api/recordingApi';
 
 const StudentRecordings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSubject, setFilterSubject] = useState('all');
+  const [recordings, setRecordings] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [subjects, setSubjects] = useState([]);
 
-  const recordings = [
-    {
-      id: 1,
-      title: 'Mathematics - Chapter 5: Fractions',
-      subject: 'Mathematics',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 15, 2025',
-      duration: '1:28:45',
-      views: 156,
-      watched: true,
-      watchProgress: 100,
-      thumbnail: 'bg-green-600',
-      description: 'Complete lesson on fractions, addition and subtraction',
-    },
-    {
-      id: 2,
-      title: 'Sinhala - Essay Writing Techniques',
-      subject: 'Sinhala',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 13, 2025',
-      duration: '1:15:30',
-      views: 142,
-      watched: true,
-      watchProgress: 65,
-      thumbnail: 'bg-purple-600',
-      description: 'How to write compelling essays for Grade 5',
-    },
-    {
-      id: 3,
-      title: 'Mathematics - Chapter 4: Multiplication',
-      subject: 'Mathematics',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 11, 2025',
-      duration: '1:35:20',
-      views: 178,
-      watched: false,
-      watchProgress: 0,
-      thumbnail: 'bg-green-600',
-      description: 'Advanced multiplication techniques and shortcuts',
-    },
-    {
-      id: 4,
-      title: 'Environment - Ecosystem Balance',
-      subject: 'Environment',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 10, 2025',
-      duration: '1:20:15',
-      views: 134,
-      watched: true,
-      watchProgress: 45,
-      thumbnail: 'bg-yellow-600',
-      description: 'Understanding food chains and natural balance',
-    },
-    {
-      id: 5,
-      title: 'English - Grammar Basics',
-      subject: 'English',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 8, 2025',
-      duration: '1:10:00',
-      views: 98,
-      watched: false,
-      watchProgress: 0,
-      thumbnail: 'bg-red-600',
-      description: 'Essential grammar rules for scholarship exam',
-    },
-    {
-      id: 6,
-      title: 'Sinhala - Poetry Analysis',
-      subject: 'Sinhala',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 6, 2025',
-      duration: '1:05:45',
-      views: 125,
-      watched: false,
-      watchProgress: 0,
-      thumbnail: 'bg-purple-600',
-      description: 'Analyzing classical Sinhala poetry',
-    },
-  ];
+  useEffect(() => {
+    fetchStudentData();
+  }, []);
 
-  const filteredRecordings = recordings.filter(
-    (rec) =>
-      (filterSubject === 'all' || rec.subject === filterSubject) &&
-      rec.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const fetchStudentData = async () => {
+    setLoading(true);
+    try {
+      // Fetch enrolled courses
+      const coursesRes = await API.quiz.getStudentCourses();
+      const enrolledCourses = coursesRes.data.courses || [];
+      setCourses(enrolledCourses);
+      
+      // Extract unique subjects from courses
+      const uniqueSubjects = [...new Set(enrolledCourses.map(course => course.title))];
+      setSubjects(uniqueSubjects);
+
+      // Fetch recordings for enrolled courses using the new endpoint
+      const recordingsRes = await studentRecordingAPI.getStudentRecordings('');
+      const fetchedRecordings = recordingsRes.data.recordings || [];
+      
+      setRecordings(fetchedRecordings);
+    } catch (error) {
+      console.error('Error fetching student data:', error);
+      // Fallback to empty state if API fails
+      setRecordings([]);
+      setCourses([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredRecordings = recordings.filter((rec) => {
+    const matchesSearch = rec.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (rec.description && rec.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (rec.course_title && rec.course_title.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesSubject = filterSubject === 'all' || 
+      (rec.course_title && rec.course_title === filterSubject) ||
+      (rec.subject && rec.subject === filterSubject);
+    
+    return matchesSearch && matchesSubject;
+  });
+
+  const getThumbnailColor = (index) => {
+    const colors = ['bg-green-600', 'bg-purple-600', 'bg-yellow-600', 'bg-red-600', 'bg-blue-600', 'bg-indigo-600'];
+    return colors[index % colors.length];
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const formatDuration = (seconds) => {
+    if (!seconds) return '0:00';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${minutes}:${String(secs).padStart(2, '0')}`;
+  };
 
   return (
     <div className="p-8">
@@ -117,32 +108,41 @@ const StudentRecordings = () => {
         <div className="card">
           <div className="text-sm text-gray-600 mb-1">Watched</div>
           <div className="text-2xl font-bold text-green-600">
-            {recordings.filter((r) => r.watched).length}
+            {recordings.filter((r) => r.is_watched).length}
           </div>
         </div>
         <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Watch Time</div>
-          <div className="text-2xl font-bold text-primary-600">24.5 hrs</div>
+          <div className="text-sm text-gray-600 mb-1">From Enrolled Courses</div>
+          <div className="text-2xl font-bold text-primary-600">{courses.length}</div>
         </div>
         <div className="card">
-          <div className="text-sm text-gray-600 mb-1">This Month</div>
-          <div className="text-2xl font-bold text-gray-900">12 Videos</div>
+          <div className="text-sm text-gray-600 mb-1">Available Recordings</div>
+          <div className="text-2xl font-bold text-gray-900">{filteredRecordings.length}</div>
         </div>
       </div>
 
       {/* Search and Filter */}
       <div className="card mb-6">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 md:space-x-4">
-          <div className="flex-1">
+          <div className="flex-1 relative">
+            <FaSearch className="absolute left-3 top-3 text-gray-400" />
             <input
               type="text"
-              placeholder="Search recordings..."
+              placeholder="Search recordings by title, course..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field w-full"
+              className="input-field w-full pl-10 pr-10"
             />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+              >
+                <FaTimes />
+              </button>
+            )}
           </div>
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 flex-wrap gap-2">
             <button
               onClick={() => setFilterSubject('all')}
               className={`px-4 py-2 rounded-lg font-medium transition-colors ${
@@ -153,67 +153,51 @@ const StudentRecordings = () => {
             >
               All
             </button>
-            <button
-              onClick={() => setFilterSubject('Mathematics')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterSubject === 'Mathematics'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Maths
-            </button>
-            <button
-              onClick={() => setFilterSubject('Sinhala')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterSubject === 'Sinhala'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Sinhala
-            </button>
-            <button
-              onClick={() => setFilterSubject('Environment')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterSubject === 'Environment'
-                  ? 'bg-yellow-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Environment
-            </button>
-            <button
-              onClick={() => setFilterSubject('English')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterSubject === 'English'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              English
-            </button>
+            {subjects.length > 0 ? (
+              subjects.map((subject, index) => (
+                <button
+                  key={subject}
+                  onClick={() => setFilterSubject(subject)}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
+                    filterSubject === subject
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {subject.length > 15 ? subject.substring(0, 15) + '...' : subject}
+                </button>
+              ))
+            ) : (
+              <span className="text-gray-500 px-4 py-2">No courses available</span>
+            )}
           </div>
         </div>
       </div>
 
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading recordings...</p>
+        </div>
+      ) : (
+      <div>
       {/* Recordings Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredRecordings.map((recording) => (
+        {filteredRecordings.map((recording, index) => (
           <div key={recording.id} className="card hover:shadow-lg transition-shadow">
             {/* Thumbnail */}
-            <div className={`${recording.thumbnail} text-white p-8 -m-6 mb-4 rounded-t-xl relative`}>
+            <div className={`${getThumbnailColor(index)} text-white p-8 -m-6 mb-4 rounded-t-xl relative`}>
               <div className="flex items-center justify-center h-32">
                 <div className="text-6xl">▶️</div>
               </div>
               <div className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-sm">
-                {recording.duration}
+                {formatDuration(recording.duration)}
               </div>
-              {recording.watched && recording.watchProgress > 0 && (
+              {recording.is_watched && recording.watch_progress > 0 && (
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
                   <div
                     className="h-1 bg-white"
-                    style={{ width: `${recording.watchProgress}%` }}
+                    style={{ width: `${recording.watch_progress}%` }}
                   />
                 </div>
               )}
@@ -234,27 +218,27 @@ const StudentRecordings = () => {
               </div>
 
               <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>📅 {recording.date}</span>
-                <span>👁️ {recording.views} views</span>
+                <span>📅 {formatDate(recording.created_at || recording.date)}</span>
+                <span>👁️ {recording.views || 0} views</span>
               </div>
 
-              {recording.watched && recording.watchProgress > 0 && recording.watchProgress < 100 && (
+              {recording.is_watched && recording.watch_progress > 0 && recording.watch_progress < 100 && (
                 <div className="flex items-center space-x-2 text-sm">
                   <div className="flex-1 bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-primary-600 h-2 rounded-full"
-                      style={{ width: `${recording.watchProgress}%` }}
+                      style={{ width: `${recording.watch_progress}%` }}
                     />
                   </div>
-                  <span className="text-gray-600 font-medium">{recording.watchProgress}%</span>
+                  <span className="text-gray-600 font-medium">{recording.watch_progress}%</span>
                 </div>
               )}
 
               <div className="flex space-x-2 pt-2">
                 <button className="flex-1 btn-primary text-sm py-2">
-                  {recording.watched && recording.watchProgress > 0 && recording.watchProgress < 100
+                  {recording.is_watched && recording.watch_progress > 0 && recording.watch_progress < 100
                     ? 'Continue Watching'
-                    : recording.watched && recording.watchProgress === 100
+                    : recording.is_watched && recording.watch_progress === 100
                     ? 'Watch Again'
                     : 'Watch Now'}
                 </button>
@@ -263,10 +247,10 @@ const StudentRecordings = () => {
                 </button>
               </div>
 
-              {recording.watched && (
+              {recording.is_watched && (
                 <div className="flex items-center text-xs text-green-600">
                   <FaCheck className="mr-1" />
-                  Watched {recording.watchProgress === 100 ? 'completely' : 'partially'}
+                  Watched {recording.watch_progress === 100 ? 'completely' : 'partially'}
                 </div>
               )}
             </div>
@@ -280,6 +264,8 @@ const StudentRecordings = () => {
           <h3 className="text-xl font-bold text-gray-900 mb-2">No recordings found</h3>
           <p className="text-gray-600">Try adjusting your search or filter</p>
         </div>
+      )}
+      </div>
       )}
     </div>
   );
