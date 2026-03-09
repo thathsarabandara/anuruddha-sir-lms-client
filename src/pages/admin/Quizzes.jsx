@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FaBook, FaCalendar,  FaChartBar, FaCheck, FaCheckCircle, FaFilePdf, FaTimes } from 'react-icons/fa';
+import PulseLoader from '../../components/common/PulseLoader';
 
 const AdminQuizzes = () => {
   const [filterStatus, setFilterStatus] = useState('all');
