@@ -105,6 +105,11 @@ function App() {
       
       <Routes>
         <Route element={<PublicLayout />}>
+          <Route path={ROUTES.LOGIN} element={<Login />} />
+          <Route path={ROUTES.REGISTER} element={<Register />} />
+          <Route path={ROUTES.VERIFY_OTP} element={<VerifyOTP />} />
+          <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
+          <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
           <Route path={ROUTES.HOME} element={<Home />} />
           <Route path={ROUTES.ABOUT} element={<About />} />
           <Route path={ROUTES.COURSES} element={<Courses />} />
@@ -114,40 +119,7 @@ function App() {
           <Route path={ROUTES.FAQ} element={<FAQ />} />
           <Route path={ROUTES.GALLERY} element={<Gallery />} />
         </Route>
-
-        <Route
-          path={ROUTES.LOGIN}
-          element={
-            <PublicRoute>
-              <Login />
-            </PublicRoute>
-          }
-        />
-        <Route
-          path={ROUTES.REGISTER}
-          element={
-            <PublicRoute>
-              <Register />
-            </PublicRoute>
-          }
-        />
-        <Route 
-          path={ROUTES.VERIFY_OTP} 
-          element={
-            <PublicRoute>
-              <VerifyOTP />
-            </PublicRoute>
-          } 
-        />
-        <Route 
-          path={ROUTES.FORGOT_PASSWORD} 
-          element={<ForgotPassword />} 
-        />
-        <Route 
-          path={ROUTES.RESET_PASSWORD} 
-          element={<ResetPassword />} 
-        />
-
+        
         <Route
           element={
             <ProtectedRoute allowedRoles={[ROLES.STUDENT]}>
