@@ -4,6 +4,7 @@ import { CgSandClock } from 'react-icons/cg';
 import { BiLoader } from 'react-icons/bi';
 import { toast } from 'react-toastify';
 import { teachersAPI } from '../../api';
+import PulseLoader from '../../components/common/PulseLoader';
 
 const AdminTeachers = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -329,10 +330,15 @@ const AdminTeachers = () => {
 
   const statsDisplay = [
     { label: 'Total Teachers', value: stats.total_teachers, icon: FaBook, color: 'bg-blue-100 text-blue-700', borderColor: 'border-blue-500' },
-    { label: 'Active Teachers', value: stats.active_teachers, icon: FaCheckCircle, color: 'bg-green-100 text-green-700', borderColor: 'border-green-500' },
+    { label: 'Active Teachers', value: stats.approved_teachers, icon: FaCheckCircle, color: 'bg-green-100 text-green-700', borderColor: 'border-green-500' },
     { label: 'Pending Approval', value: stats.pending_teachers, icon: CgSandClock, color: 'bg-yellow-100 text-yellow-700', borderColor: 'border-yellow-500' },
     { label: 'Suspended', value: stats.suspended_teachers, icon: FaExclamationTriangle, color: 'bg-red-100 text-red-700', borderColor: 'border-red-500' },
   ];
+
+  // Loading state
+  if (loading) {
+    return <PulseLoader />;
+  }
 
   return (
     <div className="p-8">
