@@ -5,6 +5,7 @@ import API from '../../api';
 import QuestionModal from '../../components/teacher/QuestionModal';
 import Notification from '../../components/common/Notification';
 import { BiLoader } from 'react-icons/bi';
+import { getAbsoluteImageUrl } from '../../utils/helpers';
 
 const ManageQuestions = () => {
   const { quizId } = useParams();
@@ -146,10 +147,42 @@ const ManageQuestions = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-full">
-          <BiLoader className="animate-spin text-4xl text-primary-600" />
-          <span className="ml-3 text-gray-600">Loading Questions...</span>
+      <div className="p-8">
+        {/* Header Skeleton */}
+        <div className="mb-8">
+          <div className="h-10 w-64 bg-gray-200 rounded-lg animate-pulse mb-3"></div>
+          <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
         </div>
+
+        {/* Tabs Skeleton */}
+        <div className="flex gap-4 mb-6 border-b border-gray-200 pb-4">
+          {[...Array(2)].map((_, idx) => (
+            <div key={idx} className="h-10 w-40 bg-gray-200 rounded-lg animate-pulse"></div>
+          ))}
+        </div>
+
+        {/* Questions List Skeleton */}
+        <div className="space-y-4">
+          {[...Array(5)].map((_, idx) => (
+            <div key={idx} className="bg-white rounded-lg border border-gray-200 p-6">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="h-6 w-3/4 bg-gray-200 rounded-lg animate-pulse mb-3"></div>
+                  <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse mb-3"></div>
+                  <div className="flex gap-2">
+                    <div className="h-6 w-20 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="h-6 w-20 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </div>
+                <div className="flex gap-2 flex-shrink-0">
+                  <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                  <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     );
   }
 
@@ -345,11 +378,11 @@ const ManageQuestions = () => {
                   </div>
 
                   {/* Question Image */}
-                  {question.question_image && (
+                  {question.image && (
                     <img 
-                      src={question.question_image} 
+                      src={getAbsoluteImageUrl(question.image)} 
                       alt="Question" 
-                      className="max-w-md h-auto rounded-lg mb-3"
+                      className="max-w-md h-auto rounded-lg mb-3 border border-gray-200"
                     />
                   )}
 
