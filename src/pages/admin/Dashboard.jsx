@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { FaBook,  FaChartBar, FaCheckCircle, FaCreditCard, FaFilePdf, FaFileVideo, FaGraduationCap, FaTrophy, FaUserGraduate, FaSpinner } from 'react-icons/fa';
 import { adminCourseAPI } from '../../api/courseApi';
+import PulseLoader from '../../components/common/PulseLoader';
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState([]);
@@ -89,14 +90,7 @@ const AdminDashboard = () => {
 
   // Loading state
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 lg:p-8 flex items-center justify-center">
-        <div className="text-center">
-          <FaSpinner className="text-5xl text-blue-600 animate-spin mx-auto mb-4" />
-          <p className="text-xl text-slate-600">Loading dashboard...</p>
-        </div>
-      </div>
-    );
+    return <PulseLoader />;
   }
 
   // Error state
