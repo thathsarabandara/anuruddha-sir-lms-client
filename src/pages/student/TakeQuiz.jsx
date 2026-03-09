@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaClock, FaCheck, FaExclamationTriangle, FaSave, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import API from '../../api';
+import { getAbsoluteImageUrl } from '../../utils/helpers';
 
 const TakeQuiz = () => {
   const { quizId } = useParams();
@@ -203,10 +204,42 @@ const TakeQuiz = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading quiz...</p>
+      <div className="p-8">
+        {/* Header Skeleton */}
+        <div className="mb-8">
+          <div className="h-10 w-72 bg-gray-200 rounded-lg animate-pulse mb-3"></div>
+          <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
+        </div>
+
+        {/* Quiz Info Skeleton */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <div className="lg:col-span-2">
+            <div className="bg-white border rounded-lg p-6 mb-6">
+              <div className="h-6 w-1/2 bg-gray-200 rounded-lg animate-pulse mb-4"></div>
+              <div className="space-y-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="p-4 border rounded-lg">
+                    <div className="h-4 w-3/4 bg-gray-200 rounded animate-pulse mb-2"></div>
+                    <div className="space-y-2">
+                      {[...Array(3)].map((_, j) => (
+                        <div key={j} className="h-3 w-full bg-gray-100 rounded animate-pulse"></div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+          <div>
+            <div className="bg-white border rounded-lg p-6 sticky top-6">
+              <div className="h-6 w-24 bg-gray-200 rounded animate-pulse mb-4"></div>
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="h-4 bg-gray-200 rounded animate-pulse"></div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -294,11 +327,11 @@ const TakeQuiz = () => {
               </span>
             </div>
             
-            {currentQuestion.question_image && (
+            {currentQuestion.image && (
               <img 
-                src={currentQuestion.question_image} 
+                src={getAbsoluteImageUrl(currentQuestion.image)} 
                 alt="Question" 
-                className="max-w-full h-auto rounded-lg mb-4"
+                className="max-w-full h-auto rounded-lg mb-4 border border-gray-200"
               />
             )}
           </div>
