@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FaChartBar, FaGraduationCap, FaUserGraduate } from 'react-icons/fa';
+import PulseLoader from '../../components/common/PulseLoader';
 
 const AdminReports = () => {
   const [reportType, setReportType] = useState('overview');
