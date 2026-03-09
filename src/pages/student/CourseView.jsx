@@ -11,6 +11,8 @@ import {
   FaVideo,
   FaLock
 } from 'react-icons/fa';
+import ReviewForm from '../../components/common/ReviewForm';
+import ReviewsList from '../../components/common/ReviewsList';
 
 const CourseView = () => {
   const { courseId } = useParams();
@@ -164,7 +166,7 @@ const CourseView = () => {
       <div className="max-w-6xl mx-auto px-6 lg:px-8 py-12">
         {/* Tabs */}
         <div className="flex gap-4 mb-8 border-b border-slate-200">
-          {['curriculum', 'overview', 'resources'].map(tab => (
+          {['curriculum', 'overview', 'resources', 'reviews'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -351,6 +353,17 @@ const CourseView = () => {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Reviews Tab */}
+        {activeTab === 'reviews' && (
+          <div className="max-w-4xl space-y-8">
+            {/* Review Form */}
+            <ReviewForm courseId={courseId} onReviewSubmitted={() => window.location.reload()} />
+
+            {/* Reviews List */}
+            <ReviewsList courseId={courseId} isStudent={true} />
           </div>
         )}
       </div>
