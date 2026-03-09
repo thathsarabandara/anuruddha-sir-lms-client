@@ -134,3 +134,15 @@ export const getRoleDisplayName = (role) => {
   };
   return roleNames[role] || role;
 };
+
+export const getAbsoluteImageUrl = (imagePath) => {
+  if (!imagePath) return null;
+  if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+    return imagePath;
+  }
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+  const domain = apiBaseUrl.split('/api')[0];
+  const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
+  return `${domain}/${cleanPath}`;
+};
+
