@@ -1,6 +1,7 @@
 import axiosInstance from './axios';
 import { API_ENDPOINTS } from '../utils/constants';
 import quizAPI from './quizApi';
+import recordingApi from './recordingApi';
 
 // Auth API calls
 export const authAPI = {
@@ -71,6 +72,17 @@ export const paymentsAPI = {
   verify: (id) => axiosInstance.post(`${API_ENDPOINTS.PAYMENTS}/${id}/verify`),
 };
 
+// Admin Payments API
+export const adminPaymentsAPI = {
+  getStats: () => axiosInstance.get('/payments/admin/payments/stats/'),
+  getAll: (params) => axiosInstance.get('/payments/admin/payments/', { params }),
+  getById: (id) => axiosInstance.get(`/payments/admin/payments/${id}/`),
+  approve: (id, notes = '') => axiosInstance.post(`/payments/admin/payments/${id}/approve/`, { notes }),
+  reject: (id, reason) => axiosInstance.post(`/payments/admin/payments/${id}/reject/`, { reason }),
+  getBankSlips: (params) => axiosInstance.get('/payments/admin/bank-slips/', { params }),
+  getAnalytics: (days = 30) => axiosInstance.get('/payments/admin/payments/analytics/', { params: { days } }),
+};
+
 // Recordings API
 export const recordingsAPI = {
   getAll: (params) => axiosInstance.get(API_ENDPOINTS.RECORDINGS, { params }),
@@ -80,10 +92,41 @@ export const recordingsAPI = {
 };
 
 // Rewards API
-export const rewardsAPI = {
-  getBalance: () => axiosInstance.get(`${API_ENDPOINTS.REWARDS}/balance`),
-  getHistory: (params) => axiosInstance.get(`${API_ENDPOINTS.REWARDS}/history`, { params }),
-  assign: (data) => axiosInstance.post(`${API_ENDPOINTS.REWARDS}/assign`, data),
+export const studentRewardsAPI = {
+  getGems: () => axiosInstance.get(API_ENDPOINTS.REWARDS_ENDPOINTS.STUDENT.GEMS),
+  getTransactions: (params) => axiosInstance.get(API_ENDPOINTS.REWARDS_ENDPOINTS.STUDENT.TRANSACTIONS, { params }),
+  getStudentCoupons: () => axiosInstance.get(API_ENDPOINTS.REWARDS_ENDPOINTS.STUDENT.COUPONS),
+};
+
+// Rewards API
+export const teacherRewardsAPI = {
+  getPendingRewards: (params) => axiosInstance.get(API_ENDPOINTS.REWARDS_ENDPOINTS.TEACHER.PENDING, { params }),
+  approveReward: (data) => axiosInstance.post(API_ENDPOINTS.REWARDS_ENDPOINTS.TEACHER.APPROVE, data),
+  rejectReward: (data) => axiosInstance.post(API_ENDPOINTS.REWARDS_ENDPOINTS.TEACHER.REJECT, data),
+};
+
+// Rewards API
+export const adminRewardsAPI = {
+  sendReward: (data) => axiosInstance.post(API_ENDPOINTS.REWARDS_ENDPOINTS.ADMIN.SEND_REWARD, data),
+  createCoupon: (data) => axiosInstance.post(API_ENDPOINTS.REWARDS_ENDPOINTS.ADMIN.CREATE_COUPON, data),
+  deductGems: (data) => axiosInstance.post(API_ENDPOINTS.REWARDS_ENDPOINTS.ADMIN.DEDUCT_GEMS, data),
+};
+
+// Rewards API - Coupon endpoints
+export const couponAPI = {
+  createCoupon: (data) => axiosInstance.post(API_ENDPOINTS.REWARDS_ENDPOINTS.COUPON.CREATE, data),
+  useCoupon: (data) => axiosInstance.post(API_ENDPOINTS.REWARDS_ENDPOINTS.COUPON.USE, data),
+  getAllCoupons: (params) => axiosInstance.get(API_ENDPOINTS.REWARDS_ENDPOINTS.COUPON.ALL, { params }),
+};
+
+// Rewards API - Approval endpoints
+export const rewardApprovalAPI = {
+  requestReward: (data) => axiosInstance.post(API_ENDPOINTS.REWARDS_ENDPOINTS.REQUEST, data),
+};
+
+// Rewards API - Public endpoints
+export const leaderboardAPI = {
+  getLeaderboard: (params) => axiosInstance.get(API_ENDPOINTS.REWARDS_ENDPOINTS.PUBLIC.LEADERBOARD, { params }),
 };
 
 // Notifications API
@@ -100,8 +143,14 @@ export default {
   teachers: teachersAPI,
   quizzes: quizzesAPI,
   payments: paymentsAPI,
+  adminPayments: adminPaymentsAPI,
   recordings: recordingsAPI,
-  rewards: rewardsAPI,
+  studentRewards: studentRewardsAPI,
+  teacherRewards: teacherRewardsAPI,
+  adminRewards: adminRewardsAPI,
+  coupon: couponAPI,
+  rewardApproval: rewardApprovalAPI,
+  leaderboard: leaderboardAPI,
   notifications: notificationsAPI,
   quiz: quizAPI,
 };
