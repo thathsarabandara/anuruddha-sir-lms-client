@@ -43,6 +43,7 @@ export const teacherCourseAPI = {
   getEnrolledStudents: (courseId) => axiosInstance.get(`${API_BASE_URL}courses/teacher/courses/${courseId}/students/`),
   getRevenueOverview: (params) => axiosInstance.get(`${API_BASE_URL}courses/teacher/revenue/`, { params }),
   getPayoutHistory: () => axiosInstance.get(`${API_BASE_URL}courses/teacher/payouts/`),
+  verifyQuizId: (data) => axiosInstance.post(`${API_BASE_URL}quiz/teacher/verify-quiz-id/`, data),
 };
 
 export const studentCourseAPI = {
@@ -50,18 +51,23 @@ export const studentCourseAPI = {
   getCourseDetails: (courseId) => axiosInstance.get(`${API_BASE_URL}courses/student/courses/${courseId}/`),
   enrollCourse: (courseId) => axiosInstance.post(`${API_BASE_URL}courses/student/courses/${courseId}/enroll/`),
   getEnrolledCourses: (params) => axiosInstance.get(`${API_BASE_URL}courses/student/enrolled-courses/`, { params }),
+  getZoomClasses: (params) => axiosInstance.get(`${API_BASE_URL}courses/student/zoom-classes/`, { params }),
   getLesson: (lessonId) => axiosInstance.get(`${API_BASE_URL}courses/student/lessons/${lessonId}/`),
   updateLessonProgress: (lessonId, progressData) => axiosInstance.post(`${API_BASE_URL}courses/student/lessons/${lessonId}/`, progressData),
   getQuiz: (quizId) => axiosInstance.get(`${API_BASE_URL}courses/student/quizzes/${quizId}/attempt/`),
   submitQuiz: (quizId, answers) => axiosInstance.post(`${API_BASE_URL}courses/student/quizzes/${quizId}/attempt/`, { answers }),
+  getQuizAttempts: (quizId) => axiosInstance.get(`${API_BASE_URL}courses/student/quizzes/${quizId}/attempts/`),
 };
 
 export const adminCourseAPI = {
+  getCourseStats: () => axiosInstance.get(`${API_BASE_URL}courses/admin/stats/`),
   getAllCourses: (params) => axiosInstance.get(`${API_BASE_URL}courses/admin/courses/`, { params }),
   approveCourse: (courseId, action) => axiosInstance.post(`${API_BASE_URL}courses/admin/courses/${courseId}/approve/`, { action }),
   featureCourse: (courseId, isFeatured) => axiosInstance.post(`${API_BASE_URL}courses/admin/courses/${courseId}/feature/`, { is_featured: isFeatured }),
   setCommission: (courseId, commissionPercentage) => axiosInstance.put(`${API_BASE_URL}courses/admin/courses/${courseId}/commission/`, { commission_percentage: commissionPercentage }),
-  getDashboardStats: () => axiosInstance.get(`${API_BASE_URL}courses/admin/dashboard/`),
+  toggleEnrollments: (courseId, enrollmentsEnabled) => axiosInstance.post(`${API_BASE_URL}courses/admin/courses/${courseId}/toggle-enrollments/`, { enrollments_enabled: enrollmentsEnabled }),
+  deleteCourse: (courseId) => axiosInstance.post(`${API_BASE_URL}courses/admin/courses/${courseId}/delete/`),
+  getDashboardStats: () => axiosInstance.get(`${API_BASE_URL}courses/admin/dashboard/stats/`),
 };
 
 export const utilityAPI = {
