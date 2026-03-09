@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaCheckCircle, FaExclamationTriangle, FaGraduationCap, FaTimes, FaUserGraduate, FaTimesCircle, FaClock, FaSearch, FaEye, FaCheck, FaBan, FaUndo, FaUserPlus, FaEdit, FaKey } from 'react-icons/fa';
 import { BiLoader } from 'react-icons/bi';
 import { studentsAPI } from '../../api';
+import PulseLoader from '../../components/common/PulseLoader';
 
 const AdminStudents = () => {
   const [students, setStudents] = useState([]);
@@ -362,6 +363,11 @@ const AdminStudents = () => {
       borderColor: 'border-red-500'
     },
   ];
+
+  // Loading state
+  if (loading) {
+    return <PulseLoader />;
+  }
 
   return (
     <div className="p-8">
