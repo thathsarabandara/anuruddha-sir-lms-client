@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FaFilePdf, FaGraduationCap, FaTimes, FaTrophy } from 'react-icons/fa';
+import PulseLoader from '../../components/common/PulseLoader';
 
 const AdminCertificates = () => {
   const [filterType, setFilterType] = useState('all');
