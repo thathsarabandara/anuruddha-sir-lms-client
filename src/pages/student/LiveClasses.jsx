@@ -1,6 +1,7 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { FaBook, FaCalendar, FaCheck, FaClock, FaFileVideo, FaUsers, FaVideo, FaSearch, FaFilter, FaTimes, FaGraduationCap } from 'react-icons/fa';
 import { GoDotFill } from 'react-icons/go';
+import { studentCourseAPI } from '../../api/courseApi';
 
 const StudentLiveClasses = () => {
   const [filter, setFilter] = useState('upcoming');
@@ -8,87 +9,47 @@ const StudentLiveClasses = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [selectedSubjects, setSelectedSubjects] = useState([]);
   const [selectedStatus, setSelectedStatus] = useState([]);
+  
+  // Data loading states
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [upcomingClasses, setUpcomingClasses] = useState([]);
+  const [completedClasses, setCompletedClasses] = useState([]);
 
-  const upcomingClasses = useMemo(() => [
-    {
-      id: 1,
-      title: 'Mathematics - Chapter 5',
-      subject: 'Mathematics',
-      instructor: 'Anuruddha Sir',
-      date: 'Today',
-      time: '4:00 PM - 5:30 PM',
-      duration: '1.5 hours',
-      zoomLink: 'https://zoom.us/j/12345',
-      status: 'starting-soon',
-      attendees: 45,
-      color: 'bg-green-600',
-    },
-    {
-      id: 2,
-      title: 'Sinhala Language - Grammar',
-      subject: 'Sinhala',
-      instructor: 'Anuruddha Sir',
-      date: 'Tomorrow',
-      time: '3:00 PM - 4:30 PM',
-      duration: '1.5 hours',
-      zoomLink: 'https://zoom.us/j/12346',
-      status: 'scheduled',
-      attendees: 38,
-      color: 'bg-purple-600',
-    },
-    {
-      id: 3,
-      title: 'Environment Studies - Unit 3',
-      subject: 'Environment',
-      instructor: 'Anuruddha Sir',
-      date: 'Friday, Dec 20',
-      time: '2:00 PM - 3:30 PM',
-      duration: '1.5 hours',
-      zoomLink: 'https://zoom.us/j/12347',
-      status: 'scheduled',
-      attendees: 42,
-      color: 'bg-yellow-600',
-    },
-  ], []);
-
-  const completedClasses = useMemo(() => [
-    {
-      id: 4,
-      title: 'Mathematics - Chapter 4',
-      subject: 'Mathematics',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 15, 2025',
-      time: '4:00 PM - 5:30 PM',
-      duration: '1.5 hours',
-      attended: true,
-      recordingAvailable: true,
-      color: 'bg-green-600',
-    },
-    {
-      id: 5,
-      title: 'Sinhala - Essay Writing',
-      subject: 'Sinhala',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 13, 2025',
-      time: '3:00 PM - 4:30 PM',
-      duration: '1.5 hours',
-      attended: true,
-      recordingAvailable: true,
-      color: 'bg-purple-600',
-    },
-    {
-      id: 6,
-      title: 'Mathematics - Chapter 3',
-      subject: 'Mathematics',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 11, 2025',
-      time: '4:00 PM - 5:30 PM',
-      duration: '1.5 hours',
-      attended: false,
-      recordingAvailable: true,
-      color: 'bg-green-600',
-    }
-  ], []);
+  // Fetch zoom classes when component mounts
+  useEffect(() => {
+    const fetchZoomClasses = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await studentCourseAPI.getZoomClasses();
+        const zoomClasses = response.data?.zoom_classes || [];
+        
+        // Separate upcoming and completed classes
+        const upcoming = zoomClasses.filter(cls => {
+          const classDate = new Date(cls.date);
+          return classDate > new Date();
+        });
+        
+        const completed = zoomClasses.filter(cls => {
+          const classDate = new Date(cls.date);
+          return classDate <= new Date();
+        });
+        
+        setUpcomingClasses(upcoming);
+        setCompletedClasses(completed);
+        setSelectedStatus([]);
+      } catch (err) {
+        console.error('Error fetching zoom classes:', err);
+        setError('Failed to load live classes');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchZoomClasses();
+  }, []);
 
   // Filter logic
   const applyFilters = useCallback((classes) => {
@@ -96,24 +57,26 @@ const StudentLiveClasses = () => {
       // Search filter
       const matchesSearch = 
         classItem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        classItem.subject.toLowerCase().includes(searchQuery.toLowerCase());
+        classItem.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        classItem.instructor.toLowerCase().includes(searchQuery.toLowerCase());
 
       // Subject filter
       const matchesSubject = selectedSubjects.length === 0 || selectedSubjects.includes(classItem.subject);
 
-      // Status filter (only for upcoming)
-      const matchesStatus = selectedStatus.length === 0 || selectedStatus.includes(classItem.status);
-
-      return matchesSearch && matchesSubject && (filter === 'upcoming' ? matchesStatus : true);
+      return matchesSearch && matchesSubject;
     });
-  }, [searchQuery, selectedSubjects, selectedStatus, filter]);
+  }, [searchQuery, selectedSubjects]);
 
   const filteredUpcomingClasses = useMemo(() => applyFilters(upcomingClasses), [applyFilters, upcomingClasses]);
   const filteredCompletedClasses = useMemo(() => applyFilters(completedClasses), [applyFilters, completedClasses]);
 
   const displayClasses = filter === 'upcoming' ? filteredUpcomingClasses : filteredCompletedClasses;
-  const subjects = ['Mathematics', 'Sinhala', 'Environment', 'English', 'Tamil'];
-  const statuses = ['starting-soon', 'scheduled'];
+  
+  // Get unique subjects from classes
+  const subjects = useMemo(() => {
+    const allSubjects = new Set([...upcomingClasses, ...completedClasses].map(cls => cls.subject));
+    return Array.from(allSubjects).sort();
+  }, [upcomingClasses, completedClasses]);
 
   const handleSubjectToggle = (subject) => {
     setSelectedSubjects(prev => 
@@ -121,16 +84,9 @@ const StudentLiveClasses = () => {
     );
   };
 
-  const handleStatusToggle = (status) => {
-    setSelectedStatus(prev => 
-      prev.includes(status) ? prev.filter(s => s !== status) : [...prev, status]
-    );
-  };
-
   const handleResetFilters = () => {
     setSearchQuery('');
     setSelectedSubjects([]);
-    setSelectedStatus([]);
   };
 
   return (
@@ -150,27 +106,45 @@ const StudentLiveClasses = () => {
           </div>
         </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        {/* Error State */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <p className="text-slate-600 font-semibold">Loading live classes...</p>
+          </div>
+        )}
+
+        {!loading && (
+          <div className="max-w-7xl mx-auto">
+            {/* Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-sm text-slate-600 font-semibold mb-1">This Month</div>
-          <div className="text-3xl font-bold text-slate-900">12</div>
-          <p className="text-xs text-slate-500 mt-1">Classes</p>
+          <div className="text-sm text-slate-600 font-semibold mb-1">Total Classes</div>
+          <div className="text-3xl font-bold text-slate-900">{upcomingClasses.length + completedClasses.length}</div>
+          <p className="text-xs text-slate-500 mt-1">Enrolled</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="text-sm text-slate-600 font-semibold mb-1">Attended</div>
-          <div className="text-3xl font-bold text-green-600">10</div>
+          <div className="text-3xl font-bold text-green-600">{completedClasses.filter(c => c.attended).length}</div>
           <p className="text-xs text-slate-500 mt-1">Classes</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <div className="text-sm text-slate-600 font-semibold mb-1">Attendance Rate</div>
-          <div className="text-3xl font-bold text-blue-600">83%</div>
-          <p className="text-xs text-slate-500 mt-1">This month</p>
+          <div className="text-3xl font-bold text-blue-600">
+            {completedClasses.length > 0 ? Math.round((completedClasses.filter(c => c.attended).length / completedClasses.length) * 100) : 0}%
+          </div>
+          <p className="text-xs text-slate-500 mt-1">Overall</p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-sm text-slate-600 font-semibold mb-1">Next Class</div>
-          <div className="text-3xl font-bold text-purple-600">Today</div>
-          <p className="text-xs text-slate-500 mt-1">4:00 PM</p>
+          <div className="text-sm text-slate-600 font-semibold mb-1">Upcoming</div>
+          <div className="text-3xl font-bold text-purple-600">{upcomingClasses.length}</div>
+          <p className="text-xs text-slate-500 mt-1">Classes</p>
         </div>
       </div>
 
@@ -253,28 +227,6 @@ const StudentLiveClasses = () => {
                   ))}
                 </div>
               </div>
-
-              {/* Status Filter (for upcoming classes) */}
-              {filter === 'upcoming' && (
-                <div>
-                  <h6 className="font-bold text-slate-900 mb-3">Status</h6>
-                  <div className="space-y-2">
-                    {statuses.map(status => (
-                      <label key={status} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={selectedStatus.includes(status)}
-                          onChange={() => handleStatusToggle(status)}
-                          className="w-4 h-4 rounded border-slate-300 focus:ring-blue-500"
-                        />
-                        <span className="text-slate-700 capitalize">
-                          {status === 'starting-soon' ? 'Starting Soon' : 'Scheduled'}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         )}
@@ -299,16 +251,9 @@ const StudentLiveClasses = () => {
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     <h3 className="text-lg font-bold text-slate-900">{class_.title}</h3>
-                    {class_.status === 'starting-soon' && (
-                      <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-bold rounded-full flex items-center gap-1">
-                        <GoDotFill className='text-red-500 h-4 w-4' /> STARTING SOON
-                      </span>
-                    )}
-                    {class_.status === 'scheduled' && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-bold rounded-full flex items-center gap-1">
-                        <FaCalendar className='text-blue-500 h-3 w-3' /> SCHEDULED
-                      </span>
-                    )}
+                    <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-bold rounded-full flex items-center gap-1">
+                      <FaCalendar className='text-blue-500 h-3 w-3' /> SCHEDULED
+                    </span>
                   </div>
 
                   {/* Class Details Grid */}
@@ -323,7 +268,7 @@ const StudentLiveClasses = () => {
                     </div>
                     <div className="flex items-center gap-2 text-sm text-slate-600">
                       <FaCalendar className="flex-shrink-0" />
-                      <span>{class_.date}</span>
+                      <span>{new Date(class_.date).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-slate-600">
                       <FaClock className="flex-shrink-0" />
@@ -334,23 +279,32 @@ const StudentLiveClasses = () => {
                       <span>{class_.duration}</span>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <FaUsers className="flex-shrink-0" />
-                      <span>{class_.attendees} students enrolled</span>
+                      <FaBook className="flex-shrink-0" />
+                      <span>{class_.course_title}</span>
                     </div>
                   </div>
+                  {class_.description && (
+                    <p className="text-sm text-slate-600 mb-3">{class_.description}</p>
+                  )}
+                  {class_.zoom_link && (
+                    <div className="text-xs text-blue-600 break-all mb-3">
+                      <span className="font-semibold">Zoom Link:</span> {class_.zoom_link}
+                    </div>
+                  )}
                 </div>
 
                 {/* Actions */}
                 <div className="flex flex-col gap-2 w-full lg:w-auto">
-                  <button
-                    className={`px-6 py-2.5 rounded-lg font-bold transition-all whitespace-nowrap ${
-                      class_.status === 'starting-soon'
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'bg-blue-600 hover:bg-blue-700 text-white'
-                    }`}
-                  >
-                    {class_.status === 'starting-soon' ? '✓ Join Now' : '🔔 Set Reminder'}
-                  </button>
+                  {class_.zoom_link && (
+                    <a
+                      href={class_.zoom_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-6 py-2.5 rounded-lg font-bold transition-all whitespace-nowrap bg-green-600 hover:bg-green-700 text-white text-center"
+                    >
+                      ✓ Join Now
+                    </a>
+                  )}
                   <button className="px-6 py-2.5 border-2 border-slate-300 hover:bg-slate-50 rounded-lg font-semibold text-slate-700 transition-all">
                     Details
                   </button>
@@ -395,7 +349,7 @@ const StudentLiveClasses = () => {
                             ✗ MISSED
                           </span>
                         )}
-                        {class_.recordingAvailable && (
+                        {class_.recording_url && (
                           <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-bold rounded-full flex items-center gap-1">
                             <FaVideo className='text-blue-500 h-3 w-3' /> RECORDING
                           </span>
@@ -403,7 +357,7 @@ const StudentLiveClasses = () => {
                       </div>
 
                       {/* Class Details Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
                         <div className="flex items-center gap-2 text-sm text-slate-600">
                           <FaBook className="flex-shrink-0" />
                           <span className="font-semibold">{class_.subject}</span>
@@ -414,24 +368,36 @@ const StudentLiveClasses = () => {
                         </div>
                         <div className="flex items-center gap-2 text-sm text-slate-600">
                           <FaCalendar className="flex-shrink-0" />
-                          <span>{class_.date}</span>
+                          <span>{new Date(class_.date).toLocaleDateString()}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-slate-600">
                           <FaClock className="flex-shrink-0" />
                           <span>{class_.time}</span>
                         </div>
+                        <div className="flex items-center gap-2 text-sm text-slate-600">
+                          <FaBook className="flex-shrink-0" />
+                          <span>{class_.course_title}</span>
+                        </div>
                       </div>
+                      {class_.description && (
+                        <p className="text-sm text-slate-600 mb-3">{class_.description}</p>
+                      )}
                     </div>
 
                     {/* Actions */}
                     <div className="flex flex-col gap-2 w-full lg:w-auto">
-                      {class_.recordingAvailable && (
-                        <button className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all whitespace-nowrap">
+                      {class_.recording_url && (
+                        <a
+                          href={class_.recording_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all whitespace-nowrap text-center"
+                        >
                           <FaVideo className='inline-block mr-2 h-4 w-4' /> Watch Recording
-                        </button>
+                        </a>
                       )}
                       <button className="px-6 py-2.5 border-2 border-slate-300 hover:bg-slate-50 rounded-lg font-semibold text-slate-700 transition-all">
-                        Materials
+                        Details
                       </button>
                     </div>
                   </div>
@@ -446,9 +412,11 @@ const StudentLiveClasses = () => {
             </div>
           )}
         </div>
-      )}
+        )}
+          </div>
+        )}
     </div>
   );
-};
+}
 
 export default StudentLiveClasses;
