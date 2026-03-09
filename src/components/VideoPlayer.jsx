@@ -39,7 +39,6 @@ const VideoPlayer = ({ videoUrl, onProgress, onComplete, isCompleted }) => {
   ]);
   const [selectedQuality, setSelectedQuality] = useState('auto');
 
-  // Log video URL when it changes
   useEffect(() => {
     console.log('VideoPlayer received URL:', videoUrl);
     if (!videoUrl) {
@@ -47,7 +46,6 @@ const VideoPlayer = ({ videoUrl, onProgress, onComplete, isCompleted }) => {
     }
   }, [videoUrl]);
 
-  // Auto-hide controls
   useEffect(() => {
     const hideControls = () => {
       if (isPlaying) {
