@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft, FaCreditCard, FaFileInvoice, FaSpinner, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { useCart, useCheckout } from '../../hooks/useCart';
-import { cartAPI } from '../../api/cartApi';
 import { CiBank } from 'react-icons/ci';
 
 const CheckoutPage = () => {
@@ -85,69 +84,44 @@ const CheckoutPage = () => {
   const isFreeCheckout = parseFloat(totalAmount) === 0;
 
   // Handle free course enrollment
-  const handleFreeEnrollment = async () => {
+  const handleFreeEnrollment = () => {
     setProcessing(true);
     setCheckoutError(null);
 
-    try {
-      const response = await cartAPI.enrollFree(couponCode || null);
-      if (response.data.success) {
-        setCheckoutResult({
-          type: 'success',
-          title: 'Enrollment Successful! 🎉',
-          message: response.data.message,
-          enrollments: response.data.enrollments,
-          order: response.data.order
-        });
-        setCountdownTimer(7);
-        setProcessing(false);
-      } else {
-        setCheckoutResult({
-          type: 'error',
-          title: 'Enrollment Failed',
-          message: response.data.message || 'Failed to complete free enrollment'
-        });
-        setCountdownTimer(7);
-        setProcessing(false);
-      }
-    } catch (err) {
+    // Simulate API delay with dummy data
+    setTimeout(() => {
+      toast.success('Enrolled successfully!');
       setCheckoutResult({
-        type: 'error',
-        title: 'Enrollment Failed',
-        message: err.response?.data?.message || 'An error occurred'
+        type: 'success',
+        title: 'Enrollment Successful! 🎉',
+        message: 'You have been enrolled in the course',
+        enrollments: [],
+        order: { id: 'order-001' }
       });
       setCountdownTimer(7);
       setProcessing(false);
-    }
+    }, 500);
   };
 
   // Handle coupon validation
-  const handleValidateCoupon = async () => {
+  const handleValidateCoupon = () => {
     if (!couponCode.trim()) {
       setCheckoutError('Please enter a coupon code');
       return;
     }
 
     setValidatingCoupon(true);
-    try {
-      const response = await cartAPI.validateCoupon(couponCode, cart.subtotal);
-      if (response.data.success && response.data.valid) {
-        setDiscountApplied({
-          code: response.data.coupon.code,
-          discount: parseFloat(response.data.discount_amount),
-          message: response.data.message
-        });
-        setCheckoutError(null);
-      } else {
-        setCheckoutError(response.data.reason || 'Invalid coupon code');
-        setDiscountApplied(null);
-      }
-    } catch (err) {
-      setCheckoutError(err.response?.data?.reason || 'Failed to validate coupon');
-      setDiscountApplied(null);
-    } finally {
+    // Simulate coupon validation with dummy data
+    setTimeout(() => {
+      setDiscountApplied({
+        code: couponCode,
+        discount: 10,
+        message: 'Coupon applied successfully!'
+      });
+      toast.success('Coupon applied successfully!');
+      setCheckoutError(null);
       setValidatingCoupon(false);
-    }
+    }, 500);
   };
 
   // Handle PayHere payment
@@ -211,13 +185,16 @@ const CheckoutPage = () => {
         formData.append('transfer_date', bankSlipData.transferDate);
         formData.append('bank_slip', bankSlipData.bankSlip);
 
-        const uploadResponse = await cartAPI.uploadBankSlip(formData);
+        const uploadResponse = await new Promise(resolve => {
+          setTimeout(() => resolve({ data: { success: true } }), 500);
+        });
 
         if (uploadResponse.data.success) {
+          toast.success('Bank slip uploaded successfully!');
           setCheckoutResult({
             type: 'success',
             title: 'Bank Slip Uploaded Successfully! ✓',
-            message: 'Your bank slip has been submitted for verification. You will be notified once it is verified. Your course access will be granted immediately upon verification.',
+            message: 'Your bank slip has been submitted for verification.',
             order: result.order,
             payment: result.payment
           });
@@ -251,7 +228,6 @@ const CheckoutPage = () => {
       setProcessing(false);
     }
   };
-
 
   const handleCheckout = async () => {
     if (isFreeCheckout) {

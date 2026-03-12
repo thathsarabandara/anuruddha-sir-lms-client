@@ -1,18 +1,28 @@
 import { useState, useEffect } from 'react';
 import { FaCheckCircle, FaExclamationTriangle, FaGraduationCap, FaTimes, FaUserGraduate, FaTimesCircle, FaClock, FaSearch, FaEye, FaCheck, FaBan, FaUndo, FaUserPlus, FaEdit, FaKey } from 'react-icons/fa';
 import { BiLoader } from 'react-icons/bi';
-import { studentsAPI } from '../../api';
 import PulseLoader from '../../components/common/PulseLoader';
 
 const AdminStudents = () => {
-  const [students, setStudents] = useState([]);
-  const [stats, setStats] = useState({
-    total_students: 0,
-    approved_students: 0,
-    pending_students: 0,
-    rejected_students: 0,
-    suspended_students: 0,
-  });
+  // Dummy data
+  const dummyStudentsData = [
+    { id: 1, first_name: 'Alex', last_name: 'Johnson', email: 'alex.johnson@example.com', phone_number: '0771234567', status: 'approved', grade_level: '10', school: 'Colombo High School', courses: 3 },
+    { id: 2, first_name: 'Maria', last_name: 'Garcia', email: 'maria.g@example.com', phone_number: '0772345678', status: 'approved', grade_level: '9', school: 'Kandy Central School', courses: 2 },
+    { id: 3, first_name: 'James', last_name: 'Wilson', email: 'james.w@example.com', phone_number: '0773456789', status: 'pending', grade_level: '11', school: 'Galle District School', courses: 0 },
+    { id: 4, first_name: 'Sophia', last_name: 'Lee', email: 'sophia.l@example.com', phone_number: '0774567890', status: 'approved', grade_level: '8', school: 'Matara Academy', courses: 4 },
+    { id: 5, first_name: 'David', last_name: 'Martinez', email: 'david.m@example.com', phone_number: '0775678901', status: 'suspended', grade_level: '10', school: 'Colombo High School', courses: 1 },
+  ];
+
+  const dummyStats = {
+    total_students: 1250,
+    approved_students: 1200,
+    pending_students: 30,
+    rejected_students: 10,
+    suspended_students: 10,
+  };
+
+  const [students, setStudents] = useState(dummyStudentsData);
+  const [stats, setStats] = useState(dummyStats);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -20,7 +30,7 @@ const AdminStudents = () => {
   const [pagination, setPagination] = useState({
     current_page: 1,
     total_pages: 1,
-    total_count: 0,
+    total_count: 1250,
     page_size: 10,
     has_next: false,
     has_previous: false,
@@ -57,83 +67,32 @@ const AdminStudents = () => {
   const [success, setSuccess] = useState('');
 
   useEffect(() => {
-    fetchStats();
-    fetchStudents();
+    // No fetch needed with dummy data
   }, [currentPage, filterStatus]);
 
   useEffect(() => {
-    const delayDebounceFn = setTimeout(() => {
-      if (currentPage === 1) {
-        fetchStudents();
-      } else {
-        setCurrentPage(1);
-      }
-    }, 500);
-
-    return () => clearTimeout(delayDebounceFn);
+    // No search fetch needed with dummy data
   }, [searchTerm]);
 
   const fetchStats = async () => {
-    try {
-      const response = await studentsAPI.getStats();
-      setStats(response.data);
-    } catch (err) {
-      console.error('Error fetching stats:', err);
-    }
+    // Dummy stats already set
   };
 
   const fetchStudents = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      const params = {
-        page: currentPage,
-        page_size: 10,
-        search: searchTerm,
-        status: filterStatus,
-      };
-      const response = await studentsAPI.getAll(params);
-      setStudents(response.data.students);
-      setPagination(response.data.pagination);
-    } catch (err) {
-      setError(err.message || 'Failed to fetch students');
-      console.error('Error fetching students:', err);
-    } finally {
-      setLoading(false);
-    }
+    // Dummy data already set
   };
 
   const handleViewDetails = async (student) => {
-    setLoading(true);
-    try {
-      const response = await studentsAPI.getById(student.id);
-      setSelectedStudent(response.data.student);
-      setShowDetailsModal(true);
-    } catch (err) {
-      setError(err.message || 'Failed to fetch student details');
-    } finally {
-      setLoading(false);
-    }
+    setSelectedStudent(student);
+    setShowDetailsModal(true);
   };
 
   const handleApprove = async (studentId) => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    try {
-      await studentsAPI.approve(studentId);
-      setSuccess('Student approved successfully!');
-      fetchStats();
-      fetchStudents();
-      if (showDetailsModal) {
-        const response = await studentsAPI.getById(studentId);
-        setSelectedStudent(response.data.student);
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to approve student');
-    } finally {
-      setActionLoading(false);
-    }
+    setSuccess('Student approved successfully!');
+    setActionLoading(false);
   };
 
   const handleReject = async () => {
@@ -145,22 +104,10 @@ const AdminStudents = () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    try {
-      await studentsAPI.reject(selectedStudent.id, { reason: rejectReason });
-      setSuccess('Student rejected successfully!');
-      setShowRejectModal(false);
-      setRejectReason('');
-      fetchStats();
-      fetchStudents();
-      if (showDetailsModal) {
-        const response = await studentsAPI.getById(selectedStudent.id);
-        setSelectedStudent(response.data.student);
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to reject student');
-    } finally {
-      setActionLoading(false);
-    }
+    setSuccess('Student rejected successfully!');
+    setShowRejectModal(false);
+    setRejectReason('');
+    setActionLoading(false);
   };
 
   const handleSuspend = async () => {
@@ -172,42 +119,18 @@ const AdminStudents = () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    try {
-      await studentsAPI.suspend(selectedStudent.id, { reason: suspendReason });
-      setSuccess('Student suspended successfully!');
-      setShowSuspendModal(false);
-      setSuspendReason('');
-      fetchStats();
-      fetchStudents();
-      if (showDetailsModal) {
-        const response = await studentsAPI.getById(selectedStudent.id);
-        setSelectedStudent(response.data.student);
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to suspend student');
-    } finally {
-      setActionLoading(false);
-    }
+    setSuccess('Student suspended successfully!');
+    setShowSuspendModal(false);
+    setSuspendReason('');
+    setActionLoading(false);
   };
 
   const handleActivate = async (studentId) => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    try {
-      await studentsAPI.activate(studentId);
-      setSuccess('Student activated successfully!');
-      fetchStats();
-      fetchStudents();
-      if (showDetailsModal) {
-        const response = await studentsAPI.getById(studentId);
-        setSelectedStudent(response.data.student);
-      }
-    } catch (err) {
-      setError(err.message || 'Failed to activate student');
-    } finally {
-      setActionLoading(false);
-    }
+    setSuccess('Student activated successfully!');
+    setActionLoading(false);
   };
 
   const handleCreateStudent = async (e) => {
@@ -215,38 +138,22 @@ const AdminStudents = () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    try {
-      // Create FormData for file upload
-      const formData = new FormData();
-      Object.keys(createFormData).forEach(key => {
-        if (key !== 'profile_picture_preview' && createFormData[key]) {
-          formData.append(key, createFormData[key]);
-        }
-      });
-      
-      const response = await studentsAPI.create(formData);
-      setSuccess(`Student created successfully! Temporary password: ${response.data.temporary_password}`);
-      setShowCreateModal(false);
-      setCreateFormData({
-        first_name: '',
-        last_name: '',
-        email: '',
-        phone_number: '',
-        date_of_birth: '',
-        grade_level: '',
-        school: '',
-        address: '',
-        parent_name: '',
-        parent_contact: '',
-        language: 'English',
-      });
-      fetchStats();
-      fetchStudents();
-    } catch (err) {
-      setError(err.message || 'Failed to create student');
-    } finally {
-      setActionLoading(false);
-    }
+    setSuccess(`Student created successfully! Temporary password: TempPass123`);
+    setShowCreateModal(false);
+    setCreateFormData({
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone_number: '',
+      date_of_birth: '',
+      grade_level: '',
+      school: '',
+      address: '',
+      parent_name: '',
+      parent_contact: '',
+      language: 'English',
+    });
+    setActionLoading(false);
   };
 
   const handleEditStudent = async (e) => {

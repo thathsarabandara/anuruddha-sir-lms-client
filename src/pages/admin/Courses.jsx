@@ -1,66 +1,57 @@
 import { useState, useEffect } from 'react';
 import { FaBook, FaCalendar, FaCheck, FaCheckCircle, FaTimes, FaEye, FaTrash, FaToggleOn, FaToggleOff, FaStar, FaExclamationTriangle } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { adminCourseAPI } from '../../api/courseApi';
 import { CgSandClock } from 'react-icons/cg';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
 
 const AdminCourses = () => {
+  // Dummy data
+  const dummyCourses = [
+    { id: 1, title: 'Advanced Python Programming', teacher_name: 'Dr. John Smith', category: 'Programming', grade_level: '10-12', status: 'PUBLISHED', students: 245, rating: 4.8, price: '$49.99', featured: true, enrollments_enabled: true },
+    { id: 2, title: 'Mathematics for Beginners', teacher_name: 'Ms. Sarah Johnson', category: 'Mathematics', grade_level: '8-9', status: 'PUBLISHED', students: 180, rating: 4.6, price: '$39.99', featured: false, enrollments_enabled: true },
+    { id: 3, title: 'Introduction to Web Development', teacher_name: 'Mr. Patrick Davis', category: 'Programming', grade_level: '10-12', status: 'DRAFT', students: 0, rating: 0, price: '$59.99', featured: false, enrollments_enabled: false },
+    { id: 4, title: 'English Literature Essentials', teacher_name: 'Dr. Emma Wilson', category: 'English', grade_level: '9-10', status: 'PUBLISHED', students: 320, rating: 4.7, price: '$44.99', featured: true, enrollments_enabled: true },
+    { id: 5, title: 'Science Fundamentals', teacher_name: 'Mr. Robert Lee', category: 'Science', grade_level: '8-9', status: 'PUBLISHED', students: 210, rating: 4.5, price: '$49.99', featured: false, enrollments_enabled: true },
+  ];
+
+  const dummyStats = {
+    total_courses: 156,
+    published_courses: 142,
+    draft_courses: 10,
+    archived_courses: 4,
+    total_students: 12540,
+    total_revenue: 245320,
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState(null);
-  const [courses, setCourses] = useState([]);
-  const [stats, setStats] = useState(null);
+  const [courses, setCourses] = useState(dummyCourses);
+  const [stats, setStats] = useState(dummyStats);
   const [coursesLoading, setCoursesLoading] = useState(false);
-  const [statsLoading, setStatsLoading] = useState(true);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [showCommissionModal, setShowCommissionModal] = useState(false);
   const [commissionValue, setCommissionValue] = useState('');
 
   // Fetch dashboard stats on mount
   useEffect(() => {
-    fetchDashboardStats();
+    // No fetch needed with dummy data
+    setStatsLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchCourses();
+    // No fetch needed with dummy data
+    setCoursesLoading(false);
   }, [filterStatus]);
 
-  const fetchDashboardStats = async () => {
-    try {
-      setStatsLoading(true);
-      const response = await adminCourseAPI.getCourseStats();
-      if (response.data?.success) {
-        setStats(response.data.statistics || response.data.stats || null);
-        console.log('Fetched stats:',stats);
-      }
-    } catch (err) {
-      console.error('Error fetching stats:', err);
-    } finally {
-      setStatsLoading(false);
-    }
+  const fetchDashboardStats = () => {
+    // Dummy data already set
   };
 
-  const fetchCourses = async () => {
-    try {
-      setCoursesLoading(true);
-      const params = {};
-      if (filterStatus !== 'all') {
-        params.status = filterStatus;
-      }
-      const response = await adminCourseAPI.getAllCourses(params);
-      if (response.data?.success) {
-        setCourses(response.data.courses || []);
-      } else {
-        toast.error('Failed to fetch courses');
-      }
-    } catch (err) {
-      console.error('Error fetching courses:', err);
-      toast.error('Failed to load courses');
-    } finally {
-      setCoursesLoading(false);
-    }
+  const fetchCourses = () => {
+    // Dummy data already set
   };
 
   const getStatusColor = (status) => {
@@ -91,64 +82,24 @@ const AdminCourses = () => {
   const handleApproveCourse = async (courseId) => {
     if (!window.confirm('Are you sure you want to approve this course?')) return;
     
-    try {
-      setActionLoading(true);
-      await adminCourseAPI.approveCourse(courseId, 'approve');
-      toast.success('Course approved successfully');
-      setShowDetailsModal(false);
-      fetchCourses();
-    } catch (err) {
-      console.error('Error approving course:', err);
-      toast.error('Failed to approve course');
-    } finally {
-      setActionLoading(false);
-    }
+    toast.success('Course approved successfully');
+    setShowDetailsModal(false);
   };
 
   const handleRejectCourse = async (courseId) => {
     if (!window.confirm('Are you sure you want to reject this course?')) return;
     
-    try {
-      setActionLoading(true);
-      await adminCourseAPI.approveCourse(courseId, 'reject');
-      toast.success('Course rejected successfully');
-      setShowDetailsModal(false);
-      fetchCourses();
-    } catch (err) {
-      console.error('Error rejecting course:', err);
-      toast.error('Failed to reject course');
-    } finally {
-      setActionLoading(false);
-    }
+    toast.success('Course rejected successfully');
+    setShowDetailsModal(false);
   };
 
   const handleFeatureCourse = async (courseId, currentStatus) => {
-    try {
-      setActionLoading(true);
-      await adminCourseAPI.featureCourse(courseId, !currentStatus);
-      toast.success(`Course ${!currentStatus ? 'featured' : 'unfeatured'} successfully`);
-      fetchCourses();
-    } catch (err) {
-      console.error('Error updating course feature status:', err);
-      toast.error('Failed to update course');
-    } finally {
-      setActionLoading(false);
-    }
+    toast.success(`Course ${!currentStatus ? 'featured' : 'unfeatured'} successfully`);
   };
 
   const handleToggleEnrollments = async (courseId, currentStatus) => {
-    try {
-      setActionLoading(true);
-      await adminCourseAPI.toggleEnrollments(courseId, !currentStatus);
-      toast.success(`Enrollments ${!currentStatus ? 'enabled' : 'disabled'} successfully`);
-      fetchCourses();
-      setSelectedCourse(null);
-    } catch (err) {
-      console.error('Error toggling enrollments:', err);
-      toast.error('Failed to update course');
-    } finally {
-      setActionLoading(false);
-    }
+    toast.success(`Enrollments ${!currentStatus ? 'enabled' : 'disabled'} successfully`);
+    setSelectedCourse(null);
   };
 
   const handleSetCommission = async (e) => {
@@ -161,37 +112,17 @@ const AdminCourses = () => {
       return;
     }
 
-    try {
-      setActionLoading(true);
-      await adminCourseAPI.setCommission(selectedCourse.id, commission);
-      toast.success('Commission percentage updated successfully');
-      setShowCommissionModal(false);
-      setCommissionValue('');
-      fetchCourses();
-      setSelectedCourse(null);
-    } catch (err) {
-      console.error('Error setting commission:', err);
-      toast.error('Failed to set commission');
-    } finally {
-      setActionLoading(false);
-    }
+    toast.success('Commission percentage updated successfully');
+    setShowCommissionModal(false);
+    setCommissionValue('');
+    setSelectedCourse(null);
   };
 
   const handleDeleteCourse = async (courseId) => {
     if (!window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) return;
     
-    try {
-      setActionLoading(true);
-      await adminCourseAPI.deleteCourse(courseId);
-      toast.success('Course deleted successfully');
-      setShowDetailsModal(false);
-      fetchCourses();
-    } catch (err) {
-      console.error('Error deleting course:', err);
-      toast.error('Failed to delete course');
-    } finally {
-      setActionLoading(false);
-    }
+    toast.success('Course deleted successfully');
+    setShowDetailsModal(false);
   };
 
   const filteredCourses = courses.filter((course) => {

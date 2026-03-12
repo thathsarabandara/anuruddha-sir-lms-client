@@ -13,7 +13,27 @@ import {
   FaStar,
   FaCalendarAlt,
 } from 'react-icons/fa';
-import { studentQuizAPI } from '../../api/quizApi';
+
+const dummyCompletedQuizzes = [
+  {
+    id: 1,
+    title: 'Basic Mathematics',
+    quiz_type: 'PRACTICE',
+    best_percentage: 85,
+    best_is_passed: true,
+    attempts_count: 2,
+    completion_date: '2024-03-10T10:30:00',
+  },
+  {
+    id: 2,
+    title: 'JavaScript Basics',
+    quiz_type: 'GRADED',
+    best_percentage: 92,
+    best_is_passed: true,
+    attempts_count: 1,
+    completion_date: '2024-03-09T14:15:00',
+  },
+];
 
 const CompletedQuizzes = () => {
   const navigate = useNavigate();
@@ -38,33 +58,27 @@ const CompletedQuizzes = () => {
     filterQuizzes();
   }, [quizzes, searchTerm, quizTypeFilter]);
 
-  const fetchCompletedQuizzes = async () => {
+  const fetchCompletedQuizzes = () => {
     setLoading(true);
-    try {
-      const response = await studentQuizAPI.getStudentCompletedQuizzes();
-      if (response.data.success) {
-        setQuizzes(response.data.quizzes);
+    setTimeout(() => {
+      setQuizzes(dummyCompletedQuizzes);
 
-        // Calculate stats
-        const scores = response.data.quizzes.map((q) => parseFloat(q.best_percentage));
-        const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b) / scores.length : 0;
-        const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
-        const passed = response.data.quizzes.filter((q) => q.best_is_passed).length;
-        const failed = response.data.quizzes.filter((q) => !q.best_is_passed).length;
+      // Calculate stats
+      const scores = dummyCompletedQuizzes.map((q) => parseFloat(q.best_percentage));
+      const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b) / scores.length : 0;
+      const bestScore = scores.length > 0 ? Math.max(...scores) : 0;
+      const passed = dummyCompletedQuizzes.filter((q) => q.best_is_passed).length;
+      const failed = dummyCompletedQuizzes.filter((q) => !q.best_is_passed).length;
 
-        setStats({
-          totalCompleted: response.data.count,
-          averageScore: Math.round(avgScore * 10) / 10,
-          bestScore: Math.round(bestScore * 10) / 10,
-          passed,
-          failed,
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching completed quizzes:', error);
-    } finally {
+      setStats({
+        totalCompleted: dummyCompletedQuizzes.length,
+        averageScore: Math.round(avgScore * 10) / 10,
+        bestScore: Math.round(bestScore * 10) / 10,
+        passed,
+        failed,
+      });
       setLoading(false);
-    }
+    }, 500);
   };
 
   const filterQuizzes = () => {

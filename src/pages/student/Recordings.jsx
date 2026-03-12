@@ -1,7 +1,10 @@
 import { useState, useEffect } from 'react';
 import { FaBook, FaCalendar, FaCheck, FaGraduationCap, FaSearch, FaTimes } from 'react-icons/fa';
-import API from '../../api';
-import { studentRecordingAPI } from '../../api/recordingApi';
+
+const dummyRecordings = [
+  { id: 1, title: 'Intro to React', instructor: 'John Doe', date: '2024-03-10', subject: 'JavaScript' },
+  { id: 2, title: 'Advanced CSS', instructor: 'Jane Smith', date: '2024-03-09', subject: 'CSS' },
+];
 
 const StudentRecordings = () => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -11,36 +14,22 @@ const StudentRecordings = () => {
   const [loading, setLoading] = useState(true);
   const [subjects, setSubjects] = useState([]);
 
-  useEffect(() => {
-    fetchStudentData();
-  }, []);
-
-  const fetchStudentData = async () => {
+  const fetchStudentData = () => {
     setLoading(true);
-    try {
-      // Fetch enrolled courses
-      const coursesRes = await API.quiz.getStudentCourses();
-      const enrolledCourses = coursesRes.data.courses || [];
-      setCourses(enrolledCourses);
-      
-      // Extract unique subjects from courses
-      const uniqueSubjects = [...new Set(enrolledCourses.map(course => course.title))];
-      setSubjects(uniqueSubjects);
-
-      // Fetch recordings for enrolled courses using the new endpoint
-      const recordingsRes = await studentRecordingAPI.getStudentRecordings('');
-      const fetchedRecordings = recordingsRes.data.recordings || [];
-      
-      setRecordings(fetchedRecordings);
-    } catch (error) {
-      console.error('Error fetching student data:', error);
-      // Fallback to empty state if API fails
-      setRecordings([]);
-      setCourses([]);
-    } finally {
+    setTimeout(() => {
+      setCourses([{ id: 1, title: 'JavaScript' }, { id: 2, title: 'CSS' }]);
+      setSubjects(['JavaScript', 'CSS']);
+      setRecordings(dummyRecordings);
       setLoading(false);
-    }
+    }, 500);
   };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchStudentData();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
 
   const filteredRecordings = recordings.filter((rec) => {
     const matchesSearch = rec.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -154,7 +143,7 @@ const StudentRecordings = () => {
               All
             </button>
             {subjects.length > 0 ? (
-              subjects.map((subject, index) => (
+              subjects.map((subject) => (
                 <button
                   key={subject}
                   onClick={() => setFilterSubject(subject)}

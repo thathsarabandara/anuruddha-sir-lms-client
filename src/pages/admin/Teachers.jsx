@@ -3,21 +3,31 @@ import { FaBook, FaCheck, FaCheckCircle, FaExclamationTriangle, FaGraduationCap,
 import { CgSandClock } from 'react-icons/cg';
 import { BiLoader } from 'react-icons/bi';
 import { toast } from 'react-toastify';
-import { teachersAPI } from '../../api';
 import PulseLoader from '../../components/common/PulseLoader';
 
 const AdminTeachers = () => {
+  // Dummy data
+  const dummyTeachersData = [
+    { id: 1, first_name: 'John', last_name: 'Smith', email: 'john.smith@example.com', contact_number: '0771234567', status: 'active', qualifications: 'M.Sc Mathematics', subjects_taught: 'Mathematics', years_of_experience: 5, bio: 'Experienced mathematics teacher', address: 'Colombo', language: 'English', profile_picture: '', courses: 3 },
+    { id: 2, first_name: 'Sarah', last_name: 'Johnson', email: 'sarah.j@example.com', contact_number: '0772345678', status: 'active', qualifications: 'B.A English', subjects_taught: 'English', years_of_experience: 3, bio: 'English literature specialist', address: 'Kandy', language: 'English', profile_picture: '', courses: 2 },
+    { id: 3, first_name: 'Robert', last_name: 'Davis', email: 'robert.d@example.com', contact_number: '0773456789', status: 'pending', qualifications: 'B.Sc Computer Science', subjects_taught: 'Programming', years_of_experience: 2, bio: 'Software developer turned teacher', address: 'Galle', language: 'English', profile_picture: '', courses: 0 },
+    { id: 4, first_name: 'Emma', last_name: 'Wilson', email: 'emma.w@example.com', contact_number: '0774567890', status: 'active', qualifications: 'D.Sc Physics', subjects_taught: 'Science', years_of_experience: 8, bio: 'Physics and chemistry teacher', address: 'Colombo', language: 'English', profile_picture: '', courses: 4 },
+    { id: 5, first_name: 'Michael', last_name: 'Brown', email: 'michael.b@example.com', contact_number: '0775678901', status: 'suspended', qualifications: 'M.A History', subjects_taught: 'History', years_of_experience: 6, bio: 'History enthusiast', address: 'Matara', language: 'English', profile_picture: '', courses: 1 },
+  ];
+
+  const dummyStats = {
+    total_teachers: 48,
+    active_teachers: 45,
+    pending_teachers: 2,
+    suspended_teachers: 1,
+    rejected_teachers: 0
+  };
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [teachers, setTeachers] = useState([]);
-  const [stats, setStats] = useState({
-    total_teachers: 0,
-    active_teachers: 0,
-    pending_teachers: 0,
-    suspended_teachers: 0,
-    rejected_teachers: 0
-  });
-  const [loading, setLoading] = useState(true);
+  const [teachers, setTeachers] = useState(dummyTeachersData);
+  const [stats, setStats] = useState(dummyStats);
+  const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showModal, setShowModal] = useState(false);
@@ -49,40 +59,11 @@ const AdminTeachers = () => {
     language: 'English',
   });
   const fetchTeachers = useCallback(async () => {
-    try {
-      setLoading(true);
-      const params = {
-        page: currentPage,
-        page_size: 12,
-      };
-      
-      if (filterStatus !== 'all') {
-        params.status = filterStatus;
-      }
-      
-      if (searchTerm) {
-        params.search = searchTerm;
-      }
-      
-      const response = await teachersAPI.getAll(params);
-      console.log('Teachers API response:', response.data);
-      setTeachers(response.data.teachers || []);
-      setTotalPages(response.data.pagination?.total_pages || 1);
-    } catch (error) {
-      console.error('Error fetching teachers:', error);
-      toast.error('Failed to load teachers');
-    } finally {
-      setLoading(false);
-    }
+    // Dummy data already set
   }, [currentPage, filterStatus, searchTerm]);
 
   const fetchStats = async () => {
-    try {
-      const response = await teachersAPI.getStats();
-      setStats(response.data);
-    } catch {
-      console.error('Error fetching stats');
-    }
+    // Dummy stats already set
   };
 
   useEffect(() => {
@@ -124,17 +105,9 @@ const AdminTeachers = () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    try {
-      await teachersAPI.approve(selectedTeacher.id);
-      setSuccess('Teacher approved successfully!');
-      closeModal();
-      fetchTeachers();
-      fetchStats();
-    } catch {
-      setError('Failed to approve teacher');
-    } finally {
-      setActionLoading(false);
-    }
+    setSuccess('Teacher approved successfully!');
+    closeModal();
+    setActionLoading(false);
   };
 
   const handleReject = async () => {
@@ -146,18 +119,10 @@ const AdminTeachers = () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    try {
-      await teachersAPI.reject(selectedTeacher.id, { reason: actionReason, admin_notes: adminNotes });
-      setSuccess('Teacher rejected successfully!');
-      setShowRejectModal(false);
-      setActionReason('');
-      fetchTeachers();
-      fetchStats();
-    } catch {
-      setError('Failed to reject teacher');
-    } finally {
-      setActionLoading(false);
-    }
+    setSuccess('Teacher rejected successfully!');
+    setShowRejectModal(false);
+    setActionReason('');
+    setActionLoading(false);
   };
 
   const handleSuspend = async () => {
@@ -169,52 +134,28 @@ const AdminTeachers = () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    try {
-      await teachersAPI.suspend(selectedTeacher.id, { reason: actionReason, admin_notes: adminNotes });
-      setSuccess('Teacher suspended successfully!');
-      setShowSuspendModal(false);
-      setActionReason('');
-      fetchTeachers();
-      fetchStats();
-    } catch {
-      setError('Failed to suspend teacher');
-    } finally {
-      setActionLoading(false);
-    }
+    setSuccess('Teacher suspended successfully!');
+    setShowSuspendModal(false);
+    setActionReason('');
+    setActionLoading(false);
   };
 
   const handleReactivate = async () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    try {
-      await teachersAPI.activate(selectedTeacher.id);
-      setSuccess('Teacher reactivated successfully!');
-      closeModal();
-      fetchTeachers();
-      fetchStats();
-    } catch {
-      setError('Failed to reactivate teacher');
-    } finally {
-      setActionLoading(false);
-    }
+    setSuccess('Teacher reactivated successfully!');
+    closeModal();
+    setActionLoading(false);
   };
 
   const handleUpdateProfile = async (e) => {
-    e.preventDefault();
-    
-    setActionLoading(true);
-    setError('');
-    setSuccess('');
     try {
-      const formData = new FormData();
-      Object.keys(editFormData).forEach(key => {
-        if (key !== 'profile_picture_preview' && editFormData[key]) {
-          formData.append(key, editFormData[key]);
-        }
-      });
+      e.preventDefault();
       
-      await teachersAPI.update(selectedTeacher.id, formData);
+      setActionLoading(true);
+      setError('');
+      setSuccess('');
       setSuccess('Teacher profile updated successfully!');
       setShowEditModal(false);
       fetchTeachers();
@@ -266,46 +207,22 @@ const AdminTeachers = () => {
     setError('');
     setSuccess('');
     
-    try {
-      const formData = new FormData();
-      formData.append('first_name', createFormData.first_name);
-      formData.append('last_name', createFormData.last_name);
-      formData.append('email', createFormData.email);
-      formData.append('contact_number', createFormData.contact_number);
-      formData.append('qualifications', createFormData.qualifications);
-      formData.append('subjects_taught', createFormData.subjects_taught);
-      formData.append('years_of_experience', createFormData.years_of_experience);
-      formData.append('bio', createFormData.bio);
-      formData.append('address', createFormData.address);
-      formData.append('language', createFormData.language);
-      if (createFormData.profile_picture) {
-        formData.append('profile_picture', createFormData.profile_picture);
-      }
-
-      await teachersAPI.create(formData);
-      setSuccess('Teacher created successfully!');
-      setShowCreateModal(false);
-      setCreateFormData({
-        profile_picture: '',
-        first_name: '',
-        last_name: '',
-        email: '',
-        contact_number: '',
-        qualifications: '',
-        subjects_taught: '',
-        years_of_experience: '',
-        bio: '',
-        address: '',
-        language: 'English',
-      });
-      fetchTeachers();
-      fetchStats();
-    } catch (err) {
-      setError(err.response?.data?.error || 'Failed to create teacher');
-      console.error('Error creating teacher:', err);
-    } finally {
-      setActionLoading(false);
-    }
+    setSuccess('Teacher created successfully!');
+    setShowCreateModal(false);
+    setCreateFormData({
+      profile_picture: '',
+      first_name: '',
+      last_name: '',
+      email: '',
+      contact_number: '',
+      qualifications: '',
+      subjects_taught: '',
+      years_of_experience: '',
+      bio: '',
+      address: '',
+      language: 'English',
+    });
+    setActionLoading(false);
   };
 
   const getStatusColor = (status) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import reviewApi from '../../api/reviewApi';
+import { toast } from 'react-toastify';
 
 const ReviewForm = ({ courseId, onReviewSubmitted, existingReview = null }) => {
   const [formData, setFormData] = useState({
@@ -33,30 +33,27 @@ const ReviewForm = ({ courseId, onReviewSubmitted, existingReview = null }) => {
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
-    setSuccess(false);
 
-    try {
-      await reviewApi.addOrUpdateReview(courseId, formData);
-      setSuccess(true);
+    // Simulate API delay with dummy data
+    setTimeout(() => {
+      toast.success(existingReview ? 'Review updated successfully!' : 'Review submitted successfully!');
+      setLoading(false);
       
       // Reset form or notify parent
       if (onReviewSubmitted) {
         onReviewSubmitted();
       }
 
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSuccess(false);
-      }, 3000);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit review. Please try again.');
-    } finally {
-      setLoading(false);
-    }
+      // Clear form
+      setFormData({
+        rating: 5,
+        review_text: '',
+      });
+    }, 500);
   };
 
   return (

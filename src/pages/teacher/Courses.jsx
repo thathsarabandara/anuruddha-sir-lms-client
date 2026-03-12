@@ -1,21 +1,43 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaEdit, FaTrash, FaEye, FaBook, FaUsers, FaDollarSign, FaVideo, FaCheckCircle, FaClock, FaChartLine } from 'react-icons/fa';
-import { teacherCourseAPI, utilityAPI } from '../../api/courseApi';
 import { toast, ToastContainer } from 'react-toastify';
 import { BiLoader } from 'react-icons/bi';
 import CreateCourseForm from '../../components/teacher/CreateCourseForm';
 
 const TeacherCourses = () => {
   const navigate = useNavigate();
-  const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Dummy data
+  const dummyCourses = [
+    { id: 1, title: 'Advanced Python', description: 'Learn advanced Python', subject_id: 1, status: 'PUBLISHED', students: 45, revenue: 2250, price: 49.99 },
+    { id: 2, title: 'Web Development 101', description: 'Introduction to web dev', subject_id: 2, status: 'PUBLISHED', students: 32, revenue: 1280, price: 39.99 },
+    { id: 3, title: 'Mobile Apps with Flutter', description: 'Flutter development', subject_id: 3, status: 'DRAFT', students: 0, revenue: 0, price: 59.99 },
+  ];
+
+  const dummySubjects = [
+    { id: 1, name: 'Programming' },
+    { id: 2, name: 'Web Development' },
+    { id: 3, name: 'Mobile Apps' },
+  ];
+
+  const dummyGradeLevels = [
+    { id: 1, name: '9-10' },
+    { id: 2, name: '10-12' },
+  ];
+
+  const dummyCategories = [
+    { id: 1, name: 'Technology' },
+    { id: 2, name: 'Business' },
+  ];
+
+  const [courses, setCourses] = useState(dummyCourses);
+  const [loading, _setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState(null);
-  const [subjects, setSubjects] = useState([]);
-  const [gradeLevels, setGradeLevels] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [subjects, _setSubjects] = useState(dummySubjects);
+  const [gradeLevels, _setGradeLevels] = useState(dummyGradeLevels);
+  const [categories, _setCategories] = useState(dummyCategories);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const [formData, setFormData] = useState({
@@ -31,39 +53,8 @@ const TeacherCourses = () => {
   });
 
   useEffect(() => {
-    fetchCourses();
-    fetchUtilities();
+    // Dummy data already loaded
   }, []);
-
-  const fetchCourses = async () => {
-    try {
-      const response = await teacherCourseAPI.getCourses();
-      if (response.data.success) {
-        setCourses(response.data.courses);
-      }
-    } catch (error) {
-      toast.error('Failed to fetch courses');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchUtilities = async () => {
-    try {
-      const [subjectsRes, gradesRes, categoriesRes] = await Promise.all([
-        utilityAPI.getSubjects(),
-        utilityAPI.getGradeLevels(),
-        utilityAPI.getCategories(),
-      ]);
-      
-      if (subjectsRes.data.success) setSubjects(subjectsRes.data.subjects);
-      if (gradesRes.data.success) setGradeLevels(gradesRes.data.grade_levels);
-      if (categoriesRes.data.success) setCategories(categoriesRes.data.categories);
-    } catch (error) {
-      console.error('Failed to fetch utilities', error);
-    }
-  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -73,7 +64,7 @@ const TeacherCourses = () => {
     });
   };
 
-  const handleCreateCourse = async (e) => {
+  const handleCreateCourse = (e) => {
     e.preventDefault();
     
     if (!formData.title || !formData.description) {
@@ -82,21 +73,15 @@ const TeacherCourses = () => {
     }
 
     setIsSubmitting(true);
-    try {
-      console.log(formData);
-      const response = await teacherCourseAPI.createCourse(formData);
-      if (response.data.success) {
-        toast.success('Course created successfully!');
-        setShowCreateModal(false);
-        resetForm();
-        fetchCourses();
-      }
-    } catch (error) {
-      toast.error(error.response?.data?.message || 'Failed to create course');
-      console.error(error);
-    } finally {
+    // Simulate creation
+    setTimeout(() => {
+      const newCourse = { ...formData, id: Math.random() };
+      setCourses([...courses, newCourse]);
+      toast.success('Course created successfully');
+      setShowCreateModal(false);
+      resetForm();
       setIsSubmitting(false);
-    }
+    }, 300);
   };
 
   const confirmDelete = (courseId) => {
@@ -104,24 +89,18 @@ const TeacherCourses = () => {
     setShowDeleteModal(true);
   };
 
-  const handleDeleteCourse = async () => {
+  const handleDeleteCourse = () => {
     if (!courseToDelete) return;
 
     setIsSubmitting(true);
-    try {
-      const response = await teacherCourseAPI.deleteCourse(courseToDelete);
-      if (response.data.success) {
-        toast.success('Course deleted successfully');
-        fetchCourses();
-      }
-    } catch (error) {
-      toast.error('Failed to delete course');
-      console.error(error);
-    } finally {
+    // Simulate deletion
+    setTimeout(() => {
+      toast.success('Course deleted successfully');
+      setCourses(courses.filter(c => c.id !== courseToDelete));
       setIsSubmitting(false);
       setShowDeleteModal(false);
       setCourseToDelete(null);
-    }
+    }, 300);
   };
 
   const resetForm = () => {
@@ -480,5 +459,4 @@ const TeacherCourses = () => {
     </div>
   );
 };
-
 export default TeacherCourses;

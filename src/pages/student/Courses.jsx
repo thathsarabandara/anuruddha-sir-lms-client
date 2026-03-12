@@ -5,7 +5,6 @@ import EnrolledCourseCard from '../../components/student/EnrolledCourseCard';
 import { MdOutlineWorkspacePremium } from 'react-icons/md';
 import { GrCompliance } from 'react-icons/gr';
 import CompletedCourseCard from '../../components/student/CompletedCourseCard';
-import { studentCourseAPI, utilityAPI } from '../../api/courseApi';
 import { 
   transformEnrolledCourse, 
   transformCompletedCourse, 
@@ -15,19 +14,38 @@ import {
 } from '../../utils/courseDataTransform';
 
 const StudentCourses = () => {
+  // Dummy data
+  const dummyNewCourses = [
+    { id: 1, title: 'Advanced Python', teacher_name: 'Dr. John', price: 49.99, rating: 4.8, students: 245 },
+    { id: 2, title: 'Web Development 101', teacher_name: 'Mr. Davis', price: 39.99, rating: 4.6, students: 180 },
+  ];
+  
+  const dummyEnrolledCourses = [
+    { id: 1, title: 'JavaScript Basics', progress: 45, teacher_name: 'Jane Smith' },
+    { id: 2, title: 'React Fundamentals', progress: 65, teacher_name: 'John Doe' },
+  ];
+
+  const dummyCompletedCourses = [
+    { id: 1, title: 'HTML & CSS Basics', certificate: true, teacher_name: 'Tom Wilson' },
+  ];
+
+  const dummyGradeLevels = [{ id: 1, name: '10-12' }, { id: 2, name: '8-9' }];
+  const dummySubjects = [{ id: 1, name: 'Programming' }, { id: 2, name: 'Web Dev' }];
+  const dummyCategories = [{ id: 1, name: 'Technology' }, { id: 2, name: 'Business' }];
+
   const [activeTab, setActiveTab] = useState('enrolled');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(true);
   const itemsPerPage = 9;
-  const [newCourses, setNewCourses] = useState([]);
-  const [enrolledCourses, setEnrolledCourses] = useState([]);
-  const [completedCourses, setCompletedCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [newCourses, setNewCourses] = useState(dummyNewCourses);
+  const [enrolledCourses, setEnrolledCourses] = useState(dummyEnrolledCourses);
+  const [completedCourses, setCompletedCourses] = useState(dummyCompletedCourses);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [gradeLevels, setGradeLevels] = useState([]);
-  const [subjects, setSubjects] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [gradeLevels, setGradeLevels] = useState(dummyGradeLevels);
+  const [subjects, setSubjects] = useState(dummySubjects);
+  const [categories, setCategories] = useState(dummyCategories);
   const [filters, setFilters] = useState({
     grades: [],
     subjects: [],
@@ -37,80 +55,7 @@ const StudentCourses = () => {
   });
 
   useEffect(() => {
-    const fetchFiltersData = async () => {
-      try {
-        const [gradesRes, subjectsRes, categoriesRes] = await Promise.all([
-          utilityAPI.getGradeLevels().catch(() => ({ data: [] })),
-          utilityAPI.getSubjects().catch(() => ({ data: [] })),
-          utilityAPI.getCategories().catch(() => ({ data: [] }))
-        ]);
-
-        const gradesData = gradesRes.data?.grade_levels || gradesRes.data || [];
-        const subjectsData = subjectsRes.data?.subjects || subjectsRes.data || [];
-        const categoriesData = categoriesRes.data?.categories || categoriesRes.data || [];
-
-        setGradeLevels(gradesData);
-        setSubjects(subjectsData);
-        setCategories(categoriesData);
-      } catch (err) {
-        console.error('Error fetching filters:', err);
-      }
-    };
-
-    fetchFiltersData();
-  }, []);
-
-  useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        resetColorIndex();
-        
-        const allCoursesPromise = await studentCourseAPI.discoverCourses({ page_size: 1000, filters: { ...filters } });
-        
-        const coursesArray = allCoursesPromise.data?.courses || [];
-        const allNewCourses = coursesArray.filter(course => course.course_type === 'available');
-        const enrolled = coursesArray.filter(course => course.course_type === 'enrolled');
-        const completed = coursesArray.filter(course => course.course_type === 'completed');
-
-        // Transform courses using utility functions
-        const processedNewCourses = transformCourses(allNewCourses, transformNewCourse);
-        const processedEnrolled = transformCourses(enrolled, transformEnrolledCourse);
-        const processedCompleted = transformCourses(completed, transformCompletedCourse);
-
-        setNewCourses(processedNewCourses);
-        setEnrolledCourses(processedEnrolled);
-        setCompletedCourses(processedCompleted);
-        
-      } catch (err) {
-        console.error('Error fetching courses:', err);
-        setError('Failed to load courses. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCourses();
-  }, [filters]);
-
-  // Load enrolled and completed courses separately for better accuracy
-  useEffect(() => {
-    const loadEnrolledAndCompleted = async () => {
-      try {
-        // Fetch enrolled courses separately
-        const enrolledRes = await studentCourseAPI.getEnrolledCourses({ page_size: 100 }).catch(() => null);
-        if (enrolledRes?.data) {
-          const enrolledData = enrolledRes.data.courses || enrolledRes.data.results || [];
-          const processedEnrolled = transformCourses(enrolledData, transformEnrolledCourse);
-          setEnrolledCourses(processedEnrolled);
-        }
-      } catch (err) {
-        console.error('Error fetching enrolled courses:', err);
-      }
-    };
-
-    loadEnrolledAndCompleted();
+    // Dummy data already loaded
   }, []);
 
   // Filter Application Function

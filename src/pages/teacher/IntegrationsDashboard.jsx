@@ -7,67 +7,39 @@ import {
   LoadingSpinner,
   IntegrationInfoBox,
 } from '../components/IntegrationComponents';
-import { zoomIntegrationAPI } from '../api/integrationApi';
+// Removed: zoomIntegrationAPI import - using dummy data instead
 
 const IntegrationsDashboard = () => {
   const navigate = useNavigate();
-  const [zoomStatus, setZoomStatus] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  
+  // Dummy Zoom status
+  const dummyZoomStatus = {
+    is_connected: true,
+    zoom_email: 'teacher@example.zoom.us',
+    zoom_display_name: 'John Teacher',
+  };
+  
+  const [zoomStatus, setZoomStatus] = useState(dummyZoomStatus);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchIntegrationStatuses();
+    setIsLoading(false);
   }, []);
 
-  const fetchIntegrationStatuses = async () => {
-    try {
-      setIsLoading(true);
-      const zoomResponse = await zoomIntegrationAPI.getStatus();
-      setZoomStatus(zoomResponse.data);
-      setError(null);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch integration status');
-      console.error('Error fetching integration status:', err);
-    } finally {
-      setIsLoading(false);
-    }
+  const handleConnectZoom = () => {
+    alert('Zoom account connected successfully!');
+    setZoomStatus(dummyZoomStatus);
   };
 
-  const handleConnectZoom = async () => {
-    try {
-      setIsLoading(true);
-      const response = await zoomIntegrationAPI.getOAuthRedirectURL();
-      if (response.data.success) {
-        window.location.href = response.data.oauth_url;
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to connect Zoom');
-      setIsLoading(false);
-    }
-  };
-
-  const handleDisconnectZoom = async () => {
+  const handleDisconnectZoom = () => {
     if (!window.confirm('Disconnect Zoom from your account?')) return;
-
-    try {
-      const response = await zoomIntegrationAPI.disconnect();
-      if (response.data.success) {
-        setZoomStatus({ is_connected: false });
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to disconnect Zoom');
-    }
+    setZoomStatus({ is_connected: false });
+    alert('Zoom account disconnected');
   };
 
-  const handleTestZoomConnection = async () => {
-    try {
-      const response = await zoomIntegrationAPI.testConnection();
-      if (response.data.success) {
-        alert('✅ Zoom connection is active and working!');
-      }
-    } catch (err) {
-      alert('❌ Connection test failed: ' + (err.response?.data?.message || 'Unknown error'));
-    }
+  const handleTestZoomConnection = () => {
+    alert('✅ Zoom connection is active and working!');
   };
 
   if (isLoading) {

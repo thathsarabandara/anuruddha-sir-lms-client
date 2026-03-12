@@ -1,57 +1,54 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaDownload, FaUser, FaCheck, FaTimes, FaClock, FaChartBar, FaSearch, FaEye } from 'react-icons/fa';
-import API from '../../api';
 
 const QuizResultsDashboard = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
   
-  const [quiz, setQuiz] = useState(null);
-  const [attempts, setAttempts] = useState([]);
-  const [analytics, setAnalytics] = useState(null);
+  // Dummy quiz data
+  const dummyQuiz = {
+    id: quizId,
+    title: 'Introduction to Python',
+    total_marks: 100,
+    passing_score: 60,
+    total_questions: 20,
+  };
+  
+  const dummyAttempts = [
+    { id: 1, student_name: 'Rahul Kumar', student_id: 'STU001', score: 85, max_score: 100, attempts: 1, completed_at: '2024-01-15 10:30 AM' },
+    { id: 2, student_name: 'Priya Singh', student_id: 'STU002', score: 92, max_score: 100, attempts: 1, completed_at: '2024-01-14 02:15 PM' },
+    { id: 3, student_name: 'Amit Patel', student_id: 'STU003', score: 45, max_score: 100, attempts: 2, completed_at: '2024-01-13 11:45 AM' },
+    { id: 4, student_name: 'Deepa Sharma', student_id: 'STU004', score: 78, max_score: 100, attempts: 1, completed_at: '2024-01-12 03:20 PM' },
+    { id: 5, student_name: 'Vikram Das', student_id: 'STU005', score: 88, max_score: 100, attempts: 1, completed_at: '2024-01-11 09:00 AM' },
+  ];
+  
+  const dummyAnalytics = {
+    total_attempts: 5,
+    average_score: 77.6,
+    highest_score: 92,
+    lowest_score: 45,
+    pass_rate: 80,
+    chart_data: {
+      scores: [45, 78, 85, 88, 92],
+      labels: ['Amit P.', 'Deepa S.', 'Rahul K.', 'Vikram D.', 'Priya S.'],
+    },
+  };
+  
+  const [quiz, setQuiz] = useState(dummyQuiz);
+  const [attempts, setAttempts] = useState(dummyAttempts);
+  const [analytics, setAnalytics] = useState(dummyAnalytics);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [loading, setLoading] = useState(true);
-
-  const fetchQuizResults = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await API.quiz.teacherQuizAPI.getQuizAttempts(quizId);
-      setQuiz(response.data.quiz);
-      setAttempts(response.data.attempts || []);
-    } catch (error) {
-      console.error('Error fetching results:', error);
-      alert('Failed to load quiz results');
-    } finally {
-      setLoading(false);
-    }
-  }, [quizId]);
-
-  const fetchQuizAnalytics = useCallback(async () => {
-    try {
-      const response = await API.quiz.teacherQuizAPI.getQuizAnalytics(quizId);
-      setAnalytics(response.data);
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-    }
-  }, [quizId]);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetchQuizResults();
-    fetchQuizAnalytics();
-  }, [fetchQuizResults, fetchQuizAnalytics]);
+    // Initialize with dummy data
+    setLoading(false);
+  }, [quizId]);
 
-
-  const handleExportResults = async () => {
-    try {
-      // This would trigger a CSV download
-      alert('Export functionality will download a CSV file with all results');
-      // await API.quiz.exportQuizResults(quizId);
-    } catch (error) {
-      console.error('Error exporting results:', error);
-      alert('Failed to export results');
-    }
+  const handleExportResults = () => {
+    alert('Export functionality will download a CSV file with all results');
   };
 
   const handleViewAttempt = (attemptId) => {

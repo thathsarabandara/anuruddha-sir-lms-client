@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { adminCourseAPI } from '../../api/courseApi';
 import PulseLoader from '../../components/common/PulseLoader';
 
 const AdminCourseModeration = () => {

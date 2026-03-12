@@ -1,14 +1,41 @@
 import { useEffect, useState } from 'react';
 import { FaBook,  FaChartBar, FaCheckCircle, FaCreditCard, FaFilePdf, FaFileVideo, FaGraduationCap, FaTrophy, FaUserGraduate, FaSpinner } from 'react-icons/fa';
-import { adminCourseAPI } from '../../api/courseApi';
 import PulseLoader from '../../components/common/PulseLoader';
 
 const AdminDashboard = () => {
-  const [stats, setStats] = useState([]);
-  const [recentActivities, setRecentActivities] = useState([]);
-  const [pendingApprovals, setPendingApprovals] = useState([]);
-  const [systemAlerts, setSystemAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  // Dummy data
+  const dummyStats = [
+    { label: 'Total Students', value: 1250, change: '+15%', color: 'blue' },
+    { label: 'Active Teachers', value: 48, change: '+5%', color: 'green' },
+    { label: 'Total Courses', value: 156, change: '+12%', color: 'purple' },
+    { label: 'Monthly Revenue', value: '$45,320', change: '+28%', color: 'yellow' },
+  ];
+
+  const dummyRecentActivities = [
+    { user: 'John Doe', action: 'enrolled in Mathematics 101', type: 'enrollment', time: '2 hours ago' },
+    { user: 'Jane Smith', action: 'submitted payment for course', type: 'payment', time: '4 hours ago' },
+    { user: 'Dr. Wilson', action: 'uploaded new course material', type: 'teacher', time: '6 hours ago' },
+    { user: 'Mike Johnson', action: 'completed course quiz', type: 'quiz', time: '8 hours ago' },
+    { user: 'Sarah Lee', action: 'received course certificate', type: 'certificate', time: '1 day ago' },
+  ];
+
+  const dummyPendingApprovals = [
+    { type: 'Course', name: 'Advanced Python', request: 'Course Approval', date: '2024-03-10', priority: 'high' },
+    { type: 'Teacher', name: 'Dr. Robert Brown', request: 'Teacher Registration', date: '2024-03-09', priority: 'medium' },
+    { type: 'Course', name: 'Web Development', request: 'Course Update', date: '2024-03-08', priority: 'low' },
+  ];
+
+  const dummySystemAlerts = [
+    { message: 'High server CPU usage (85%)', severity: 'high', time: '15 minutes ago' },
+    { message: 'Database backup completed successfully', severity: 'low', time: '2 hours ago' },
+    { message: 'SSL certificate expiring in 30 days', severity: 'medium', time: '1 day ago' },
+  ];
+
+  const [stats, setStats] = useState(dummyStats);
+  const [recentActivities, setRecentActivities] = useState(dummyRecentActivities);
+  const [pendingApprovals, setPendingApprovals] = useState(dummyPendingApprovals);
+  const [systemAlerts, setSystemAlerts] = useState(dummySystemAlerts);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const getPriorityColor = (priority) => {
@@ -57,35 +84,12 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await adminCourseAPI.getDashboardStats();
-        
-        if (response.data?.success) {
-          setStats(response.data.stats || []);
-          setRecentActivities(response.data.recent_activities || []);
-          setPendingApprovals(response.data.pending_approvals || []);
-          setSystemAlerts(response.data.system_alerts || []);
-        } else {
-          setError('Failed to load dashboard data');
-        }
-      } catch (err) {
-        console.error('Error fetching dashboard data:', err);
-        setError('Failed to load dashboard data. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchDashboardData();
+    // Simulate loading of dummy data
+    const timer = setTimeout(() => {
+      setLoading(false);
+    }, 500);
     
-    // Refresh dashboard data every 30 seconds
-    const interval = setInterval(fetchDashboardData, 30000);
-    
-    return () => clearInterval(interval);
+    return () => clearTimeout(timer);
   }, []);
 
   // Loading state

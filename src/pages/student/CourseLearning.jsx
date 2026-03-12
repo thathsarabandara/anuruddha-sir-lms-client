@@ -18,7 +18,6 @@ import {
   FaChevronLeft,
   FaQuestionCircle
 } from 'react-icons/fa';
-import { studentCourseAPI } from '../../api/courseApi';
 import VideoPlayer from '../../components/VideoPlayer';
 import PDFViewer from '../../components/PDFViewer';
 import SectionProgress from '../../components/SectionProgress';

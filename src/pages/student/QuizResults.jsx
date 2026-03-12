@@ -1,8 +1,17 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaTimes, FaTrophy, FaClock, FaClipboardCheck, FaExclamationCircle } from 'react-icons/fa';
-import API from '../../api';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
+
+const dummyResults = {
+  attempt: { id: 'attempt-001', score: 75, started_at: '2024-03-10T10:00:00', submitted_at: '2024-03-10T10:30:00' },
+  quiz: { id: 1, title: 'Sample Quiz', total_marks: 100, passing_score: 60 },
+  questions_with_answers: [
+    { id: 1, question_text: 'What is 2+2?', student_answer: '4', correct_answer: '4', marks_earned: 10, total_marks: 10, is_correct: true },
+    { id: 2, question_text: 'True or False: JS is a language', student_answer: 'True', correct_answer: 'True', marks_earned: 10, total_marks: 10, is_correct: true },
+  ],
+  statistics: { total_questions: 2, correct_answers: 2, incorrect_answers: 0, time_taken: '30 minutes' },
+};
 
 const QuizResults = () => {
   const { quizId, attemptId } = useParams();
@@ -11,23 +20,17 @@ const QuizResults = () => {
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchResults = useCallback(async () => {
+  const fetchResults = () => {
     setLoading(true);
-    try {
-      const response = await API.quiz.getQuizResults(attemptId);
-      setResults(response.data);
-    } catch (error) {
-      console.error('Error fetching results:', error);
-      alert(error.response?.data?.message || 'Failed to load results');
-      navigate('/student/quizzes');
-    } finally {
+    setTimeout(() => {
+      setResults(dummyResults);
       setLoading(false);
-    }
-  }, [attemptId, navigate]);
+    }, 500);
+  };
 
   useEffect(() => {
     fetchResults();
-  }, [fetchResults]);
+  }, []);
 
   if (loading) {
     return (

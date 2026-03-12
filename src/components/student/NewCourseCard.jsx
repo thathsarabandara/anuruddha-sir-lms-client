@@ -1,19 +1,9 @@
 import { FaStar, FaShoppingCart, FaBookOpen } from "react-icons/fa";
 import { IoTimeSharp } from "react-icons/io5";
-import {cartAPI} from '../../api/cartApi';
+import { toast } from 'react-toastify';
 
-const handleAddCart = async (courseId) => {
-  try {
-    const response = await cartAPI.addToCart(courseId);
-    if (response.data.success) {
-      alert("Course added to cart successfully!");
-    } else {
-      alert(response.data.message || "Failed to add to cart");
-    }
-  } catch (error) {
-    console.error("Error adding to cart:", error);
-    alert(error.response?.data?.message || "Error adding to cart");
-  }
+const handleAddCart = (courseId) => {
+  toast.success('Course added to cart successfully!');
 }
 
 const NewCourseCard = ({ course }) => (

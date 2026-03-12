@@ -161,7 +161,6 @@ const Courses = () => {
     return () => ScrollTrigger.getAll().forEach((trigger) => trigger.kill());
   }, [selectedSubject]);
 
-
   return (
     <div ref={containerRef}>
       {/* Header */}

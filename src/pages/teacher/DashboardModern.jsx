@@ -5,37 +5,42 @@ import {
   FaChartBar, FaFire, FaAward, FaClock, FaCheckCircle, FaArrowUp
 } from 'react-icons/fa';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { dashboardApi } from '../../api/dashboardApi';
 
 const TeacherDashboardModern = () => {
-  const [dashboardData, setDashboardData] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  // Dummy data
+  const dummyDashboardData = {
+    stats: {
+      total_courses: 5,
+      active_students: 245,
+      total_revenue: 12450.50,
+      pending_reviews: 8,
+    },
+    todays_classes: [
+      { id: 1, title: 'Advanced Python', time: '10:00 AM', status: 'upcoming' },
+      { id: 2, title: 'Web Development', time: '2:00 PM', status: 'upcoming' },
+    ],
+    revenue_trend: [
+      { month: 'Jan', revenue: 2400 },
+      { month: 'Feb', revenue: 3200 },
+      { month: 'Mar', revenue: 2800 },
+      { month: 'Apr', revenue: 3900 },
+      { month: 'May', revenue: 4500 },
+      { month: 'Jun', revenue: 5200 },
+    ],
+    recent_submissions: [
+      { id: 1, student: 'Alex Johnson', quiz: 'Python Basics', score: 85, date: '2024-03-10' },
+      { id: 2, student: 'Maria Garcia', quiz: 'Web Dev Quiz', score: 92, date: '2024-03-10' },
+    ],
+  };
+
+  const [dashboardData, _setDashboardData] = useState(dummyDashboardData);
+  const [loading, _setLoading] = useState(false);
+  const [_error, _setError] = useState(null);
   const [activeTab, setActiveTab] = useState('overview');
 
   useEffect(() => {
-    fetchDashboardData();
+    // Dummy data already loaded
   }, []);
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      const response = await dashboardApi.getTeacherDashboardData();
-
-      if (response.ok) {
-        const result = await response.json();
-        setDashboardData(result.data);
-      } else {
-        setError('Failed to load dashboard data');
-      }
-    } catch (err) {
-      console.error('Error:', err);
-      setError('Error loading dashboard');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
@@ -108,24 +113,6 @@ const TeacherDashboardModern = () => {
               </div>
             </div>
           ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !dashboardData) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border-l-4 border-red-500 p-6 rounded-lg">
-            <div className="flex items-center">
-              <CiCircleAlert className="text-red-600 text-2xl mr-4" />
-              <div>
-                <h3 className="text-red-900 font-bold text-lg">{error || 'Error Loading Dashboard'}</h3>
-                <p className="text-red-700">Please try refreshing the page.</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     );
@@ -409,5 +396,4 @@ const TeacherDashboardModern = () => {
     </div>
   );
 };
-
 export default TeacherDashboardModern;

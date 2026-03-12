@@ -7,7 +7,6 @@ import {
   LoadingSpinner,
   IntegrationStatusCard,
 } from '../components/IntegrationComponents';
-import { adminIntegrationAPI } from '../api/integrationApi';
 import PulseLoader from '../../components/common/PulseLoader';
 
 const AdminIntegrationSettings = () => {
@@ -16,10 +15,17 @@ const AdminIntegrationSettings = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
-  const [integrationStatus, setIntegrationStatus] = useState(null);
+  const dummyIntegrationStatus = {
+    zoom: { is_connected: true, account_email: 'admin@zoom.us' },
+    whatsapp: { is_connected: false },
+    payhere: { is_connected: true, merchant_id: 'DEMO_MERCHANT' },
+  };
+
+  const [integrationStatus, _setIntegrationStatus] = useState(dummyIntegrationStatus);
 
   useEffect(() => {
-    fetchIntegrationStatuses();
+    // Initialize with dummy data
+    setLoading(false);
   }, []);
 
   const fetchIntegrationStatuses = async () => {

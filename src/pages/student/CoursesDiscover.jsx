@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
-import { studentCourseAPI, utilityAPI } from '../../api/courseApi';
 
 const StudentCoursesDiscover = () => {
   const navigate = useNavigate();

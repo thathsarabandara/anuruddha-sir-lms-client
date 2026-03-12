@@ -1,101 +1,48 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaArrowRight, FaCheck, FaGraduationCap, FaTrophy, FaSearch, FaClock, FaClipboardCheck, FaExclamationCircle, FaCheckCircle, FaHourglassHalf, FaTimes, FaCalendarTimes } from 'react-icons/fa';
-import API from '../../api';
-import { studentQuizAPI } from '../../api/quizApi';
+// Removed: API and studentQuizAPI imports - using dummy data instead
 
 const StudentQuizzes = () => {
   const navigate = useNavigate();
+  
+  // Dummy data
+  const dummyQuizzes = [
+    { id: 1, title: 'Python Basics', course: 'Python 101', status: 'available', questions: 15, passingScore: 10, timeLimit: 60 },
+    { id: 2, title: 'Advanced OOP', course: 'OOP Concepts', status: 'completed', questions: 20, passingScore: 14, score: 16, completionDate: '2024-01-20' },
+    { id: 3, title: 'Data Structures', course: 'DSA Course', status: 'available', questions: 18, passingScore: 13, timeLimit: 90 },
+  ];
+  
+  const dummyStats = {
+    completed: 5,
+    avgScore: 78,
+    bestScore: 95,
+    totalAttempts: 8
+  };
+  
   const [filter, setFilter] = useState('available');
   const [searchTerm, setSearchTerm] = useState('');
   const [courseSearchTerm, setCourseSearchTerm] = useState('');
   const [courseFilter, setCourseFilter] = useState('all');
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
   
-  const [availableQuizzes, setAvailableQuizzes] = useState([]);
-  const [completedQuizzes, setCompletedQuizzes] = useState([]);
-  const [missedQuizzes, setMissedQuizzes] = useState([]);
-  const [upcomingQuizzes, setUpcomingQuizzes] = useState([]);
-  const [expiredQuizzes, setExpiredQuizzes] = useState([]);
+  const [availableQuizzes, _setAvailableQuizzes] = useState(dummyQuizzes.filter(q => q.status === 'available'));
+  const [completedQuizzes, _setCompletedQuizzes] = useState(dummyQuizzes.filter(q => q.status === 'completed'));
+  const [missedQuizzes, _setMissedQuizzes] = useState([]);
+  const [upcomingQuizzes, _setUpcomingQuizzes] = useState([]);
+  const [expiredQuizzes, _setExpiredQuizzes] = useState([]);
   
-  const [courses, setCourses] = useState([]);
-  const [stats, setStats] = useState({
-    completed: 0,
-    avgScore: 0,
-    bestScore: 0,
-    totalAttempts: 0
-  });
-  const [loading, setLoading] = useState(true);
+  const [courses, _setCourses] = useState([{ id: 1, name: 'Python 101' }, { id: 2, name: 'OOP Concepts' }]);
+  const [stats, _setStats] = useState(dummyStats);
+  const [loading, _setLoading] = useState(false);
 
   useEffect(() => {
-    fetchStudentData();
+    // Initialize with dummy data
   }, []);
 
   useEffect(() => {
-    if (!loading) {
-      performSearch();
-    }
-  }, [searchTerm, courseFilter, filter, loading]);
-
-  const fetchStudentData = async () => {
-    setLoading(true);
-    try {
-      // Fetch enrolled courses
-      const coursesRes = await API.quiz.getStudentCourses();
-      setCourses(coursesRes.data.courses || []);
-      
-      // Fetch available quizzes
-      const availRes = await studentQuizAPI.getStudentAvailableQuizzes('');
-      setAvailableQuizzes(availRes.data.quizzes || []);
-      
-      // Fetch completed quizzes
-      const compRes = await studentQuizAPI.getStudentCompletedQuizzesDetailed('');
-      setCompletedQuizzes(compRes.data.quizzes || []);
-      
-      // Fetch expired, upcoming, and unavailable quizzes
-      const expRes = await studentQuizAPI.getStudentExpiredUpcomingQuizzes('', 'all');
-      const allData = expRes.data.quizzes || [];
-      
-      setExpiredQuizzes(allData.filter(q => q.status_type === 'expired'));
-      setUpcomingQuizzes(allData.filter(q => q.status_type === 'upcoming'));
-      setMissedQuizzes(allData.filter(q => q.status_type === 'expired'));
-      
-      // Fetch stats from API
-      const statsRes = await studentQuizAPI.getStudentQuizStats();
-      if (statsRes.data.success) {
-        setStats(statsRes.data.stats);
-      }
-    } catch (error) {
-      console.error('Error fetching student data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const performSearch = async () => {
-    if (!searchTerm) return;
-
-    try {
-      if (filter === 'available') {
-        const availRes = await studentQuizAPI.getStudentAvailableQuizzes(searchTerm);
-        setAvailableQuizzes(availRes.data.quizzes || []);
-      } else if (filter === 'completed') {
-        const compRes = await studentQuizAPI.getStudentCompletedQuizzesDetailed(searchTerm);
-        setCompletedQuizzes(compRes.data.quizzes || []);
-      } else if (filter === 'expired') {
-        const expRes = await studentQuizAPI.getStudentExpiredUpcomingQuizzes(searchTerm, 'expired');
-        setExpiredQuizzes(expRes.data.quizzes || []);
-      } else if (filter === 'upcoming') {
-        const upRes = await studentQuizAPI.getStudentExpiredUpcomingQuizzes(searchTerm, 'upcoming');
-        setUpcomingQuizzes(upRes.data.quizzes || []);
-      } else if (filter === 'missed') {
-        const missRes = await studentQuizAPI.getStudentExpiredUpcomingQuizzes(searchTerm, 'expired');
-        setMissedQuizzes(missRes.data.quizzes || []);
-      }
-    } catch (error) {
-      console.error('Error searching quizzes:', error);
-    }
-  };
+    // Dummy search - quizzes already loaded
+  }, [searchTerm, courseFilter, filter]);
 
   const handleStartQuiz = (quizId) => {
     navigate(`/student/quiz/${quizId}/take`);

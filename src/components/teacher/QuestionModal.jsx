@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MdClose, MdAdd, MdDelete } from 'react-icons/md';
-import API from '../../api';
+import { toast } from 'react-toastify';
 import Notification from '../common/Notification';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
 
@@ -36,43 +36,18 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId }) => {
     }
   }, [question?.id]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
     
-    try {
-      const submitData = new FormData();
-      submitData.append('question_type', formData.question_type);
-      submitData.append('question_text', formData.question_text);
-      submitData.append('marks', formData.marks);
-      submitData.append('explanation', formData.explanation);
-      submitData.append('difficulty', formData.difficulty);
-      submitData.append('tags', formData.tags);
-      
-      // Handle image
-      if (formData.image) {
-        submitData.append('image', formData.image);
-      } else if (formData.remove_image) {
-        submitData.append('remove_image', 'true');
-      }
-      
-      // Handle options
-      submitData.append('options', JSON.stringify(formData.options));
-      
-      if (question?.id) {
-        await API.quiz.teacherQuizAPI.updateQuestion(question.id, submitData);
-      } else {
-        await API.quiz.teacherQuizAPI.createQuestion(quizId, submitData);
-      }
+    // Simulate API delay with dummy data
+    setTimeout(() => {
+      toast.success(question?.id ? 'Question updated successfully' : 'Question created successfully');
+      setIsLoading(false);
       onSave();
       onClose();
-    } catch (error) {
-      console.error('Error saving question:', error);
-      setError(error.response?.data?.message || 'Failed to save question');
-    } finally {
-      setIsLoading(false);
-    }
+    }, 500);
   };
 
   const addOption = () => {

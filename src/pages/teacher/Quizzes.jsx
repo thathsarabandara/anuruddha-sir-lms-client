@@ -3,60 +3,41 @@ import { useNavigate } from 'react-router-dom';
 import { FaAward, FaPencilAlt, FaPlus, FaEye, FaTrash, FaEdit, FaClock, FaUsers, FaClipboardCheck, FaBook, FaCheckCircle, FaCopy } from 'react-icons/fa';
 import { MdQuiz } from 'react-icons/md';
 import { toast } from 'react-toastify';
-import API from '../../api';
 import QuizFormModal from '../../components/teacher/QuizFormModal';
 import { BiLoader } from 'react-icons/bi';
-import quizApi from '../../api/quizApi';
 
 const TeacherQuizzes = () => {
   const navigate = useNavigate();
+  // Dummy data
+  const dummyQuizzes = [
+    { id: 1, title: 'Python Basics', description: 'Basic Python concepts', status: 'published', questions: 20, attempts: 45, created_date: '2024-02-15' },
+    { id: 2, title: 'Web Dev Quiz', description: 'HTML, CSS, JS', status: 'published', questions: 15, attempts: 32, created_date: '2024-02-20' },
+    { id: 3, title: 'Advanced Python', description: 'Advanced concepts', status: 'draft', questions: 10, attempts: 0, created_date: '2024-03-05' },
+  ];
+
+  const dummyStats = {
+    total: 3,
+    published: 2,
+    draft: 1,
+    attempts: 77,
+  };
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState('published');
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   
-  const [quizzes, setQuizzes] = useState([]);
-  const [stats, setStats] = useState({
-    total: 0,
-    published: 0,
-    pending: 0,
-    avgScore: 0
-  });
-  const [loading, setLoading] = useState(true);
+  const [quizzes, setQuizzes] = useState(dummyQuizzes);
+  const [stats, _setStats] = useState(dummyStats);
+  const [loading, _setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
 
   useEffect(() => {
-    fetchQuizzes();
+    // Dummy data already loaded
   }, []);
 
-
-  const fetchQuizzes = async () => {
-    setLoading(true);
-    try {
-      const stat = await quizApi.teacherQuizAPI.teacherStat();
-      const response = await quizApi.teacherQuizAPI.getTeacherAllQuizzes();
-      const quizzesData = response.data.quizzes || [];
-      setQuizzes(quizzesData);
-      const statsData = stat.data || {};
-      
-      // Calculate stats
-      const total = statsData.stats.total || 0;
-      const published = statsData.stats.published || 0;
-      const totalPending = statsData.stats.pending || 0;
-      const draft = statsData.stats.draft || 0;
-      
-      setStats({
-        total: total,
-        published,
-        pending: totalPending,
-        draft: draft
-      });
-
-    } catch (error) {
-      console.error('Error fetching quizzes:', error);
-    } finally {
-      setLoading(false);
-    }
+  const fetchQuizzes = () => {
+    // Dummy data already set
   };
 
   const handleCreateQuiz = () => {
@@ -69,18 +50,12 @@ const TeacherQuizzes = () => {
     setShowEditModal(true);
   };
 
-  const handleDeleteQuiz = async (quizId) => {
+  const handleDeleteQuiz = (quizId) => {
     if (!confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
       return;
     }
-    
-    try {
-      await API.quiz.deleteQuiz(quizId);
-      fetchQuizzes();
-    } catch (error) {
-      console.error('Error deleting quiz:', error);
-      alert(error.response?.data?.message || 'Failed to delete quiz');
-    }
+    setQuizzes(quizzes.filter(q => q.id !== quizId));
+    toast.success('Quiz deleted successfully');
   };
 
   const handleQuizSaved = () => {

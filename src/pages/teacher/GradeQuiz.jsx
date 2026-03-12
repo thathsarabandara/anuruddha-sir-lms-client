@@ -1,48 +1,67 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaTimes, FaUser, FaClock, FaClipboardCheck, FaSave } from 'react-icons/fa';
-import API from '../../api';
+
+// Dummy data outside component to avoid dependency issues
+const getDummyQuiz = (quizId) => ({
+  id: quizId,
+  title: 'Python Programming Quiz',
+  total_marks: 100,
+});
+
+const dummyPendingReviews = [
+  {
+    answer_id: 1,
+    student_name: 'Rahul Kumar',
+    student_id: 'STU001',
+    question_id: 1,
+    question_text: 'Explain the concept of object-oriented programming',
+    question_marks: 10,
+    student_answer: 'OOP is a programming paradigm that involves organizing code using objects and classes...',
+    earned_marks: 0,
+    feedback: '',
+    submitted_at: '2024-01-15 10:30 AM',
+  },
+  {
+    answer_id: 2,
+    student_name: 'Priya Singh',
+    student_id: 'STU002',
+    question_id: 2,
+    question_text: 'What are the four pillars of OOP?',
+    question_marks: 10,
+    student_answer: 'The four pillars are: 1) Encapsulation, 2) Abstraction, 3) Inheritance, and 4) Polymorphism',
+    earned_marks: 0,
+    feedback: '',
+    submitted_at: '2024-01-14 02:15 PM',
+  },
+];
 
 const GradeQuiz = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
   
-  const [quiz, setQuiz] = useState(null);
-  const [pendingReviews, setPendingReviews] = useState([]);
+  const [quiz, _setQuiz] = useState(getDummyQuiz(quizId));
+  const [pendingReviews, _setPendingReviews] = useState(dummyPendingReviews);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [grades, setGrades] = useState({});
   const [feedback, setFeedback] = useState({});
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const fetchPendingReviews = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await API.quiz.getPendingReviews(quizId);
-      setQuiz(response.data.quiz);
-      setPendingReviews(response.data.pending_reviews || []);
-      
-      // Initialize grades and feedback
+  useEffect(() => {
+    // Initialize grades and feedback with dummy data asynchronously to avoid cascading renders
+    setTimeout(() => {
       const initialGrades = {};
       const initialFeedback = {};
-      response.data.pending_reviews?.forEach(review => {
+      dummyPendingReviews.forEach(review => {
         initialGrades[review.answer_id] = review.earned_marks || 0;
         initialFeedback[review.answer_id] = review.feedback || '';
       });
       setGrades(initialGrades);
       setFeedback(initialFeedback);
-    } catch (error) {
-      console.error('Error fetching pending reviews:', error);
-      alert('Failed to load pending reviews');
-      navigate('/teacher/quizzes');
-    } finally {
       setLoading(false);
-    }
-  }, [quizId, navigate]);
-
-  useEffect(() => {
-    fetchPendingReviews();
-  }, [fetchPendingReviews]);
+    }, 0);
+  }, []);
 
   const handleGradeChange = (answerId, value) => {
     const currentReview = pendingReviews[currentReviewIndex];
@@ -66,30 +85,21 @@ const GradeQuiz = () => {
     }));
   };
 
-  const handleSaveGrade = async (answerId) => {
+  const handleSaveGrade = () => {
     setSaving(true);
-    try {
-      await API.quiz.gradeAnswer(answerId, {
-        earned_marks: grades[answerId],
-        teacher_feedback: feedback[answerId]
-      });
-      
+    
+    // Simulate saving
+    setTimeout(() => {
       alert('Grade saved successfully!');
       
       // Move to next review or go back if this was the last one
       if (currentReviewIndex < pendingReviews.length - 1) {
         setCurrentReviewIndex(prev => prev + 1);
       } else {
-        // Refresh to get updated list
-        fetchPendingReviews();
         setCurrentReviewIndex(0);
       }
-    } catch (error) {
-      console.error('Error saving grade:', error);
-      alert(error.response?.data?.message || 'Failed to save grade');
-    } finally {
       setSaving(false);
-    }
+    }, 500);
   };
 
   const handleSkip = () => {

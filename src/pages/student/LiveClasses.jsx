@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { FaBook, FaCalendar, FaCheck, FaClock, FaFileVideo, FaUsers, FaVideo, FaSearch, FaFilter, FaTimes, FaGraduationCap } from 'react-icons/fa';
 import { GoDotFill } from 'react-icons/go';
-import { studentCourseAPI } from '../../api/courseApi';
 
 const StudentLiveClasses = () => {
   const [filter, setFilter] = useState('upcoming');

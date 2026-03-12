@@ -1,5 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import reviewApi from '../../api/reviewApi';
+import { toast } from 'react-toastify';
+
+const dummyReviews = [
+  {
+    id: 1,
+    student_name: 'John Doe',
+    rating: 5,
+    review_text: 'Excellent course! Very well structured and easy to follow.',
+    created_at: '2024-03-10T10:30:00',
+    status: 'APPROVED',
+  },
+  {
+    id: 2,
+    student_name: 'Jane Smith',
+    rating: 4,
+    review_text: 'Good course content but could use more examples.',
+    created_at: '2024-03-08T14:15:00',
+    status: 'APPROVED',
+  },
+];
+
+const dummyStats = {
+  total_reviews: 12,
+  average_rating: 4.5,
+  approved_count: 10,
+  pending_count: 2,
+};
 
 const ReviewsList = ({ courseId, isStudent = false, isTeacher = false, isAdmin = false }) => {
   const [reviews, setReviews] = useState([]);
@@ -12,91 +38,45 @@ const ReviewsList = ({ courseId, isStudent = false, isTeacher = false, isAdmin =
   const [filterApproved, setFilterApproved] = useState(null);
   const [myReview, setMyReview] = useState(null);
 
-  // Fetch reviews based on role
-  const fetchReviews = async (page = 1, approved = null) => {
-    setLoading(true);
-    setError(null);
-    try {
-      let response;
-
-      if (isTeacher) {
-        response = await reviewApi.getTeacherCourseReviews(courseId, page, perPage, approved);
-      } else if (isAdmin) {
-        response = await reviewApi.getAllReviews(page, perPage, approved, courseId);
-      } else {
-        response = await reviewApi.getCourseReviews(courseId, page, perPage);
-      }
-
-      const data = response.data;
-      setReviews(data.reviews || []);
-      setStats(data.stats || null);
-      setPagination(data.pagination || null);
-      setCurrentPage(page);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load reviews');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Fetch student's own review
-  const fetchMyReview = async () => {
-    if (!isStudent) return;
-
-    try {
-      const response = await reviewApi.getMyReview(courseId);
-      if (response.data.review) {
-        setMyReview(response.data.review);
-      }
-    } catch (err) {
-      console.error('Error fetching my review:', err);
-    }
-  };
-
+  // Load dummy reviews on mount
   useEffect(() => {
-    fetchReviews(1, filterApproved);
-    if (isStudent) {
-      fetchMyReview();
-    }
-  }, [courseId, filterApproved]);
-
-  const handleApproveReview = async (reviewId) => {
-    try {
-      await reviewApi.approveReview(reviewId);
-      // Refresh reviews
-      fetchReviews(currentPage, filterApproved);
-    } catch (err) {
-        console.error('Error approving review:', err);
-        alert('Failed to approve review');
-    }
-  };
-
-  const handleRejectReview = async (reviewId) => {
-    try {
-      await reviewApi.rejectReview(reviewId);
-      // Refresh reviews
-      fetchReviews(currentPage, filterApproved);
-    } catch (err) {
-      console.error('Error rejecting review:', err);
-      alert('Failed to reject review');
-    }
-  };
-
-  const handleDeleteReview = async (reviewId) => {
-    if (window.confirm('Are you sure you want to delete this review?')) {
-      try {
-        await reviewApi.deleteReview(reviewId);
-        // Refresh reviews
-        fetchReviews(currentPage, filterApproved);
-      } catch (err) {
-        console.error('Error deleting review:', err);
-        alert('Failed to delete review');
+    setLoading(true);
+    setTimeout(() => {
+      setReviews(dummyReviews);
+      setStats(dummyStats);
+      setPagination({
+        total: 12,
+        per_page: perPage,
+        current_page: 1,
+        total_pages: 2,
+      });
+      setCurrentPage(1);
+      if (isStudent) {
+        setMyReview(dummyReviews[0]);
       }
+      setLoading(false);
+    }, 300);
+  }, [courseId, perPage, isStudent]);
+
+  const handleApproveReview = (reviewId) => {
+    toast.success('Review approved successfully');
+    setReviews(reviews.map(r => r.id === reviewId ? { ...r, status: 'APPROVED' } : r));
+  };
+
+  const handleRejectReview = (reviewId) => {
+    toast.success('Review rejected successfully');
+    setReviews(reviews.map(r => r.id === reviewId ? { ...r, status: 'REJECTED' } : r));
+  };
+
+  const handleDeleteReview = (reviewId) => {
+    if (window.confirm('Are you sure you want to delete this review?')) {
+      toast.success('Review deleted successfully');
+      setReviews(reviews.filter(r => r.id !== reviewId));
     }
   };
 
   const handlePageChange = (newPage) => {
-    fetchReviews(newPage, filterApproved);
+    setCurrentPage(newPage);
   };
 
   const getRatingStars = (rating) => {

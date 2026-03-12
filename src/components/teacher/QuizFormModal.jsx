@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaTimes, FaCheck } from 'react-icons/fa';
-import quizApi from '../../api/quizApi';
+import { toast } from 'react-toastify';
 
 const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
   const [formData, setFormData] = useState({
@@ -62,25 +62,17 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
     }
   }, [quiz]);
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      if (quiz?.id) {
-        await quizApi.teacherQuizAPI.updateQuiz(quiz.id, formData);
-      } else {
-        console.log(formData);
-        await quizApi.teacherQuizAPI.createQuiz(formData);
-      }
+    // Simulate API delay with dummy data
+    setTimeout(() => {
+      toast.success(quiz?.id ? 'Quiz updated successfully' : 'Quiz created successfully');
+      setLoading(false);
       onSave();
       onClose();
-    } catch (error) {
-      console.error('Error saving quiz:', error);
-      alert(error.response?.data?.message || 'Failed to save quiz');
-    } finally {
-      setLoading(false);
-    }
+    }, 500);
   };
 
   if (!isOpen) return null;

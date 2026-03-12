@@ -12,7 +12,6 @@ import {
   FaCalendarAlt,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import { adminPaymentsAPI } from '../../api';
 import PulseLoader from '../../components/common/PulseLoader';
 
 // eslint-disable-next-line no-unused-vars

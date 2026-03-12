@@ -10,7 +10,11 @@ import {
   FaSpinner,
   FaCalendarAlt,
 } from 'react-icons/fa';
-import { studentQuizAPI } from '../../api/quizApi';
+
+const dummyAvailableQuizzes = [
+  { id: 1, title: 'Basic Math Quiz', quiz_type: 'PRACTICE', duration: 30, total_marks: 100, attempts_used: 0, max_attempts: 3 },
+  { id: 2, title: 'JavaScript Basics', quiz_type: 'GRADED', duration: 45, total_marks: 100, attempts_used: 1, max_attempts: 2 },
+];
 
 const AvailableQuizzes = () => {
   const navigate = useNavigate();
@@ -32,22 +36,16 @@ const AvailableQuizzes = () => {
     filterQuizzes();
   }, [quizzes, searchTerm, quizTypeFilter]);
 
-  const fetchAvailableQuizzes = async () => {
+  const fetchAvailableQuizzes = () => {
     setLoading(true);
-    try {
-      const response = await studentQuizAPI.getStudentAvailableQuizzes();
-      if (response.data.success) {
-        setQuizzes(response.data.quizzes);
-        setStats({
-          totalAvailable: response.data.count,
-          totalAttempts: response.data.quizzes.reduce((sum, q) => sum + q.attempts_used, 0),
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching available quizzes:', error);
-    } finally {
+    setTimeout(() => {
+      setQuizzes(dummyAvailableQuizzes);
+      setStats({
+        totalAvailable: dummyAvailableQuizzes.length,
+        totalAttempts: dummyAvailableQuizzes.reduce((sum, q) => sum + q.attempts_used, 0),
+      });
       setLoading(false);
-    }
+    }, 500);
   };
 
   const filterQuizzes = () => {

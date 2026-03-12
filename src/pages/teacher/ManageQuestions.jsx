@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaPlus, FaEdit, FaTrash, FaGripVertical, FaClipboardList, FaBook, FaSearch } from 'react-icons/fa';
-import API from '../../api';
 import QuestionModal from '../../components/teacher/QuestionModal';
 import Notification from '../../components/common/Notification';
 import { BiLoader } from 'react-icons/bi';
@@ -10,36 +9,28 @@ import { getAbsoluteImageUrl } from '../../utils/helpers';
 const ManageQuestions = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
-  const [questions, setQuestions] = useState([]);
+  
+  // Dummy data
+  const dummyQuestions = [
+    { id: 1, text: 'What is Python?', type: 'SINGLE_CHOICE', order: 1, options: ['Programming language', 'Snake', 'Other'] },
+    { id: 2, text: 'Define OOP', type: 'SHORT_ANSWER', order: 2 },
+  ];
+
+  const [questions, setQuestions] = useState(dummyQuestions);
   const [selectedBank, setSelectedBank] = useState(null);
   const [bankQuestions, setBankQuestions] = useState([]);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
   const [showBankModal, setShowBankModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [hasAttempts, setHasAttempts] = useState(false);
+  const [loading, _setLoading] = useState(false);
+  const [hasAttempts, _setHasAttempts] = useState(false);
   const [notification, setNotification] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const fetchQuizData = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [questionsResponse] = await Promise.all([
-        API.quiz.teacherQuizAPI.getQuizQuestions(quizId),
-      ]);
-      setQuestions(questionsResponse.data.questions || []);
-      setHasAttempts(questionsResponse.data.has_attempts || false);
-    } catch (error) {
-      console.error('Error fetching quiz questions:', error);
-      setNotification({
-        type: 'error',
-        message: 'Failed to load quiz questions',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, [quizId]);
-
+  
+  const fetchQuizData = useCallback(() => {
+    // Dummy data already set
+  }, []);
 
   useEffect(() => {
     fetchQuizData();
@@ -81,25 +72,16 @@ const ManageQuestions = () => {
     setShowDeleteConfirm(questionId);
   };
 
-  const confirmDeleteQuestion = async () => {
+  const confirmDeleteQuestion = () => {
     if (!showDeleteConfirm) return;
 
-    try {
-      await API.quiz.teacherQuizAPI.deleteQuestion(showDeleteConfirm);
-      setNotification({
-        type: 'success',
-        message: 'Question deleted successfully',
-      });
-      fetchQuizData();
-    } catch (error) {
-      console.error('Error deleting question:', error);
-      setNotification({
-        type: 'error',
-        message: error.response?.data?.message || 'Failed to delete question',
-      });
-    } finally {
-      setShowDeleteConfirm(null);
-    }
+    // Remove question from state
+    setQuestions(questions.filter(q => q.id !== showDeleteConfirm));
+    setNotification({
+      type: 'success',
+      message: 'Question deleted successfully',
+    });
+    setShowDeleteConfirm(null);
   };
 
   const handleQuestionSaved = () => {
@@ -112,19 +94,19 @@ const ManageQuestions = () => {
     });
   };
 
-  const handleAddFromBank = async (bankQuestionId) => {
-    try {
-      await API.quiz.teacherQuizAPI.addQuestionToQuiz(quizId, { question_bank_question_id: bankQuestionId });
-      fetchQuizData();
+  const handleAddFromBank = (bankQuestionId) => {
+    // Add question from bank to current questions
+    const bankQuestion = bankQuestions.find(q => q.id === bankQuestionId);
+    if (bankQuestion) {
+      const newQuestion = {
+        ...bankQuestion,
+        id: Math.max(...questions.map(q => q.id), 0) + 1,
+        order: questions.length + 1,
+      };
+      setQuestions([...questions, newQuestion]);
       setNotification({
         type: 'success',
         message: 'Question added successfully!',
-      });
-    } catch (error) {
-      console.error('Error adding question:', error);
-      setNotification({
-        type: 'error',
-        message: error.response?.data?.message || 'Failed to add question',
       });
     }
   };

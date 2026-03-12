@@ -1,9 +1,35 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import { quizAPI } from '../../api/quizApi';
 import { BiSearch, BiLoader } from 'react-icons/bi';
 import { AiOutlineClose } from 'react-icons/ai';
 import { FaCopy } from 'react-icons/fa';
+
+const dummyQuizzes = [
+  {
+    id: 'quiz-001',
+    title: 'Basic Mathematics Quiz',
+    description: 'Test your basic math skills',
+    total_marks: 100,
+    passing_score: 60,
+    duration: 30,
+  },
+  {
+    id: 'quiz-002',
+    title: 'Advanced JavaScript Concepts',
+    description: 'Master JavaScript promises and async/await',
+    total_marks: 100,
+    passing_score: 70,
+    duration: 45,
+  },
+  {
+    id: 'quiz-003',
+    title: 'Chemistry Fundamentals',
+    description: 'Learn basic chemistry principles',
+    total_marks: 80,
+    passing_score: 50,
+    duration: 40,
+  },
+];
 
 const QuizSearchModal = ({ isOpen, onClose, onSelect }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,25 +48,19 @@ const QuizSearchModal = ({ isOpen, onClose, onSelect }) => {
     }
   }, [searchQuery]);
 
-  const searchQuizzes = async () => {
-    try {
-      setLoading(true);
-      const response = await quizAPI.searchPublishedQuizzes(searchQuery);
-      
-      if (response.data.success) {
-        setSearchResults(response.data.quizzes || []);
-        setHasSearched(true);
-      } else {
-        toast.error('Failed to search quizzes');
-        setSearchResults([]);
-      }
-    } catch (err) {
-      console.error('Error searching quizzes:', err);
-      toast.error('Error searching quizzes');
-      setSearchResults([]);
-    } finally {
+  const searchQuizzes = () => {
+    setLoading(true);
+    // Simulate API delay with dummy data
+    setTimeout(() => {
+      const query = searchQuery.toLowerCase();
+      const filtered = dummyQuizzes.filter(q => 
+        q.title.toLowerCase().includes(query) || 
+        q.description.toLowerCase().includes(query)
+      );
+      setSearchResults(filtered);
+      setHasSearched(true);
       setLoading(false);
-    }
+    }, 300);
   };
 
   const handleSelectQuiz = (quiz) => {
