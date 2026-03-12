@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { clearAuthData } from '../utils/helpers';
+import { getToken } from '../utils/helpers';
 import { API_ENDPOINTS } from '../utils/constants';
 
 // Create axios instance
@@ -12,9 +12,18 @@ const axiosInstance = axios.create({
   withCredentials: true,
 });
 
-// Request interceptor - handle FormData
+// Request interceptor - add access token if available
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Add access token to Authorization header if available
+    // Token will be read from cookies first (Set-Cookie headers), fallback to localStorage
+    const access_token = getToken('access_token');
+    if (access_token) {
+      config.headers.Authorization = `Bearer ${access_token}`;
+    }
+    
+    // withCredentials: true ensures cookies are automatically sent with every request
+    
     if (config.data instanceof FormData) {
       delete config.headers['Content-Type'];
     }
@@ -29,26 +38,12 @@ axiosInstance.interceptors.request.use(
 // Response interceptor - handle errors globally
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Debug logging
-    console.log(`API Response: ${response.status}`, {
-      url: response.config.url,
-      data: response.data,
-    });
     return response;
   },
   (error) => {
-    // Debug logging for errors
-    console.error(`API Error: ${error.response?.status || 'Unknown'}`, {
-      url: error.config?.url,
-      message: error.message,
-      responseData: error.response?.data,
-    });
-
-    // Handle 401 Unauthorized - auto logout
+    // Handle 401 Unauthorized
     if (error.response?.status === 401) {
-      console.warn('401 Unauthorized - clearing auth data and redirecting to login');
-      clearAuthData();
-      window.location.href = '/login';
+      console.warn('401 Unauthorized - backend rejected token');
     }
 
     // Handle 403 Forbidden
