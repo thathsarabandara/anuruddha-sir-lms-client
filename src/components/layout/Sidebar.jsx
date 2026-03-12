@@ -62,7 +62,7 @@ const Sidebar = ({ isOpen = true, onClose = () => {} }) => {
         ];
       
       case ROLES.ADMIN:
-      case ROLES.SUPER_ADMIN:
+      case ROLES.SUPERADMIN:
         return [
           { name: 'Dashboard', path: ROUTES.ADMIN_DASHBOARD, icon: FaChartBar },
           { name: 'Students', path: ROUTES.ADMIN_STUDENTS, icon: FaUsers },
