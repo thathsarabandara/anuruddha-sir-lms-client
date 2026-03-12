@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   FaCheck,
   FaTimes,
-  FaTimesCircle,
   FaEye,
   FaDownload,
   FaImage,
@@ -359,134 +358,311 @@ const AdminPayments = () => {
 
   // Fetch Stats
   const fetchStats = useCallback(async () => {
-    try {
-      const response = await adminPaymentsAPI.getStats();
-      if (response.data?.success) {
-        setStats(response.data.stats);
-      }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      toast.error('Failed to load payment statistics');
-    }
+    const dummyStats = {
+      total_revenue: 5250000,
+      completed_count: 85,
+      completed_revenue: 4200000,
+      pending_count: 12,
+      bank_transfer_pending: 5,
+      this_month: 950000,
+      payhere_count: 45,
+      bank_count: 30,
+      cash_count: 15,
+      recent_payments: [
+        {
+          id: 1,
+          payment_number: 'PAY-001',
+          student_name: 'John Doe',
+          student_email: 'john@example.com',
+          amount: 50000,
+          status: 'completed',
+          created_at: '2026-03-10T10:30:00Z',
+        },
+        {
+          id: 2,
+          payment_number: 'PAY-002',
+          student_name: 'Jane Smith',
+          student_email: 'jane@example.com',
+          amount: 75000,
+          status: 'completed',
+          created_at: '2026-03-09T14:15:00Z',
+        },
+        {
+          id: 3,
+          payment_number: 'PAY-003',
+          student_name: 'Mike Johnson',
+          student_email: 'mike@example.com',
+          amount: 60000,
+          status: 'pending',
+          created_at: '2026-03-08T09:00:00Z',
+        },
+        {
+          id: 4,
+          payment_number: 'PAY-004',
+          student_name: 'Sarah Williams',
+          student_email: 'sarah@example.com',
+          amount: 80000,
+          status: 'bank_transfer_pending',
+          created_at: '2026-03-07T16:45:00Z',
+        },
+        {
+          id: 5,
+          payment_number: 'PAY-005',
+          student_name: 'Tom Brown',
+          student_email: 'tom@example.com',
+          amount: 55000,
+          status: 'completed',
+          created_at: '2026-03-06T11:20:00Z',
+        },
+      ],
+    };
+    setStats(dummyStats);
   }, []);
 
   // Fetch Payments
   const fetchPayments = useCallback(
     async (page = 1) => {
-      try {
-        setLoading(true);
-        const params = {
-          page,
-          per_page: pagination.per_page,
-        };
-        if (filterStatus !== 'all') params.status = filterStatus;
-        if (filterMethod !== 'all') params.method = filterMethod;
-        if (searchTerm) params.search = searchTerm;
-
-        const response = await adminPaymentsAPI.getAll(params);
-        if (response.data?.success) {
-          setPayments(response.data.payments);
-          setPagination({
-            page: response.data.page,
-            per_page: response.data.per_page,
-            total: response.data.total,
-            total_pages: response.data.total_pages,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching payments:', error);
-        toast.error('Failed to load payments');
-      } finally {
-        setLoading(false);
+      setLoading(true);
+      
+      const allDummyPayments = [
+        { id: 1, payment_number: 'PAY-001', student_name: 'John Doe', student_email: 'john@example.com', amount: 50000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-10T10:30:00Z' },
+        { id: 2, payment_number: 'PAY-002', student_name: 'Jane Smith', student_email: 'jane@example.com', amount: 75000, payment_method: 'bank', status: 'completed', created_at: '2026-03-09T14:15:00Z' },
+        { id: 3, payment_number: 'PAY-003', student_name: 'Mike Johnson', student_email: 'mike@example.com', amount: 60000, payment_method: 'cash', status: 'pending', created_at: '2026-03-08T09:00:00Z' },
+        { id: 4, payment_number: 'PAY-004', student_name: 'Sarah Williams', student_email: 'sarah@example.com', amount: 80000, payment_method: 'bank', status: 'bank_transfer_pending', created_at: '2026-03-07T16:45:00Z' },
+        { id: 5, payment_number: 'PAY-005', student_name: 'Tom Brown', student_email: 'tom@example.com', amount: 55000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-06T11:20:00Z' },
+        { id: 6, payment_number: 'PAY-006', student_name: 'Lisa Anderson', student_email: 'lisa@example.com', amount: 70000, payment_method: 'cash', status: 'completed', created_at: '2026-03-05T13:30:00Z' },
+        { id: 7, payment_number: 'PAY-007', student_name: 'David Miller', student_email: 'david@example.com', amount: 65000, payment_method: 'bank', status: 'pending', created_at: '2026-03-04T15:45:00Z' },
+        { id: 8, payment_number: 'PAY-008', student_name: 'Emma Davis', student_email: 'emma@example.com', amount: 90000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-03T10:15:00Z' },
+        { id: 9, payment_number: 'PAY-009', student_name: 'Robert Wilson', student_email: 'robert@example.com', amount: 45000, payment_method: 'cash', status: 'rejected', created_at: '2026-03-02T14:00:00Z' },
+        { id: 10, payment_number: 'PAY-010', student_name: 'Grace Taylor', student_email: 'grace@example.com', amount: 72000, payment_method: 'bank', status: 'completed', created_at: '2026-03-01T09:30:00Z' },
+      ];
+      
+      let filteredPayments = allDummyPayments;
+      if (filterStatus !== 'all') {
+        filteredPayments = filteredPayments.filter(p => p.status === filterStatus);
       }
+      if (filterMethod !== 'all') {
+        filteredPayments = filteredPayments.filter(p => p.payment_method === filterMethod);
+      }
+      if (searchTerm) {
+        filteredPayments = filteredPayments.filter(p => 
+          p.payment_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.student_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.student_name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      
+      const total = filteredPayments.length;
+      const total_pages = Math.ceil(total / pagination.per_page);
+      const startIndex = (page - 1) * pagination.per_page;
+      const paginatedPayments = filteredPayments.slice(startIndex, startIndex + pagination.per_page);
+      
+      setPayments(paginatedPayments);
+      setPagination({
+        page,
+        per_page: pagination.per_page,
+        total,
+        total_pages,
+      });
+      
+      setLoading(false);
     },
     [filterStatus, filterMethod, searchTerm, pagination.per_page]
   );
 
   // Fetch Bank Slips
   const fetchBankSlips = useCallback(async () => {
-    try {
-      const response = await adminPaymentsAPI.getBankSlips({ page: 1, per_page: 20 });
-      if (response.data?.success) {
-        setBankSlips(response.data.bank_slips);
-      }
-    } catch (error) {
-      console.error('Error fetching bank slips:', error);
-      toast.error('Failed to load bank slips');
-    }
+    const dummyBankSlips = [
+      { id: 4, payment_number: 'PAY-004', student_name: 'Sarah Williams', student_email: 'sarah@example.com', amount: 80000, bank_name: 'Bank of Ceylon', days_pending: 3 },
+      { id: 7, payment_number: 'PAY-007', student_name: 'David Miller', student_email: 'david@example.com', amount: 65000, bank_name: 'Commercial Bank', days_pending: 5 },
+    ];
+    setBankSlips(dummyBankSlips);
   }, []);
 
   // Fetch Analytics
   const fetchAnalytics = useCallback(async () => {
-    try {
-      const response = await adminPaymentsAPI.getAnalytics(parseInt(analyticsRange));
-      if (response.data?.success) {
-        setAnalytics(response.data.analytics);
-      }
-    } catch (error) {
-      console.error('Error fetching analytics:', error);
-      toast.error('Failed to load analytics');
-    }
-  }, [analyticsRange]);
+    const dummyAnalytics = {
+      method_breakdown: [
+        { label: 'PayHere', count: 45, amount: 1800000 },
+        { label: 'Bank Transfer', count: 30, amount: 2000000 },
+        { label: 'Cash', count: 15, amount: 900000 },
+      ],
+      status_breakdown: [
+        { label: 'Completed', count: 85 },
+        { label: 'Pending', count: 12 },
+        { label: 'Bank Pending', count: 5 },
+        { label: 'Rejected', count: 2 },
+      ],
+      top_students: [
+        { student_name: 'John Doe', email: 'john@example.com', total_spent: 250000, transaction_count: 5 },
+        { student_name: 'Emma Davis', email: 'emma@example.com', total_spent: 220000, transaction_count: 4 },
+        { student_name: 'Jane Smith', email: 'jane@example.com', total_spent: 180000, transaction_count: 3 },
+        { student_name: 'Sarah Williams', email: 'sarah@example.com', total_spent: 160000, transaction_count: 3 },
+        { student_name: 'Mike Johnson', email: 'mike@example.com', total_spent: 150000, transaction_count: 3 },
+        { student_name: 'Grace Taylor', email: 'grace@example.com', total_spent: 140000, transaction_count: 2 },
+        { student_name: 'David Miller', email: 'david@example.com', total_spent: 130000, transaction_count: 2 },
+        { student_name: 'Lisa Anderson', email: 'lisa@example.com', total_spent: 120000, transaction_count: 2 },
+        { student_name: 'Tom Brown', email: 'tom@example.com', total_spent: 115000, transaction_count: 2 },
+        { student_name: 'Robert Wilson', email: 'robert@example.com', total_spent: 105000, transaction_count: 2 },
+      ],
+    };
+    setAnalytics(dummyAnalytics);
+  }, []);
 
   // Initial Load
   useEffect(() => {
-    fetchStats();
+    // Load stats
+    const dummyStats = {
+      total_revenue: 5250000,
+      completed_count: 85,
+      completed_revenue: 4200000,
+      pending_count: 12,
+      bank_transfer_pending: 5,
+      this_month: 950000,
+      payhere_count: 45,
+      bank_count: 30,
+      cash_count: 15,
+      recent_payments: [
+        {
+          id: 1,
+          payment_number: 'PAY-001',
+          student_name: 'John Doe',
+          student_email: 'john@example.com',
+          amount: 50000,
+          status: 'completed',
+          created_at: '2026-03-10T10:30:00Z',
+        },
+        {
+          id: 2,
+          payment_number: 'PAY-002',
+          student_name: 'Jane Smith',
+          student_email: 'jane@example.com',
+          amount: 75000,
+          status: 'completed',
+          created_at: '2026-03-09T14:15:00Z',
+        },
+        {
+          id: 3,
+          payment_number: 'PAY-003',
+          student_name: 'Mike Johnson',
+          student_email: 'mike@example.com',
+          amount: 60000,
+          status: 'pending',
+          created_at: '2026-03-08T09:00:00Z',
+        },
+        {
+          id: 4,
+          payment_number: 'PAY-004',
+          student_name: 'Sarah Williams',
+          student_email: 'sarah@example.com',
+          amount: 80000,
+          status: 'bank_transfer_pending',
+          created_at: '2026-03-07T16:45:00Z',
+        },
+        {
+          id: 5,
+          payment_number: 'PAY-005',
+          student_name: 'Tom Brown',
+          student_email: 'tom@example.com',
+          amount: 55000,
+          status: 'completed',
+          created_at: '2026-03-06T11:20:00Z',
+        },
+      ],
+    };
+    setStats(dummyStats);
+
+    // Load bank slips
+    const dummyBankSlips = [
+      { id: 4, payment_number: 'PAY-004', student_name: 'Sarah Williams', student_email: 'sarah@example.com', amount: 80000, bank_name: 'Bank of Ceylon', days_pending: 3 },
+      { id: 7, payment_number: 'PAY-007', student_name: 'David Miller', student_email: 'david@example.com', amount: 65000, bank_name: 'Commercial Bank', days_pending: 5 },
+    ];
+    setBankSlips(dummyBankSlips);
+
+    // Load analytics
+    const dummyAnalytics = {
+      method_breakdown: [
+        { label: 'PayHere', count: 45, amount: 1800000 },
+        { label: 'Bank Transfer', count: 30, amount: 2000000 },
+        { label: 'Cash', count: 15, amount: 900000 },
+      ],
+      status_breakdown: [
+        { label: 'Completed', count: 85 },
+        { label: 'Pending', count: 12 },
+        { label: 'Bank Pending', count: 5 },
+        { label: 'Rejected', count: 2 },
+      ],
+      top_students: [
+        { student_name: 'John Doe', email: 'john@example.com', total_spent: 250000, transaction_count: 5 },
+        { student_name: 'Emma Davis', email: 'emma@example.com', total_spent: 220000, transaction_count: 4 },
+        { student_name: 'Jane Smith', email: 'jane@example.com', total_spent: 180000, transaction_count: 3 },
+        { student_name: 'Sarah Williams', email: 'sarah@example.com', total_spent: 160000, transaction_count: 3 },
+        { student_name: 'Mike Johnson', email: 'mike@example.com', total_spent: 150000, transaction_count: 3 },
+        { student_name: 'Grace Taylor', email: 'grace@example.com', total_spent: 140000, transaction_count: 2 },
+        { student_name: 'David Miller', email: 'david@example.com', total_spent: 130000, transaction_count: 2 },
+        { student_name: 'Lisa Anderson', email: 'lisa@example.com', total_spent: 120000, transaction_count: 2 },
+        { student_name: 'Tom Brown', email: 'tom@example.com', total_spent: 115000, transaction_count: 2 },
+        { student_name: 'Robert Wilson', email: 'robert@example.com', total_spent: 105000, transaction_count: 2 },
+      ],
+    };
+    setAnalytics(dummyAnalytics);
+
+    // Load initial payments
     fetchPayments(1);
-    fetchBankSlips();
-    fetchAnalytics();
   }, []);
 
   // Refetch when filters change
   useEffect(() => {
     fetchPayments(1);
-  }, [filterStatus, filterMethod]);
+  }, [filterStatus, filterMethod, fetchPayments]);
 
   // Handle Payment Action
-  const handlePaymentAction = async (action, paymentId, data) => {
-    try {
-      setActionLoading(true);
-      let response;
-
-      if (action === 'approve') {
-        response = await adminPaymentsAPI.approve(paymentId, data);
-      } else if (action === 'reject') {
-        response = await adminPaymentsAPI.reject(paymentId, data);
-      }
-
-      if (response.data?.success) {
-        toast.success(
-          action === 'approve'
-            ? 'Payment approved successfully!'
-            : 'Payment rejected successfully!'
-        );
-        setShowDetailsModal(false);
-        fetchStats();
-        fetchPayments(pagination.page);
-        fetchBankSlips();
-      } else {
-        toast.error(response.data?.message || 'Action failed');
-      }
-    } catch (error) {
-      console.error('Error performing action:', error);
-      toast.error('Failed to perform action');
-    } finally {
+  const handlePaymentAction = async (action) => {
+    setActionLoading(true);
+    
+    // Simulate API call with delay
+    setTimeout(() => {
+      toast.success(
+        action === 'approve'
+          ? 'Payment approved successfully!'
+          : 'Payment rejected successfully!'
+      );
+      setShowDetailsModal(false);
+      fetchStats();
+      fetchPayments(pagination.page);
+      fetchBankSlips();
       setActionLoading(false);
-    }
+    }, 500);
   };
 
   // View Payment Details
   const handleViewDetails = async (paymentId) => {
-    try {
-      const response = await adminPaymentsAPI.getById(paymentId);
-      if (response.data?.success) {
-        setSelectedPayment(response.data.payment);
-        setShowDetailsModal(true);
-      }
-    } catch (error) {
-      console.error('Error fetching payment details:', error);
-      toast.error('Failed to load payment details');
-    }
+    const dummyPaymentDetails = {
+      id: paymentId,
+      payment_number: `PAY-${String(paymentId).padStart(3, '0')}`,
+      status: 'pending',
+      student: { name: 'John Doe', email: 'john@example.com' },
+      amount: 50000,
+      discount_amount: 5000,
+      payment_method: 'bank',
+      created_at: '2026-03-10T10:30:00Z',
+      completed_at: null,
+      bank_details: {
+        bank_name: 'Bank of Ceylon',
+        branch: 'Colombo Main',
+        account_holder: 'John Doe',
+        transfer_date: '2026-03-10T10:00:00Z',
+        bank_slip_url: 'https://via.placeholder.com/400x300?text=Bank+Slip',
+      },
+      payhere_details: null,
+      verification: {
+        verified_by: null,
+        verification_date: null,
+        rejection_reason: null,
+      },
+    };
+    setSelectedPayment(dummyPaymentDetails);
+    setShowDetailsModal(true);
   };
 
   // Status Badge Color
@@ -922,6 +1098,5 @@ const AdminPayments = () => {
       )}
     </div>
   );
-};
-
+}
 export default AdminPayments;
