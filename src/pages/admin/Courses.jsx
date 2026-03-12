@@ -7,11 +7,11 @@ import { getAbsoluteImageUrl } from '../../utils/helpers';
 const AdminCourses = () => {
   // Dummy data
   const dummyCourses = [
-    { id: 1, title: 'Advanced Python Programming', teacher_name: 'Dr. John Smith', category: 'Programming', grade_level: '10-12', status: 'PUBLISHED', students: 245, rating: 4.8, price: '$49.99', featured: true, enrollments_enabled: true },
-    { id: 2, title: 'Mathematics for Beginners', teacher_name: 'Ms. Sarah Johnson', category: 'Mathematics', grade_level: '8-9', status: 'PUBLISHED', students: 180, rating: 4.6, price: '$39.99', featured: false, enrollments_enabled: true },
-    { id: 3, title: 'Introduction to Web Development', teacher_name: 'Mr. Patrick Davis', category: 'Programming', grade_level: '10-12', status: 'DRAFT', students: 0, rating: 0, price: '$59.99', featured: false, enrollments_enabled: false },
-    { id: 4, title: 'English Literature Essentials', teacher_name: 'Dr. Emma Wilson', category: 'English', grade_level: '9-10', status: 'PUBLISHED', students: 320, rating: 4.7, price: '$44.99', featured: true, enrollments_enabled: true },
-    { id: 5, title: 'Science Fundamentals', teacher_name: 'Mr. Robert Lee', category: 'Science', grade_level: '8-9', status: 'PUBLISHED', students: 210, rating: 4.5, price: '$49.99', featured: false, enrollments_enabled: true },
+    { id: 1, title: 'Advanced Python Programming', teacher_name: 'Dr. John Smith', category: 'Programming', grade_level: '10-12', status: 'PUBLISHED', total_enrollments: 245, average_rating: 4.8, price: 49.99, price_type: 'PAID', total_revenue: 12247.5, is_featured: true, enrollments_enabled: true, created_at: '2024-01-15' },
+    { id: 2, title: 'Mathematics for Beginners', teacher_name: 'Ms. Sarah Johnson', category: 'Mathematics', grade_level: '8-9', status: 'PUBLISHED', total_enrollments: 180, average_rating: 4.6, price: 39.99, price_type: 'PAID', total_revenue: 7198.2, is_featured: false, enrollments_enabled: true, created_at: '2024-01-20' },
+    { id: 3, title: 'Introduction to Web Development', teacher_name: 'Mr. Patrick Davis', category: 'Programming', grade_level: '10-12', status: 'DRAFT', total_enrollments: 0, average_rating: 0, price: 59.99, price_type: 'PAID', total_revenue: 0, is_featured: false, enrollments_enabled: false, created_at: '2024-02-01' },
+    { id: 4, title: 'English Literature Essentials', teacher_name: 'Dr. Emma Wilson', category: 'English', grade_level: '9-10', status: 'PUBLISHED', total_enrollments: 320, average_rating: 4.7, price: 44.99, price_type: 'PAID', total_revenue: 14396.8, is_featured: true, enrollments_enabled: true, created_at: '2024-01-10' },
+    { id: 5, title: 'Science Fundamentals', teacher_name: 'Mr. Robert Lee', category: 'Science', grade_level: '8-9', status: 'PUBLISHED', total_enrollments: 210, average_rating: 4.5, price: 49.99, price_type: 'PAID', total_revenue: 10497.9, is_featured: false, enrollments_enabled: true, created_at: '2024-01-25' },
   ];
 
   const dummyStats = {
