@@ -14,7 +14,6 @@ import ChatBot from './components/common/ChatBot';
 
 // Route Guards
 import ProtectedRoute from './routes/ProtectedRoute';
-import PublicRoute from './routes/PublicRoute';
 
 // Public Pages
 import Home from './pages/public/Home';
@@ -35,7 +34,6 @@ import ResetPassword from './pages/auth/ResetPassword';
 
 // Student Pages
 import StudentDashboard from './pages/student/Dashboard';
-import StudentDashboardModern from './pages/student/DashboardModern';
 import StudentCourses from './pages/student/Courses';
 import StudentCoursesDiscover from './pages/student/CoursesDiscover';
 import StudentCourseLearning from './pages/student/CourseLearning';
@@ -57,7 +55,6 @@ import StudentCoursesView from './pages/student/CourseView';
 
 // Teacher Pages
 import TeacherDashboard from './pages/teacher/Dashboard';
-import TeacherDashboardModern from './pages/teacher/DashboardModern';
 import TeacherCourses from './pages/teacher/Courses';
 import TeacherCourseDetail from './pages/teacher/CourseDetail';
 import TeacherLiveClasses from './pages/teacher/LiveClasses';
@@ -73,7 +70,6 @@ import TeacherAnnouncements from './pages/teacher/Announcements';
 import TeacherProfile from './pages/teacher/Profile';
 
 // Admin Pages
-import AdminDashboardModern from './pages/admin/DashboardModern';
 import AdminDashboard from './pages/admin/Dashboard';
 import AdminStudents from './pages/admin/Students';
 import AdminTeachers from './pages/admin/Teachers';
@@ -86,14 +82,6 @@ import AdminManagement from './pages/admin/Management';
 import AdminReports from './pages/admin/Reports';
 import AdminSettings from './pages/admin/Settings';
 
-// Developer Pages
-import DeveloperDashboardModern from './pages/developer/DashboardModern';
-import DeveloperDashboard from './pages/developer/Dashboard';
-import SystemHealth from './pages/developer/SystemHealth';
-import APILogs from './pages/developer/APILogs';
-import ErrorMonitoring from './pages/developer/ErrorMonitoring';
-import FeatureFlags from './pages/developer/FeatureFlags';
-import IntegrationStatus from './pages/developer/IntegrationStatus';
 
 function App() {
   useAuthExpiry();
@@ -127,7 +115,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path={ROUTES.STUDENT_DASHBOARD} element={<StudentDashboardModern />} />
+          <Route path={ROUTES.STUDENT_DASHBOARD} element={<StudentDashboard />} />
           <Route path={ROUTES.STUDENT_COURSES} element={<StudentCourses />} />
           <Route path="/student/courses/discover" element={<StudentCoursesDiscover />} />
           <Route path="/student/course/:courseId" element={<StudentCoursesDiscover />} />
@@ -157,7 +145,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path={ROUTES.TEACHER_DASHBOARD} element={<TeacherDashboardModern />} />
+          <Route path={ROUTES.TEACHER_DASHBOARD} element={<TeacherDashboard />} />
           <Route path={ROUTES.TEACHER_COURSES} element={<TeacherCourses />} />
           <Route path="/teacher/courses/:courseId" element={<TeacherCourseDetail />} />
           <Route path={ROUTES.TEACHER_LIVE_CLASSES} element={<TeacherLiveClasses />} />
@@ -181,7 +169,7 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboardModern />} />
+          <Route path={ROUTES.ADMIN_DASHBOARD} element={<AdminDashboard />} />
           <Route path={ROUTES.ADMIN_STUDENTS} element={<AdminStudents />} />
           <Route path={ROUTES.ADMIN_TEACHERS} element={<AdminTeachers />} />
           <Route path={ROUTES.ADMIN_COURSES} element={<AdminCourses />} />
@@ -192,22 +180,6 @@ function App() {
           <Route path={ROUTES.ADMIN_MANAGEMENT} element={<AdminManagement />} />
           <Route path={ROUTES.ADMIN_REPORTS} element={<AdminReports />} />
           <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettings />} />
-        </Route>
-
-        {/* Developer Routes with Sidebar */}
-        <Route
-          element={
-            <ProtectedRoute allowedRoles={[ROLES.DEVELOPER]}>
-              <AuthenticatedLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path={ROUTES.DEVELOPER_DASHBOARD} element={<DeveloperDashboardModern />} />
-          <Route path={ROUTES.DEVELOPER_SYSTEM_HEALTH} element={<SystemHealth />} />
-          <Route path={ROUTES.DEVELOPER_API_LOGS} element={<APILogs />} />
-          <Route path={ROUTES.DEVELOPER_ERROR_MONITORING} element={<ErrorMonitoring />} />
-          <Route path={ROUTES.DEVELOPER_FEATURE_FLAGS} element={<FeatureFlags />} />
-          <Route path={ROUTES.DEVELOPER_INTEGRATION_STATUS} element={<IntegrationStatus />} />
         </Route>
       </Routes>
       <ToastContainer 
