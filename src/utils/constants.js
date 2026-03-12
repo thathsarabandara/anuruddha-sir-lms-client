@@ -3,7 +3,7 @@ export const ROLES = {
   STUDENT: 'STUDENT',
   TEACHER: 'TEACHER',
   ADMIN: 'ADMIN',
-  SUPER_ADMIN: 'SUPER_ADMIN',
+  SUPERADMIN: 'SUPERADMIN',
   DEVELOPER: 'DEVELOPER',
 };
 
@@ -62,12 +62,12 @@ export const API_ENDPOINTS = {
 
 // Local storage keys
 export const STORAGE_KEYS = {
-  TOKEN: 'lms_token',
+  ACCESSTOKEN: 'access_token',
+  REFRESHTOKEN: 'refresh_token',
+  VERIFICATIONTOKEN: 'verification_token',
   USER: 'lms_user',
-  REFRESH_TOKEN: 'lms_refresh_token',
   TOKEN_EXPIRY: 'lms_token_expiry',
   LOGIN_TIME: 'lms_login_time',
-  VERIFICATION_TOKEN: 'lms_verification_token',
 };
 
 // Route paths
@@ -169,17 +169,13 @@ export const getAuthRoute = (authType, role) => {
   }
 };
 
-// Helper function to normalize backend roles to frontend format
-// Backend returns: "student", "teacher", "admin", "superadmin" (lowercase, no underscore)
-// Frontend expects: "STUDENT", "TEACHER", "ADMIN", "SUPER_ADMIN", "DEVELOPER"
 export const normalizeRole = (backendRole) => {
   if (!backendRole) return 'STUDENT';
   
   const normalizedRole = backendRole.toUpperCase();
   
-  // Handle backend "superadmin" -> frontend "SUPER_ADMIN"
   if (normalizedRole === 'SUPERADMIN') {
-    return 'SUPER_ADMIN';
+    return 'SUPERADMIN';
   }
   
   return normalizedRole;
@@ -195,7 +191,7 @@ export const getDashboardRoute = (role) => {
     case ROLES.TEACHER:
       return ROUTES.TEACHER_DASHBOARD;
     case ROLES.ADMIN:
-    case ROLES.SUPER_ADMIN:
+    case ROLES.SUPERADMIN:
       return ROUTES.ADMIN_DASHBOARD;
     case ROLES.DEVELOPER:
       return ROUTES.DEVELOPER_DASHBOARD;
