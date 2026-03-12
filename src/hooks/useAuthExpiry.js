@@ -5,12 +5,13 @@ import { STORAGE_KEYS } from '../utils/constants';
 
 export const useAuthExpiry = () => {
   const dispatch = useDispatch();
-  const { token, isAuthenticated } = useSelector((state) => state.auth);
+  const { access_token, isAuthenticated } = useSelector((state) => state.auth);
   const checkIntervalRef = useRef(null);
   const warningShownRef = useRef(false);
 
+  // Token expiry checking effect
   useEffect(() => {
-    if (!isAuthenticated || !token) {
+    if (!isAuthenticated || !access_token) {
       warningShownRef.current = false;
       if (checkIntervalRef.current) {
         clearInterval(checkIntervalRef.current);
@@ -23,22 +24,6 @@ export const useAuthExpiry = () => {
         const tokenExpiry = localStorage.getItem(STORAGE_KEYS.TOKEN_EXPIRY);
         
         if (!tokenExpiry) {
-          const loginTime = localStorage.getItem(STORAGE_KEYS.LOGIN_TIME);
-          if (loginTime) {
-            const loginTimeMs = parseInt(loginTime);
-            const now = Date.now();
-            const twoHoursMs = 2 * 60 * 60 * 1000;
-            
-            if (now - loginTimeMs > twoHoursMs) {
-              dispatch(logout());
-              return;
-            }
-            const timeUntilExpiry = twoHoursMs - (now - loginTimeMs);
-            if (timeUntilExpiry < 30 * 60 * 1000 && !warningShownRef.current) {
-              console.warn('Token will expire in less than 30 minutes');
-              warningShownRef.current = true;
-            }
-          }
           return;
         }
 
@@ -47,6 +32,7 @@ export const useAuthExpiry = () => {
         const timeDiff = expiryTime - now;
 
         if (timeDiff <= 0) {
+          console.warn('Token expired - logging out');
           dispatch(logout());
           warningShownRef.current = false;
         } else if (timeDiff < 30 * 60 * 1000 && !warningShownRef.current) {
@@ -58,8 +44,10 @@ export const useAuthExpiry = () => {
       }
     };
 
+    // Check immediately on load
     checkTokenExpiry();
 
+    // Then check periodically
     checkIntervalRef.current = setInterval(checkTokenExpiry, 60000);
 
     return () => {
@@ -67,7 +55,7 @@ export const useAuthExpiry = () => {
         clearInterval(checkIntervalRef.current);
       }
     };
-  }, [isAuthenticated, token, dispatch]);
+  }, [isAuthenticated, access_token, dispatch]);
 };
 
 export default useAuthExpiry;
