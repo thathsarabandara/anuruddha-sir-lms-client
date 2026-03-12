@@ -2,7 +2,6 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ROUTES, ROLES } from './utils/constants';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
-import useAuthExpiry from './hooks/useAuthExpiry';
 
 // Layouts
 import PublicLayout from './components/layout/PublicLayout';
@@ -84,8 +83,6 @@ import AdminSettings from './pages/admin/Settings';
 
 
 function App() {
-  useAuthExpiry();
-
   return (
     <Router>
       <ScrollToTop />
@@ -164,7 +161,7 @@ function App() {
         {/* Admin Routes with Sidebar */}
         <Route
           element={
-            <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SUPER_ADMIN]}>
+            <ProtectedRoute allowedRoles={[ROLES.ADMIN, ROLES.SUPERADMIN]}>
               <AuthenticatedLayout />
             </ProtectedRoute>
           }
