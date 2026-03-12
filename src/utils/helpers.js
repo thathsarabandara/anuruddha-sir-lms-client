@@ -1,29 +1,50 @@
 import { STORAGE_KEYS } from './constants';
 
-export const getToken = () => {
+export const getToken = (type) => {
   try {
-    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-    if (!token || token === 'undefined' || token === 'null' || token.trim() === '') {
+    if (type === 'access_token') {
+      return localStorage.getItem(STORAGE_KEYS.ACCESSTOKEN);
+    } else if (type === 'refresh_token') {
+      return localStorage.getItem(STORAGE_KEYS.REFRESHTOKEN);
+    } else if (type === 'verification_token') {
+      return localStorage.getItem(STORAGE_KEYS.VERIFICATIONTOKEN);
+    } else {
+      console.warn('Unknown token type:', type);
       return null;
-    }
-    return token;
+    }  
   } catch (error) {
     console.error('Error getting token:', error);
     return null;
   }
 };
 
-export const setToken = (token) => {
+export const setToken = (type,token) => {
   try {
-    localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+    if (type === 'access_token') {
+      localStorage.setItem(STORAGE_KEYS.ACCESSTOKEN, token);
+    } else if (type === 'refresh_token') {
+      localStorage.setItem(STORAGE_KEYS.REFRESHTOKEN, token);
+    } else if (type === 'verification_token') {
+      localStorage.setItem(STORAGE_KEYS.VERIFICATIONTOKEN, token);
+    } else {
+      console.warn('Unknown token type:', type);
+    }
   } catch (error) {
     console.error('Error setting token:', error);
   }
 };
 
-export const removeToken = () => {
+export const removeToken = (type) => {
   try {
-    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    if (type === 'access_token') {
+      localStorage.removeItem(STORAGE_KEYS.ACCESSTOKEN);
+    } else if (type === 'refresh_token') {
+      localStorage.removeItem(STORAGE_KEYS.REFRESHTOKEN);
+    } else if (type === 'verification_token') {
+      localStorage.removeItem(STORAGE_KEYS.VERIFICATIONTOKEN);
+    } else {
+      console.warn('Unknown token type:', type);
+    }
   } catch (error) {
     console.error('Error removing token:', error);
   }
@@ -61,9 +82,10 @@ export const removeUser = () => {
 
 export const clearAuthData = () => {
   try {
-    removeToken();
+    removeToken('access_token');
+    removeToken('refresh_token');
+    removeToken('verification_token');
     removeUser();
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN);
     localStorage.removeItem(STORAGE_KEYS.TOKEN_EXPIRY);
     localStorage.removeItem(STORAGE_KEYS.LOGIN_TIME);
   } catch (error) {
@@ -129,7 +151,7 @@ export const getRoleDisplayName = (role) => {
     STUDENT: 'Student',
     TEACHER: 'Teacher',
     ADMIN: 'Admin',
-    SUPER_ADMIN: 'Super Admin',
+    SUPER_ADMIN: 'SuperAdmin',
     DEVELOPER: 'Developer',
   };
   return roleNames[role] || role;
@@ -140,7 +162,7 @@ export const getAbsoluteImageUrl = (imagePath) => {
   if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
     return imagePath;
   }
-  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL;
   const domain = apiBaseUrl.split('/api')[0];
   const cleanPath = imagePath.startsWith('/') ? imagePath.substring(1) : imagePath;
   return `${domain}/${cleanPath}`;
