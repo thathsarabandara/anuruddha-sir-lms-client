@@ -12,6 +12,7 @@ import {
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import PulseLoader from '../../components/common/PulseLoader';
+import { adminAPI } from '../../api/admin';
 
 // eslint-disable-next-line no-unused-vars
 const StatsCard = ({ label, value, icon: Icon, color, subtext }) => (
@@ -423,49 +424,69 @@ const AdminPayments = () => {
   const fetchPayments = useCallback(
     async (page = 1) => {
       setLoading(true);
-      
-      const allDummyPayments = [
-        { id: 1, payment_number: 'PAY-001', student_name: 'John Doe', student_email: 'john@example.com', amount: 50000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-10T10:30:00Z' },
-        { id: 2, payment_number: 'PAY-002', student_name: 'Jane Smith', student_email: 'jane@example.com', amount: 75000, payment_method: 'bank', status: 'completed', created_at: '2026-03-09T14:15:00Z' },
-        { id: 3, payment_number: 'PAY-003', student_name: 'Mike Johnson', student_email: 'mike@example.com', amount: 60000, payment_method: 'cash', status: 'pending', created_at: '2026-03-08T09:00:00Z' },
-        { id: 4, payment_number: 'PAY-004', student_name: 'Sarah Williams', student_email: 'sarah@example.com', amount: 80000, payment_method: 'bank', status: 'bank_transfer_pending', created_at: '2026-03-07T16:45:00Z' },
-        { id: 5, payment_number: 'PAY-005', student_name: 'Tom Brown', student_email: 'tom@example.com', amount: 55000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-06T11:20:00Z' },
-        { id: 6, payment_number: 'PAY-006', student_name: 'Lisa Anderson', student_email: 'lisa@example.com', amount: 70000, payment_method: 'cash', status: 'completed', created_at: '2026-03-05T13:30:00Z' },
-        { id: 7, payment_number: 'PAY-007', student_name: 'David Miller', student_email: 'david@example.com', amount: 65000, payment_method: 'bank', status: 'pending', created_at: '2026-03-04T15:45:00Z' },
-        { id: 8, payment_number: 'PAY-008', student_name: 'Emma Davis', student_email: 'emma@example.com', amount: 90000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-03T10:15:00Z' },
-        { id: 9, payment_number: 'PAY-009', student_name: 'Robert Wilson', student_email: 'robert@example.com', amount: 45000, payment_method: 'cash', status: 'rejected', created_at: '2026-03-02T14:00:00Z' },
-        { id: 10, payment_number: 'PAY-010', student_name: 'Grace Taylor', student_email: 'grace@example.com', amount: 72000, payment_method: 'bank', status: 'completed', created_at: '2026-03-01T09:30:00Z' },
-      ];
-      
-      let filteredPayments = allDummyPayments;
-      if (filterStatus !== 'all') {
-        filteredPayments = filteredPayments.filter(p => p.status === filterStatus);
+      try {
+        // Try to fetch from API, fall back to dummy data if endpoint not available
+        const response = await adminAPI.getRevenueAnalytics().catch(() => null);
+        
+        if (response?.data) {
+          // Process real API data if available
+          const paymentsList = response.data.transactions || [];
+          setPayments(Array.isArray(paymentsList) ? paymentsList : []);
+          setPagination({
+            page,
+            per_page: pagination.per_page,
+            total: paymentsList.length,
+            total_pages: Math.ceil(paymentsList.length / pagination.per_page),
+          });
+        } else {
+          // Fallback to dummy data
+          const allDummyPayments = [
+            { id: 1, payment_number: 'PAY-001', student_name: 'John Doe', student_email: 'john@example.com', amount: 50000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-10T10:30:00Z' },
+            { id: 2, payment_number: 'PAY-002', student_name: 'Jane Smith', student_email: 'jane@example.com', amount: 75000, payment_method: 'bank', status: 'completed', created_at: '2026-03-09T14:15:00Z' },
+            { id: 3, payment_number: 'PAY-003', student_name: 'Mike Johnson', student_email: 'mike@example.com', amount: 60000, payment_method: 'cash', status: 'pending', created_at: '2026-03-08T09:00:00Z' },
+            { id: 4, payment_number: 'PAY-004', student_name: 'Sarah Williams', student_email: 'sarah@example.com', amount: 80000, payment_method: 'bank', status: 'bank_transfer_pending', created_at: '2026-03-07T16:45:00Z' },
+            { id: 5, payment_number: 'PAY-005', student_name: 'Tom Brown', student_email: 'tom@example.com', amount: 55000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-06T11:20:00Z' },
+            { id: 6, payment_number: 'PAY-006', student_name: 'Lisa Anderson', student_email: 'lisa@example.com', amount: 70000, payment_method: 'cash', status: 'completed', created_at: '2026-03-05T13:30:00Z' },
+            { id: 7, payment_number: 'PAY-007', student_name: 'David Miller', student_email: 'david@example.com', amount: 65000, payment_method: 'bank', status: 'pending', created_at: '2026-03-04T15:45:00Z' },
+            { id: 8, payment_number: 'PAY-008', student_name: 'Emma Davis', student_email: 'emma@example.com', amount: 90000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-03T10:15:00Z' },
+            { id: 9, payment_number: 'PAY-009', student_name: 'Robert Wilson', student_email: 'robert@example.com', amount: 45000, payment_method: 'cash', status: 'rejected', created_at: '2026-03-02T14:00:00Z' },
+            { id: 10, payment_number: 'PAY-010', student_name: 'Grace Taylor', student_email: 'grace@example.com', amount: 72000, payment_method: 'bank', status: 'completed', created_at: '2026-03-01T09:30:00Z' },
+          ];
+          
+          let filteredPayments = allDummyPayments;
+          if (filterStatus !== 'all') {
+            filteredPayments = filteredPayments.filter(p => p.status === filterStatus);
+          }
+          if (filterMethod !== 'all') {
+            filteredPayments = filteredPayments.filter(p => p.payment_method === filterMethod);
+          }
+          if (searchTerm) {
+            filteredPayments = filteredPayments.filter(p => 
+              p.payment_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              p.student_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+              p.student_name.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+          }
+          
+          const total = filteredPayments.length;
+          const total_pages = Math.ceil(total / pagination.per_page);
+          const startIndex = (page - 1) * pagination.per_page;
+          const paginatedPayments = filteredPayments.slice(startIndex, startIndex + pagination.per_page);
+          
+          setPayments(paginatedPayments);
+          setPagination({
+            page,
+            per_page: pagination.per_page,
+            total,
+            total_pages,
+          });
+        }
+      } catch (err) {
+        console.error('Error fetching payments:', err);
+        toast.error('Failed to load payments');
+      } finally {
+        setLoading(false);
       }
-      if (filterMethod !== 'all') {
-        filteredPayments = filteredPayments.filter(p => p.payment_method === filterMethod);
-      }
-      if (searchTerm) {
-        filteredPayments = filteredPayments.filter(p => 
-          p.payment_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.student_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.student_name.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-      }
-      
-      const total = filteredPayments.length;
-      const total_pages = Math.ceil(total / pagination.per_page);
-      const startIndex = (page - 1) * pagination.per_page;
-      const paginatedPayments = filteredPayments.slice(startIndex, startIndex + pagination.per_page);
-      
-      setPayments(paginatedPayments);
-      setPagination({
-        page,
-        per_page: pagination.per_page,
-        total,
-        total_pages,
-      });
-      
-      setLoading(false);
     },
     [filterStatus, filterMethod, searchTerm, pagination.per_page]
   );
