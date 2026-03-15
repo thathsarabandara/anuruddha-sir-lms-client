@@ -22,6 +22,223 @@ import VideoPlayer from '../../components/VideoPlayer';
 import PDFViewer from '../../components/PDFViewer';
 import SectionProgress from '../../components/SectionProgress';
 
+// Dummy Course Data
+const getDummyCourseData = () => ({
+  id: 'course-1',
+  title: 'Advanced Python Programming',
+  subject: 'Programming',
+  grade_level: '10',
+  instructor: {
+    user: {
+      first_name: 'John'
+    },
+    name: 'John Smith'
+  },
+  average_rating: 4.8,
+  enrolled_students_count: 2340,
+  description: 'Master advanced Python concepts including OOP, decorators, generators, and async programming.',
+  duration: '8 weeks',
+  price: 49.99,
+  enrollment: {
+    enrollment_date: new Date().toISOString()
+  },
+  color: 'from-blue-500 to-blue-600',
+  thumbnail: null,
+  sections: [
+    {
+      id: 'section-1',
+      title: 'Getting Started with Python',
+      description: 'Introduction to Python fundamentals',
+      lessons: [
+        {
+          id: 'lesson-1',
+          title: 'Python Basics - Variables & Data Types',
+          description: 'Learn about variables, data types, and basic operations in Python.',
+          content_type: 'VIDEO',
+          type: 'VIDEO',
+          video_file: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/big_buck_bunny.mp4',
+          video_url: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/big_buck_bunny.mp4',
+          external_link: null,
+          duration_minutes: 45,
+          is_completed: true,
+          is_locked: false,
+          document_file: null,
+          document_url: null,
+          resources: [
+            {
+              id: 'res-1',
+              title: 'Python Cheat Sheet',
+              size: '2.5 MB',
+              file_url: '#',
+              type: 'pdf'
+            }
+          ],
+          quiz_id: 'quiz-1'
+        },
+        {
+          id: 'lesson-2',
+          title: 'Control Flow - If, Loops & Functions',
+          description: 'Master conditional statements, loops, and function definitions.',
+          content_type: 'VIDEO',
+          type: 'VIDEO',
+          video_file: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/fortnite.mp4',
+          video_url: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/fortnite.mp4',
+          duration_minutes: 52,
+          is_completed: true,
+          is_locked: false,
+          document_file: null,
+          document_url: null,
+          resources: [],
+          quiz_id: 'quiz-2'
+        },
+        {
+          id: 'lesson-3',
+          title: 'String Operations & Text Processing',
+          description: 'Work with strings and learn text processing techniques.',
+          content_type: 'PDF',
+          type: 'PDF',
+          document_file: '/documents/string-operations.pdf',
+          document_url: '/documents/string-operations.pdf',
+          duration_minutes: 38,
+          is_completed: false,
+          is_locked: false,
+          video_file: null,
+          resources: [],
+          quiz_id: null
+        },
+        {
+          id: 'lesson-4',
+          title: 'Working with Collections - Lists & Dictionaries',
+          description: 'Understand lists, tuples, sets, and dictionaries.',
+          content_type: 'VIDEO',
+          type: 'VIDEO',
+          video_file: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/tears_of_steel.mp4',
+          video_url: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/tears_of_steel.mp4',
+          duration_minutes: 48,
+          is_completed: false,
+          is_locked: false,
+          document_file: null,
+          resources: [],
+          quiz_id: null
+        }
+      ]
+    },
+    {
+      id: 'section-2',
+      title: 'Object-Oriented Programming',
+      description: 'Deep dive into OOP concepts',
+      lessons: [
+        {
+          id: 'lesson-5',
+          title: 'Classes & Objects',
+          description: 'Understanding classes, objects, attributes, and methods.',
+          content_type: 'VIDEO',
+          type: 'VIDEO',
+          video_file: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/ElephantsDream.mp4',
+          video_url: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/ElephantsDream.mp4',
+          duration_minutes: 55,
+          is_completed: false,
+          is_locked: false,
+          document_file: null,
+          resources: [
+            {
+              id: 'res-2',
+              title: 'OOP Design Patterns',
+              size: '3.2 MB',
+              file_url: '#',
+              type: 'pdf'
+            }
+          ],
+          quiz_id: 'quiz-3'
+        },
+        {
+          id: 'lesson-6',
+          title: 'Inheritance & Polymorphism',
+          description: 'Master inheritance, method overriding, and polymorphism.',
+          content_type: 'TEXT',
+          type: 'TEXT',
+          description: 'Learn how to create class hierarchies and use polymorphism effectively in Python applications.',
+          duration_minutes: 42,
+          is_completed: false,
+          is_locked: false,
+          video_file: null,
+          document_file: null,
+          resources: [],
+          quiz_id: null
+        },
+        {
+          id: 'lesson-7',
+          title: 'Decorators & Property Methods',
+          description: 'Advanced Python features for cleaner code.',
+          content_type: 'VIDEO',
+          type: 'VIDEO',
+          video_file: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/sintel.mp4',
+          video_url: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/sintel.mp4',
+          duration_minutes: 51,
+          is_completed: false,
+          is_locked: true,
+          document_file: null,
+          resources: [],
+          quiz_id: null
+        }
+      ]
+    },
+    {
+      id: 'section-3',
+      title: 'Advanced Topics',
+      description: 'Expert-level Python techniques',
+      lessons: [
+        {
+          id: 'lesson-8',
+          title: 'Generators & Iterators',
+          description: 'Create efficient iterators and generators.',
+          content_type: 'VIDEO',
+          type: 'VIDEO',
+          video_file: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/vp9.webm',
+          video_url: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/vp9.webm',
+          duration_minutes: 46,
+          is_completed: false,
+          is_locked: true,
+          document_file: null,
+          resources: [],
+          quiz_id: null
+        },
+        {
+          id: 'lesson-9',
+          title: 'Async Programming & Concurrency',
+          description: 'Master async/await and concurrent programming.',
+          content_type: 'VIDEO',
+          type: 'VIDEO',
+          video_file: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/butterfly.mp4',
+          video_url: 'https://commondatastorage.googleapis.com/gtv-videos-library/sample/butterfly.mp4',
+          duration_minutes: 58,
+          is_completed: false,
+          is_locked: true,
+          document_file: null,
+          resources: [],
+          quiz_id: null
+        }
+      ]
+    }
+  ],
+  resources: [
+    {
+      id: 'res-course-1',
+      title: 'Complete Python Documentation',
+      size: '15 MB',
+      file_url: '#',
+      type: 'pdf'
+    },
+    {
+      id: 'res-course-2',
+      title: 'Source Code Examples',
+      size: '8.5 MB',
+      file_url: '#',
+      type: 'zip'
+    }
+  ]
+});
+
 const StudentCourseLearning = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
@@ -45,8 +262,8 @@ const StudentCourseLearning = () => {
         setLoading(true);
         setError(null);
         
-        const response = await studentCourseAPI.getCourseDetails(courseId);
-        const courseData = response.data?.course || response.data;
+        // Use dummy data instead of API call
+        const courseData = getDummyCourseData();
         
         // Calculate progress and completed lessons
         let totalLessons = 0;
@@ -182,11 +399,13 @@ const StudentCourseLearning = () => {
         totalLessons: course?.lessons
       });
 
-      const response = await studentCourseAPI.updateLessonProgress(lesson.id, {
-        status: 'COMPLETED',
-        progress_percentage: 100,
-        last_position_seconds: 0
-      });
+      // Dummy response - simulate successful API call
+      const response = { 
+        data: { 
+          success: true, 
+          message: 'Lesson marked as completed' 
+        } 
+      };
 
       console.log('Lesson marked as completed:', response);
 
