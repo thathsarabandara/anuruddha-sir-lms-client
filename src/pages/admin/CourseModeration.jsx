@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 import PulseLoader from '../../components/common/PulseLoader';
+import { adminAPI } from '../../api/admin';
+import { courseAPI } from '../../api/course';
 
 const AdminCourseModeration = () => {
   const [courses, setCourses] = useState([]);
@@ -12,27 +14,15 @@ const AdminCourseModeration = () => {
   const [commissionRate, setCommissionRate] = useState('');
 
   useEffect(() => {
-    const fetchCourses = async () => {
-      try {
-        setLoading(true);
-        const response = await adminCourseAPI.getAllCourses({ status: filter });
-        setCourses(response.data);
-        setLoading(false);
-      } catch (err) {
-        toast.error('Failed to fetch courses');
-        setLoading(false);
-        console.error(err);
-      }
-    };
-
     fetchCourses();
   }, [filter]);
 
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const response = await adminCourseAPI.getAllCourses({ status: filter });
-      setCourses(response.data);
+      const response = await adminAPI.getCourseModeration(1, 50, filter === 'all' ? '' : filter);
+      const courseList = response.data.courses || response.data;
+      setCourses(Array.isArray(courseList) ? courseList : []);
       setLoading(false);
     } catch (err) {
       toast.error('Failed to fetch courses');
@@ -45,11 +35,11 @@ const AdminCourseModeration = () => {
     if (!window.confirm('Are you sure you want to approve this course?')) return;
 
     try {
-      await adminCourseAPI.approveCourse(courseId, { is_approved: true });
+      await adminAPI.approveCourse(courseId, { notes: '' });
       toast.success('Course approved successfully');
       fetchCourses();
     } catch (err) {
-      toast.error('Failed to approve course');
+      toast.error(err.response?.data?.message || 'Failed to approve course');
       console.error(err);
     }
   };
@@ -58,22 +48,21 @@ const AdminCourseModeration = () => {
     const reason = window.prompt('Enter rejection reason (optional):');
     
     try {
-      await adminCourseAPI.approveCourse(courseId, { 
-        approve: false, 
-        rejection_reason: reason 
+      await adminAPI.rejectCourse(courseId, { 
+        reason: reason || 'No reason provided'
       });
-      toast.success('Course rejected');
+      toast.success('Course rejected successfully');
       fetchCourses();
     } catch (err) {
-      toast.error('Failed to reject course');
+      toast.error(err.response?.data?.message || 'Failed to reject course');
       console.error(err);
     }
   };
 
-  const handleFeatureCourse = async (courseId, featured) => {
+  const handleFeatureCourse = async (courseId, currentStatus) => {
     try {
-      await adminCourseAPI.featureCourse(courseId, { featured });
-      toast.success(featured ? 'Course featured' : 'Course unfeatured');
+      await courseAPI.updateCourse(courseId, { is_featured: !currentStatus });
+      toast.success(!currentStatus ? 'Course featured' : 'Course unfeatured');
       fetchCourses();
     } catch (err) {
       toast.error('Failed to update course');
