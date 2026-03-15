@@ -36,9 +36,9 @@ const AdminTeachers = () => {
     email: '',
     contact_number: '',
     qualifications: '',
-    subjects_taught: '',
+    subject_expertise: '',
     years_of_experience: '',
-    bio: '',
+    professional_bio: '',
     address: '',
     language: 'English',
   });
@@ -85,9 +85,9 @@ const AdminTeachers = () => {
         email: teacher.email,
         contact_number: teacher.contact_number,
         qualifications: teacher.qualifications,
-        subjects_taught: teacher.subjects_taught,
+        subject_expertise: teacher.subject_expertise,
         years_of_experience: teacher.years_of_experience,
-        bio: teacher.bio,
+        professional_bio: teacher.professional_bio,
         address: teacher.address,
         language: teacher.language,
       });
@@ -225,10 +225,10 @@ const AdminTeachers = () => {
         last_name: editFormData.last_name,
         phone: editFormData.contact_number,
         date_of_birth: editFormData.date_of_birth,
-        subject_expertise: editFormData.subjects_taught,
+        subject_expertise: editFormData.subject_expertise,
         years_of_experience: editFormData.years_of_experience,
         qualifications: editFormData.qualifications,
-        professional_bio: editFormData.bio,
+        professional_bio: editFormData.professional_bio,
         address: editFormData.address,
       });
       
@@ -276,9 +276,9 @@ const AdminTeachers = () => {
       email: selectedTeacher.email || '',
       contact_number: selectedTeacher.contact_number || '',
       qualifications: selectedTeacher.qualifications || '',
-      subjects_taught: selectedTeacher.subjects_taught || '',
+      subject_expertise: selectedTeacher.subject_expertise || '',
       years_of_experience: selectedTeacher.years_of_experience || '',
-      bio: selectedTeacher.bio || '',
+      professional_bio: selectedTeacher.professional_bio || '',
       address: selectedTeacher.address || '',
       language: selectedTeacher.language || '',
     });
@@ -305,10 +305,10 @@ const AdminTeachers = () => {
         email: createFormData.email,
         phone: createFormData.contact_number,
         date_of_birth: createFormData.date_of_birth || undefined,
-        subject_expertise: createFormData.subjects_taught,
+        subject_expertise: createFormData.subject_expertise,
         years_of_experience: createFormData.years_of_experience,
         qualifications: createFormData.qualifications,
-        professional_bio: createFormData.bio,
+        professional_bio: createFormData.professional_bio,
         address: createFormData.address,
       });
       
@@ -324,9 +324,9 @@ const AdminTeachers = () => {
         email: '',
         contact_number: '',
         qualifications: '',
-        subjects_taught: '',
+        subject_expertise: '',
         years_of_experience: '',
-        bio: '',
+        professional_bio: '',
         address: '',
         language: 'English',
       });
@@ -465,6 +465,7 @@ const AdminTeachers = () => {
               }} 
               className="input-field"
             >
+              <option value="all">All Statuses</option>
               <option value="active">Active</option>
               <option value="pending">Pending</option>
               <option value="banned">Banned</option>
@@ -577,7 +578,7 @@ const AdminTeachers = () => {
                             </button>
                             
                             {/* Active/Approved teachers: Show Ban/Suspend button */}
-                            {['active', 'approved'].includes(teacher.status?.toLowerCase()) && (
+                            {teacher.account_status.is_active === true && teacher.account_status.is_banned === false && (
                               <button
                                 onClick={() => {
                                   setSelectedTeacher(teacher);
@@ -590,7 +591,7 @@ const AdminTeachers = () => {
                             )}
                             
                             {/* Banned/Suspended teachers: Show Activate button */}
-                            {['banned', 'suspended', 'rejected'].includes(teacher.status?.toLowerCase()) && (
+                            {teacher.account_status.is_banned === true && teacher.account_status.is_active === false && (
                               <button
                                 onClick={() => {
                                   setSelectedTeacher(teacher);
@@ -604,7 +605,7 @@ const AdminTeachers = () => {
                             )}
                             
                             {/* Pending teachers: Show Approve and Reject buttons */}
-                            {teacher.status?.toLowerCase() === 'pending' && (
+                            {teacher.account_status.is_active === false && teacher.account_status.is_banned === false && (
                               <>
                                 <button
                                   onClick={() => {
@@ -739,11 +740,11 @@ const AdminTeachers = () => {
                   </div>
                   <div className="col-span-2">
                     <label className="text-sm font-medium text-gray-500">Subjects Taught</label>
-                    <p className="text-gray-900 font-medium">{selectedTeacher.subjects_taught || 'N/A'}</p>
+                    <p className="text-gray-900 font-medium">{selectedTeacher.subject_expertise || 'N/A'}</p>
                   </div>
                   <div className="col-span-2">
-                    <label className="text-sm font-medium text-gray-500">Bio</label>
-                    <p className="text-gray-900">{selectedTeacher.bio || 'N/A'}</p>
+                    <label className="text-sm font-medium text-gray-500">professional_bio</label>
+                    <p className="text-gray-900">{selectedTeacher.professional_bio || 'N/A'}</p>
                   </div>
                   <div className="col-span-2">
                     <label className="text-sm font-medium text-gray-500">Address</label>
@@ -754,7 +755,7 @@ const AdminTeachers = () => {
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t flex-wrap">
-                {selectedTeacher.status === 'PENDING' && (
+                {selectedTeacher.account_status.is_active === false && selectedTeacher.account_status.is_banned === false && (
                   <>
                     <button 
                       onClick={handleApprove}
@@ -773,7 +774,7 @@ const AdminTeachers = () => {
                   </>
                 )}
                 
-                {selectedTeacher.status === 'APPROVED' && (
+                {selectedTeacher.account_status.is_active === true && selectedTeacher.account_status.is_banned === false && (
                   <>
                     <button 
                       onClick={() => setShowSuspendModal(true)}
@@ -799,7 +800,7 @@ const AdminTeachers = () => {
                   </>
                 )}
                 
-                {(selectedTeacher.status === 'SUSPENDED' || selectedTeacher.status === 'REJECTED') && (
+                {selectedTeacher.account_status.is_banned === true && selectedTeacher.account_status.is_active === false && (
                   <button 
                     onClick={handleReactivate}
                     disabled={actionLoading}
@@ -889,17 +890,17 @@ const AdminTeachers = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Subjects Taught</label>
                   <input
                     type="text"
-                    value={editFormData.subjects_taught}
-                    onChange={(e) => setEditFormData({...editFormData, subjects_taught: e.target.value})}
+                    value={editFormData.subject_expertise}
+                    onChange={(e) => setEditFormData({...editFormData, subject_expertise: e.target.value})}
                     className="input-field"
                     placeholder="Math, Science, English"
                   />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">professional_bio</label>
                   <textarea
-                    value={editFormData.bio}
-                    onChange={(e) => setEditFormData({...editFormData, bio: e.target.value})}
+                    value={editFormData.professional_bio}
+                    onChange={(e) => setEditFormData({...editFormData, professional_bio: e.target.value})}
                     className="input-field"
                     rows="3"
                   />
@@ -1154,8 +1155,8 @@ const AdminTeachers = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Subjects Taught *</label>
                 <input
                   type="text"
-                  value={createFormData.subjects_taught}
-                  onChange={(e) => setCreateFormData({...createFormData, subjects_taught: e.target.value})}
+                  value={createFormData.subject_expertise}
+                  onChange={(e) => setCreateFormData({...createFormData, subject_expertise: e.target.value})}
                   className="input-field w-full"
                   placeholder="e.g., Mathematics, Science, English"
                   required
@@ -1163,12 +1164,12 @@ const AdminTeachers = () => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Bio *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">professional_bio *</label>
                 <textarea
-                  value={createFormData.bio}
-                  onChange={(e) => setCreateFormData({...createFormData, bio: e.target.value})}
+                  value={createFormData.professional_bio}
+                  onChange={(e) => setCreateFormData({...createFormData, professional_bio: e.target.value})}
                   className="input-field w-full h-20"
-                  placeholder="Teacher biography"
+                  placeholder="Teacher professional_biography"
                   required
                 />
               </div>
