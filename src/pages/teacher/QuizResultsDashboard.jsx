@@ -1,54 +1,89 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaDownload, FaUser, FaCheck, FaTimes, FaClock, FaChartBar, FaSearch, FaEye } from 'react-icons/fa';
+import { toast } from 'react-toastify';
+import { quizAPI } from '../../api/quiz';
+import QuizStatsCard from '../../components/teacher/QuizStatsCard';
 
 const QuizResultsDashboard = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
   
-  // Dummy quiz data
-  const dummyQuiz = {
-    id: quizId,
-    title: 'Introduction to Python',
-    total_marks: 100,
-    passing_score: 60,
-    total_questions: 20,
-  };
-  
-  const dummyAttempts = [
-    { id: 1, student_name: 'Rahul Kumar', student_id: 'STU001', score: 85, max_score: 100, attempts: 1, completed_at: '2024-01-15 10:30 AM' },
-    { id: 2, student_name: 'Priya Singh', student_id: 'STU002', score: 92, max_score: 100, attempts: 1, completed_at: '2024-01-14 02:15 PM' },
-    { id: 3, student_name: 'Amit Patel', student_id: 'STU003', score: 45, max_score: 100, attempts: 2, completed_at: '2024-01-13 11:45 AM' },
-    { id: 4, student_name: 'Deepa Sharma', student_id: 'STU004', score: 78, max_score: 100, attempts: 1, completed_at: '2024-01-12 03:20 PM' },
-    { id: 5, student_name: 'Vikram Das', student_id: 'STU005', score: 88, max_score: 100, attempts: 1, completed_at: '2024-01-11 09:00 AM' },
-  ];
-  
-  const dummyAnalytics = {
-    total_attempts: 5,
-    average_score: 77.6,
-    highest_score: 92,
-    lowest_score: 45,
-    pass_rate: 80,
-    chart_data: {
-      scores: [45, 78, 85, 88, 92],
-      labels: ['Amit P.', 'Deepa S.', 'Rahul K.', 'Vikram D.', 'Priya S.'],
-    },
-  };
-  
-  const [quiz, setQuiz] = useState(dummyQuiz);
-  const [attempts, setAttempts] = useState(dummyAttempts);
-  const [analytics, setAnalytics] = useState(dummyAnalytics);
+  const [quiz, setQuiz] = useState(null);
+  const [attempts, setAttempts] = useState([]);
+  const [analytics, setAnalytics] = useState(null);
+  const [quizStats, setQuizStats] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [error, setError] = useState('');
 
+  // Fetch quiz results and analytics
   useEffect(() => {
-    // Initialize with dummy data
-    setLoading(false);
+    const fetchResults = async () => {
+      setLoading(true);
+      setStatsLoading(true);
+      setError('');
+      try {
+        // Get quiz details
+        const quizDetail = await quizAPI.getQuizDetails(quizId);
+        setQuiz(quizDetail.data?.data || {});
+
+        // Get quiz results (student attempts and basic analytics)
+        const resultsData = await quizAPI.getQuizResults(quizId);
+        const resultsInfo = resultsData.data?.data || {};
+        setAttempts(resultsInfo.attempts || []);
+        setAnalytics(resultsInfo.analytics || {});
+
+        // Get detailed quiz statistics (4 key metrics)
+        const statsData = await quizAPI.getQuizStatistics(quizId);
+        setQuizStats(statsData.data?.data || null);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to fetch results');
+        toast.error('Failed to load quiz results');
+      } finally {
+        setLoading(false);
+        setStatsLoading(false);
+      }
+    };
+
+    fetchResults();
   }, [quizId]);
 
   const handleExportResults = () => {
-    alert('Export functionality will download a CSV file with all results');
+    try {
+      // Create CSV content
+      const headers = ['Student Name', 'Student ID', 'Score', 'Max Score', 'Percentage', 'Status', 'Attempts', 'Completed At'];
+      const rows = attempts.map(attempt => [
+        attempt.student_name || 'N/A',
+        attempt.student_id || 'N/A',
+        attempt.score || 0,
+        attempt.max_score || quiz?.total_marks || 100,
+        Math.round((attempt.score / (attempt.max_score || quiz?.total_marks || 100)) * 100),
+        (attempt.score / (attempt.max_score || quiz?.total_marks || 100)) * 100 >= (quiz?.passing_score || 60) ? 'Passed' : 'Failed',
+        attempt.attempts || 1,
+        attempt.completed_at || 'N/A',
+      ]);
+
+      const csvContent = [
+        headers.join(','),
+        ...rows.map(row => row.join(',')),
+      ].join('\n');
+
+      // Download CSV
+      const element = document.createElement('a');
+      element.setAttribute('href', 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent));
+      element.setAttribute('download', `${quiz?.title || 'quiz'}_results.csv`);
+      element.style.display = 'none';
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+
+      toast.success('Results exported successfully!');
+    } catch (err) {
+      toast.error('Failed to export results');
+    }
   };
 
   const handleViewAttempt = (attemptId) => {
@@ -56,17 +91,22 @@ const QuizResultsDashboard = () => {
   };
 
   const getStatusBadge = (attempt) => {
-    const percentage = (attempt.score / quiz.total_marks) * 100;
-    if (percentage >= quiz.passing_score) {
+    const maxScore = attempt.max_score || quiz?.total_marks || 100;
+    const passingScore = quiz?.passing_score || 60;
+    const percentage = (attempt.score / maxScore) * 100;
+    
+    if (percentage >= passingScore) {
       return <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded">Passed</span>;
     }
     return <span className="px-3 py-1 bg-red-100 text-red-700 text-sm font-semibold rounded">Failed</span>;
   };
 
   const filteredAttempts = attempts.filter(attempt => {
-    const matchesSearch = attempt.student_name.toLowerCase().includes(searchTerm.toLowerCase());
-    const percentage = (attempt.score / quiz.total_marks) * 100;
-    const passed = percentage >= quiz.passing_score;
+    const matchesSearch = (attempt.student_name || '').toLowerCase().includes(searchTerm.toLowerCase());
+    const maxScore = attempt.max_score || quiz?.total_marks || 100;
+    const passingScore = quiz?.passing_score || 60;
+    const percentage = (attempt.score / maxScore) * 100;
+    const passed = percentage >= passingScore;
     
     if (filterStatus === 'passed') return matchesSearch && passed;
     if (filterStatus === 'failed') return matchesSearch && !passed;
@@ -153,33 +193,11 @@ const QuizResultsDashboard = () => {
         </div>
       </div>
 
-      {/* Analytics */}
-      {analytics && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
-          <div className="card">
-            <div className="text-sm text-gray-600 mb-1">Total Attempts</div>
-            <div className="text-2xl font-bold text-gray-900">{analytics.total_attempts}</div>
-          </div>
-          <div className="card">
-            <div className="text-sm text-gray-600 mb-1">Average Score</div>
-            <div className="text-2xl font-bold text-primary-600">{analytics.average_score}%</div>
-          </div>
-          <div className="card">
-            <div className="text-sm text-gray-600 mb-1">Highest Score</div>
-            <div className="text-2xl font-bold text-green-600">{analytics.highest_score}%</div>
-          </div>
-          <div className="card">
-            <div className="text-sm text-gray-600 mb-1">Pass Rate</div>
-            <div className="text-2xl font-bold text-blue-600">{analytics.pass_rate}%</div>
-          </div>
-          <div className="card">
-            <div className="text-sm text-gray-600 mb-1">Avg Time</div>
-            <div className="text-2xl font-bold text-yellow-600">
-              {Math.floor(analytics.average_time / 60)}m
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Quiz Statistics - 4 Key Metrics */}
+      <div className="mb-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Quiz Performance Metrics</h2>
+        <QuizStatsCard stats={quizStats} loading={statsLoading} />
+      </div>
 
       {/* Filters */}
       <div className="card mb-6">
