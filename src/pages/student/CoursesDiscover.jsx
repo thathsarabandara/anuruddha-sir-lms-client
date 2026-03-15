@@ -2,6 +2,288 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
+// Dummy Courses Data
+const getDummyCourses = (filters = {}) => {
+  const allCourses = [
+    {
+      id: 'course-1',
+      title: 'Advanced Python Programming',
+      slug: 'advanced-python-programming',
+      description: 'Master advanced Python concepts including OOP, decorators, generators, and async programming.',
+      subject: 'Programming',
+      category: 'Programming',
+      grade_level: '10',
+      instructor: { id: 'inst-1', name: 'John Smith', email: 'john@example.com' },
+      average_rating: 4.8,
+      total_reviews: 245,
+      enrolled_students_count: 2340,
+      price: 49.99,
+      discount_price: null,
+      duration: '8 weeks',
+      level: 'Advanced',
+      thumbnail: null,
+      is_enrolled: false,
+      created_at: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'course-2',
+      title: 'Web Development Fundamentals',
+      slug: 'web-development-fundamentals',
+      description: 'Learn HTML, CSS, JavaScript, and create modern responsive websites from scratch.',
+      subject: 'Web Development',
+      category: 'Web Development',
+      grade_level: '9',
+      instructor: { id: 'inst-2', name: 'Sarah Lee', email: 'sarah@example.com' },
+      average_rating: 4.7,
+      total_reviews: 198,
+      enrolled_students_count: 1890,
+      price: 39.99,
+      discount_price: 29.99,
+      duration: '6 weeks',
+      level: 'Beginner',
+      thumbnail: null,
+      is_enrolled: false,
+      created_at: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'course-3',
+      title: 'Data Science with Python',
+      slug: 'data-science-with-python',
+      description: 'Learn data analysis, visualization, and machine learning with Pandas, NumPy, and Scikit-learn.',
+      subject: 'Data Science',
+      category: 'Data Science',
+      grade_level: '11',
+      instructor: { id: 'inst-3', name: 'Mike Johnson', email: 'mike@example.com' },
+      average_rating: 4.9,
+      total_reviews: 312,
+      enrolled_students_count: 3120,
+      price: 59.99,
+      discount_price: null,
+      duration: '10 weeks',
+      level: 'Advanced',
+      thumbnail: null,
+      is_enrolled: false,
+      created_at: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'course-4',
+      title: 'React & Redux Mastery',
+      slug: 'react-redux-mastery',
+      description: 'Build dynamic React applications using hooks, Redux for state management, and modern patterns.',
+      subject: 'Web Development',
+      category: 'Frontend',
+      grade_level: '10',
+      instructor: { id: 'inst-4', name: 'Emma Brown', email: 'emma@example.com' },
+      average_rating: 4.8,
+      total_reviews: 287,
+      enrolled_students_count: 2560,
+      price: 49.99,
+      discount_price: 39.99,
+      duration: '8 weeks',
+      level: 'Intermediate',
+      thumbnail: null,
+      is_enrolled: false,
+      created_at: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'course-5',
+      title: 'Database Design & SQL',
+      slug: 'database-design-sql',
+      description: 'Master relational databases, SQL queries, normalization, and database optimization techniques.',
+      subject: 'Databases',
+      category: 'Databases',
+      grade_level: '10',
+      instructor: { id: 'inst-5', name: 'Alex Brown', email: 'alex@example.com' },
+      average_rating: 4.6,
+      total_reviews: 156,
+      enrolled_students_count: 1620,
+      price: 34.99,
+      discount_price: null,
+      duration: '6 weeks',
+      level: 'Intermediate',
+      thumbnail: null,
+      is_enrolled: false,
+      created_at: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'course-6',
+      title: 'Cloud Computing with AWS',
+      slug: 'cloud-computing-aws',
+      description: 'Learn AWS services including EC2, S3, Lambda, and build scalable cloud applications.',
+      subject: 'Cloud',
+      category: 'Cloud Computing',
+      grade_level: '11',
+      instructor: { id: 'inst-6', name: 'David Wilson', email: 'david@example.com' },
+      average_rating: 4.7,
+      total_reviews: 203,
+      enrolled_students_count: 2780,
+      price: 54.99,
+      discount_price: null,
+      duration: '9 weeks',
+      level: 'Advanced',
+      thumbnail: null,
+      is_enrolled: false,
+      created_at: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'course-7',
+      title: 'JavaScript ES6+ Essentials',
+      slug: 'javascript-es6-essentials',
+      description: 'Master modern JavaScript with ES6+ features, async programming, and best practices.',
+      subject: 'Programming',
+      category: 'Programming',
+      grade_level: '9',
+      instructor: { id: 'inst-7', name: 'Lisa Anderson', email: 'lisa@example.com' },
+      average_rating: 4.7,
+      total_reviews: 224,
+      enrolled_students_count: 2100,
+      price: 39.99,
+      discount_price: 29.99,
+      duration: '7 weeks',
+      level: 'Intermediate',
+      thumbnail: null,
+      is_enrolled: false,
+      created_at: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'course-8',
+      title: 'Machine Learning Fundamentals',
+      slug: 'machine-learning-fundamentals',
+      description: 'Introduction to machine learning: supervised learning, classification, regression, and evaluation.',
+      subject: 'Data Science',
+      category: 'Machine Learning',
+      grade_level: '11',
+      instructor: { id: 'inst-8', name: 'Robert Green', email: 'robert@example.com' },
+      average_rating: 4.8,
+      total_reviews: 267,
+      enrolled_students_count: 1950,
+      price: 64.99,
+      discount_price: null,
+      duration: '10 weeks',
+      level: 'Advanced',
+      thumbnail: null,
+      is_enrolled: false,
+      created_at: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'course-9',
+      title: 'Mobile App Development with React Native',
+      slug: 'mobile-app-development-react-native',
+      description: 'Build native mobile applications for iOS and Android using React Native framework.',
+      subject: 'Mobile Development',
+      category: 'Mobile Development',
+      grade_level: '10',
+      instructor: { id: 'inst-9', name: 'Jennifer Lee', email: 'jennifer@example.com' },
+      average_rating: 4.6,
+      total_reviews: 178,
+      enrolled_students_count: 1450,
+      price: 59.99,
+      discount_price: 44.99,
+      duration: '10 weeks',
+      level: 'Advanced',
+      thumbnail: null,
+      is_enrolled: false,
+      created_at: new Date(Date.now() - 55 * 24 * 60 * 60 * 1000)
+    },
+    {
+      id: 'course-10',
+      title: 'DevOps and Container Technology',
+      slug: 'devops-container-technology',
+      description: 'Learn Docker, Kubernetes, CI/CD pipelines, and modern DevOps practices for deployment.',
+      subject: 'DevOps',
+      category: 'DevOps',
+      grade_level: '11',
+      instructor: { id: 'inst-10', name: 'James Miller', email: 'james@example.com' },
+      average_rating: 4.7,
+      total_reviews: 189,
+      enrolled_students_count: 1680,
+      price: 69.99,
+      discount_price: null,
+      duration: '12 weeks',
+      level: 'Advanced',
+      thumbnail: null,
+      is_enrolled: false,
+      created_at: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000)
+    }
+  ];
+
+  // Apply filters
+  let filtered = allCourses;
+
+  if (filters.search) {
+    const searchLower = filters.search.toLowerCase();
+    filtered = filtered.filter(course =>
+      course.title.toLowerCase().includes(searchLower) ||
+      course.description.toLowerCase().includes(searchLower) ||
+      course.subject.toLowerCase().includes(searchLower)
+    );
+  }
+
+  if (filters.subject) {
+    filtered = filtered.filter(course => course.subject === filters.subject);
+  }
+
+  if (filters.grade_level) {
+    filtered = filtered.filter(course => course.grade_level === filters.grade_level);
+  }
+
+  if (filters.category) {
+    filtered = filtered.filter(course => course.category === filters.category);
+  }
+
+  if (filters.price_type === 'free') {
+    filtered = filtered.filter(course => course.price === 0);
+  } else if (filters.price_type === 'paid') {
+    filtered = filtered.filter(course => course.price > 0);
+  }
+
+  // Sort
+  if (filters.sort_by === 'latest') {
+    filtered.sort((a, b) => b.created_at - a.created_at);
+  } else if (filters.sort_by === 'rating') {
+    filtered.sort((a, b) => b.average_rating - a.average_rating);
+  } else if (filters.sort_by === 'popular') {
+    filtered.sort((a, b) => b.enrolled_students_count - a.enrolled_students_count);
+  } else if (filters.sort_by === 'price_low') {
+    filtered.sort((a, b) => (a.discount_price || a.price) - (b.discount_price || b.price));
+  } else if (filters.sort_by === 'price_high') {
+    filtered.sort((a, b) => (b.discount_price || b.price) - (a.discount_price || a.price));
+  }
+
+  return filtered;
+};
+
+// Dummy Categories, Subjects, and Grade Levels
+const getDummyCategories = () => [
+  { id: 'cat-1', name: 'Programming' },
+  { id: 'cat-2', name: 'Web Development' },
+  { id: 'cat-3', name: 'Data Science' },
+  { id: 'cat-4', name: 'Machine Learning' },
+  { id: 'cat-5', name: 'Cloud Computing' },
+  { id: 'cat-6', name: 'DevOps' },
+  { id: 'cat-7', name: 'Mobile Development' },
+  { id: 'cat-8', name: 'Frontend' },
+  { id: 'cat-9', name: 'Backend' },
+  { id: 'cat-10', name: 'Databases' }
+];
+
+const getDummySubjects = () => [
+  { id: 'sub-1', name: 'Programming' },
+  { id: 'sub-2', name: 'Web Development' },
+  { id: 'sub-3', name: 'Data Science' },
+  { id: 'sub-4', name: 'Cloud' },
+  { id: 'sub-5', name: 'DevOps' },
+  { id: 'sub-6', name: 'Mobile Development' },
+  { id: 'sub-7', name: 'Databases' }
+];
+
+const getDummyGradeLevels = () => [
+  { id: 'grade-9', name: 'Grade 9' },
+  { id: 'grade-10', name: 'Grade 10' },
+  { id: 'grade-11', name: 'Grade 11' },
+  { id: 'grade-12', name: 'Grade 12' }
+];
+
 const StudentCoursesDiscover = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
@@ -22,14 +304,10 @@ const StudentCoursesDiscover = () => {
   useEffect(() => {
     const fetchUtilityData = async () => {
       try {
-        const [categoriesRes, subjectsRes, gradeLevelsRes] = await Promise.all([
-          utilityAPI.getCategories(),
-          utilityAPI.getSubjects(),
-          utilityAPI.getGradeLevels()
-        ]);
-        setCategories(categoriesRes.data);
-        setSubjects(subjectsRes.data);
-        setGradeLevels(gradeLevelsRes.data);
+        // Use dummy data instead of API calls
+        setCategories(getDummyCategories());
+        setSubjects(getDummySubjects());
+        setGradeLevels(getDummyGradeLevels());
       } catch (err) {
         console.error('Failed to fetch utility data:', err);
       }
@@ -42,17 +320,9 @@ const StudentCoursesDiscover = () => {
     const fetchCourses = async () => {
       try {
         setLoading(true);
-        const params = {};
-        
-        if (filters.search) params.search = filters.search;
-        if (filters.subject) params.subject = filters.subject;
-        if (filters.grade_level) params.grade_level = filters.grade_level;
-        if (filters.category) params.category = filters.category;
-        if (filters.price_type) params.price_type = filters.price_type;
-        if (filters.sort_by) params.sort_by = filters.sort_by;
-
-        const response = await studentCourseAPI.discoverCourses(params);
-        setCourses(response.data);
+        // Use dummy data with applied filters
+        const courses = getDummyCourses(filters);
+        setCourses(courses);
         setLoading(false);
       } catch (err) {
         toast.error('Failed to fetch courses');
@@ -67,17 +337,9 @@ const StudentCoursesDiscover = () => {
   const fetchCourses = async () => {
     try {
       setLoading(true);
-      const params = {};
-      
-      if (filters.search) params.search = filters.search;
-      if (filters.subject) params.subject = filters.subject;
-      if (filters.grade_level) params.grade_level = filters.grade_level;
-      if (filters.category) params.category = filters.category;
-      if (filters.price_type) params.price_type = filters.price_type;
-      if (filters.sort_by) params.sort_by = filters.sort_by;
-
-      const response = await studentCourseAPI.discoverCourses(params);
-      setCourses(response.data);
+      // Use dummy data with applied filters
+      const courses = getDummyCourses(filters);
+      setCourses(courses);
       setLoading(false);
     } catch (err) {
       toast.error('Failed to fetch courses');
@@ -88,11 +350,14 @@ const StudentCoursesDiscover = () => {
 
   const handleEnroll = async (courseId) => {
     try {
-      await studentCourseAPI.enrollInCourse(courseId);
+      // Simulate enrollment with dummy data
       toast.success('Successfully enrolled in course!');
-      fetchCourses();
+      // Update the course as enrolled in local state
+      setCourses(courses.map(course => 
+        course.id === courseId ? { ...course, is_enrolled: true } : course
+      ));
     } catch (error) {
-      toast.error(error.response?.data?.error || 'Failed to enroll in course');
+      toast.error('Failed to enroll in course');
     }
   };
 
