@@ -1,71 +1,60 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaTimes, FaUser, FaClock, FaClipboardCheck, FaSave } from 'react-icons/fa';
-
-// Dummy data outside component to avoid dependency issues
-const getDummyQuiz = (quizId) => ({
-  id: quizId,
-  title: 'Python Programming Quiz',
-  total_marks: 100,
-});
-
-const dummyPendingReviews = [
-  {
-    answer_id: 1,
-    student_name: 'Rahul Kumar',
-    student_id: 'STU001',
-    question_id: 1,
-    question_text: 'Explain the concept of object-oriented programming',
-    question_marks: 10,
-    student_answer: 'OOP is a programming paradigm that involves organizing code using objects and classes...',
-    earned_marks: 0,
-    feedback: '',
-    submitted_at: '2024-01-15 10:30 AM',
-  },
-  {
-    answer_id: 2,
-    student_name: 'Priya Singh',
-    student_id: 'STU002',
-    question_id: 2,
-    question_text: 'What are the four pillars of OOP?',
-    question_marks: 10,
-    student_answer: 'The four pillars are: 1) Encapsulation, 2) Abstraction, 3) Inheritance, and 4) Polymorphism',
-    earned_marks: 0,
-    feedback: '',
-    submitted_at: '2024-01-14 02:15 PM',
-  },
-];
+import { toast } from 'react-toastify';
+import { quizAPI } from '../../api/quiz';
 
 const GradeQuiz = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
   
-  const [quiz, _setQuiz] = useState(getDummyQuiz(quizId));
-  const [pendingReviews, _setPendingReviews] = useState(dummyPendingReviews);
+  const [quiz, setQuiz] = useState(null);
+  const [submissions, setSubmissions] = useState([]);
   const [currentReviewIndex, setCurrentReviewIndex] = useState(0);
   const [grades, setGrades] = useState({});
   const [feedback, setFeedback] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
 
+  // Fetch submissions for grading
   useEffect(() => {
-    // Initialize grades and feedback with dummy data asynchronously to avoid cascading renders
-    setTimeout(() => {
-      const initialGrades = {};
-      const initialFeedback = {};
-      dummyPendingReviews.forEach(review => {
-        initialGrades[review.answer_id] = review.earned_marks || 0;
-        initialFeedback[review.answer_id] = review.feedback || '';
-      });
-      setGrades(initialGrades);
-      setFeedback(initialFeedback);
-      setLoading(false);
-    }, 0);
-  }, []);
+    const fetchSubmissions = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        // Get quiz details
+        const quizDetail = await quizAPI.getQuizDetails(quizId);
+        setQuiz(quizDetail.data?.data || {});
+
+        // Get submissions for grading
+        const submissionsData = await quizAPI.getSubmissionForGrading(quizId);
+        const subs = submissionsData.data?.data || [];
+        setSubmissions(subs);
+
+        // Initialize grades and feedback
+        const initialGrades = {};
+        const initialFeedback = {};
+        subs.forEach(submission => {
+          initialGrades[submission.answer_id] = submission.earned_marks || 0;
+          initialFeedback[submission.answer_id] = submission.feedback || '';
+        });
+        setGrades(initialGrades);
+        setFeedback(initialFeedback);
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to fetch submissions');
+        toast.error('Failed to load submissions for grading');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSubmissions();
+  }, [quizId]);
 
   const handleGradeChange = (answerId, value) => {
-    const currentReview = pendingReviews[currentReviewIndex];
-    const maxMarks = currentReview.question_marks;
+    const currentSubmission = submissions[currentReviewIndex];
+    const maxMarks = currentSubmission.question_marks;
     const numValue = parseFloat(value);
     
     if (isNaN(numValue) || numValue < 0 || numValue > maxMarks) {
@@ -85,34 +74,41 @@ const GradeQuiz = () => {
     }));
   };
 
-  const handleSaveGrade = () => {
+  const handleSaveGrade = async () => {
     setSaving(true);
-    
-    // Simulate saving
-    setTimeout(() => {
-      alert('Grade saved successfully!');
+    try {
+      const currentSubmission = submissions[currentReviewIndex];
+      await quizAPI.gradeAnswer(currentSubmission.answer_id, {
+        earned_marks: grades[currentSubmission.answer_id],
+        feedback: feedback[currentSubmission.answer_id],
+      });
+      
+      toast.success('Grade saved successfully!');
       
       // Move to next review or go back if this was the last one
-      if (currentReviewIndex < pendingReviews.length - 1) {
+      if (currentReviewIndex < submissions.length - 1) {
         setCurrentReviewIndex(prev => prev + 1);
       } else {
-        setCurrentReviewIndex(0);
+        navigate(-1);
       }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save grade');
+    } finally {
       setSaving(false);
-    }, 500);
+    }
   };
 
   const handleSkip = () => {
-    if (currentReviewIndex < pendingReviews.length - 1) {
+    if (currentReviewIndex < submissions.length - 1) {
       setCurrentReviewIndex(prev => prev + 1);
     } else {
-      setCurrentReviewIndex(0);
+      navigate(-1);
     }
   };
 
   const handleQuickGrade = (answerId, percentage) => {
-    const currentReview = pendingReviews[currentReviewIndex];
-    const maxMarks = currentReview.question_marks;
+    const currentSubmission = submissions[currentReviewIndex];
+    const maxMarks = currentSubmission.question_marks;
     const grade = Math.round((maxMarks * percentage) / 100);
     setGrades(prev => ({
       ...prev,
@@ -164,7 +160,7 @@ const GradeQuiz = () => {
     );
   }
 
-  if (!quiz || pendingReviews.length === 0) {
+  if (!quiz || submissions.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="card max-w-md text-center">
@@ -179,8 +175,8 @@ const GradeQuiz = () => {
     );
   }
 
-  const currentReview = pendingReviews[currentReviewIndex];
-  const progress = ((currentReviewIndex + 1) / pendingReviews.length) * 100;
+  const currentReview = submissions[currentReviewIndex];
+  const progress = ((currentReviewIndex + 1) / submissions.length) * 100;
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -202,7 +198,7 @@ const GradeQuiz = () => {
             <div className="text-right">
               <div className="text-sm text-gray-600">Progress</div>
               <div className="text-2xl font-bold text-primary-600">
-                {currentReviewIndex + 1} / {pendingReviews.length}
+                {currentReviewIndex + 1} / {submissions.length}
               </div>
             </div>
           </div>
