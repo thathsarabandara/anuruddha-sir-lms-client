@@ -1,28 +1,12 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { FaCheckCircle, FaExclamationTriangle, FaGraduationCap, FaTimes, FaUserGraduate, FaTimesCircle, FaClock, FaSearch, FaEye, FaCheck, FaBan, FaUndo, FaUserPlus, FaEdit, FaKey } from 'react-icons/fa';
 import { BiLoader } from 'react-icons/bi';
 import PulseLoader from '../../components/common/PulseLoader';
+import { studentAPI } from '../../api/student';
 
 const AdminStudents = () => {
-  // Dummy data
-  const dummyStudentsData = [
-    { id: 1, first_name: 'Alex', last_name: 'Johnson', email: 'alex.johnson@example.com', phone_number: '0771234567', status: 'approved', grade_level: '10', school: 'Colombo High School', courses: 3 },
-    { id: 2, first_name: 'Maria', last_name: 'Garcia', email: 'maria.g@example.com', phone_number: '0772345678', status: 'approved', grade_level: '9', school: 'Kandy Central School', courses: 2 },
-    { id: 3, first_name: 'James', last_name: 'Wilson', email: 'james.w@example.com', phone_number: '0773456789', status: 'pending', grade_level: '11', school: 'Galle District School', courses: 0 },
-    { id: 4, first_name: 'Sophia', last_name: 'Lee', email: 'sophia.l@example.com', phone_number: '0774567890', status: 'approved', grade_level: '8', school: 'Matara Academy', courses: 4 },
-    { id: 5, first_name: 'David', last_name: 'Martinez', email: 'david.m@example.com', phone_number: '0775678901', status: 'suspended', grade_level: '10', school: 'Colombo High School', courses: 1 },
-  ];
-
-  const dummyStats = {
-    total_students: 1250,
-    approved_students: 1200,
-    pending_students: 30,
-    rejected_students: 10,
-    suspended_students: 10,
-  };
-
-  const [students, setStudents] = useState(dummyStudentsData);
-  const [stats, setStats] = useState(dummyStats);
+  const [students, setStudents] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
@@ -30,7 +14,7 @@ const AdminStudents = () => {
   const [pagination, setPagination] = useState({
     current_page: 1,
     total_pages: 1,
-    total_count: 1250,
+    total_count: 0,
     page_size: 10,
     has_next: false,
     has_previous: false,
@@ -45,14 +29,14 @@ const AdminStudents = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [resetPasswordData, setResetPasswordData] = useState(null);
-  const [rejectReason, setRejectReason] = useState('');
+  const [reason, setreason] = useState('');
   const [suspendReason, setSuspendReason] = useState('');
   const [createFormData, setCreateFormData] = useState({
     profile_picture: '',
     first_name: '',
     last_name: '',
     email: '',
-    phone_number: '',
+    phone: '',
     date_of_birth: '',
     grade_level: '',
     school: '',
@@ -66,37 +50,71 @@ const AdminStudents = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  useEffect(() => {
-    // No fetch needed with dummy data
-  }, [currentPage, filterStatus]);
-
-  useEffect(() => {
-    // No search fetch needed with dummy data
-  }, [searchTerm]);
-
   const fetchStats = async () => {
-    // Dummy stats already set
+    try {
+      const response = await studentAPI.getStudentStats();
+      setStats(response.data.data);
+    } catch (error) {
+      console.error('Error fetching student stats:', error);
+    }
   };
 
-  const fetchStudents = async () => {
-    // Dummy data already set
-  };
+  const fetchStudents = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const response = await studentAPI.getStudents(searchTerm, filterStatus, currentPage, 10);
+      setStudents(response.data.data.students || []);
+      if (response.data.pagination) {
+        setPagination(response.data.pagination);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch students');
+      console.error('Error fetching students:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, filterStatus, currentPage]);
+
+  useEffect(() => {
+    fetchStats();
+    fetchStudents();
+  }, [fetchStudents]);
+
+  useEffect(() => {
+    // Re-fetch when search, filter, or page changes
+  }, [searchTerm, filterStatus, currentPage]);
 
   const handleViewDetails = async (student) => {
     setSelectedStudent(student);
     setShowDetailsModal(true);
   };
 
-  const handleApprove = async (studentId) => {
+  const handleApprove = async () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    setSuccess('Student approved successfully!');
-    setActionLoading(false);
+    
+    try {
+      await studentAPI.activateStudent(selectedStudent.id);
+      
+      // Update local state
+      setStudents(students.map(s => 
+        s.id === selectedStudent.id ? { ...s, account_status: { ...s.account_status, is_active: true, is_banned: false } } : s
+      ));
+      
+      setSuccess('Student approved and activated successfully!');
+      setShowDetailsModal(false);
+      setSelectedStudent(null);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to approve student');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleReject = async () => {
-    if (!rejectReason.trim()) {
+    if (!reason.trim()) {
       setError('Please provide a reason for rejection');
       return;
     }
@@ -104,10 +122,28 @@ const AdminStudents = () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    setSuccess('Student rejected successfully!');
-    setShowRejectModal(false);
-    setRejectReason('');
-    setActionLoading(false);
+    
+    try {
+      await studentAPI.banStudent(selectedStudent.id, {
+        reason: reason,
+        ban_duration_hours: 72
+      });
+      
+      // Update local state
+      setStudents(students.map(s => 
+        s.id === selectedStudent.id ? { ...s, status: 'banned' } : s
+      ));
+      
+      setSuccess('Student rejected successfully!');
+      setShowRejectModal(false);
+      setreason('');
+      setShowDetailsModal(false);
+      setSelectedStudent(null);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to reject student');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleSuspend = async () => {
@@ -119,85 +155,159 @@ const AdminStudents = () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    setSuccess('Student suspended successfully!');
-    setShowSuspendModal(false);
-    setSuspendReason('');
-    setActionLoading(false);
-  };
-
-  const handleActivate = async (studentId) => {
-    setActionLoading(true);
-    setError('');
-    setSuccess('');
-    setSuccess('Student activated successfully!');
-    setActionLoading(false);
-  };
-
-  const handleCreateStudent = async (e) => {
-    e.preventDefault();
-    setActionLoading(true);
-    setError('');
-    setSuccess('');
-    setSuccess(`Student created successfully! Temporary password: TempPass123`);
-    setShowCreateModal(false);
-    setCreateFormData({
-      first_name: '',
-      last_name: '',
-      email: '',
-      phone_number: '',
-      date_of_birth: '',
-      grade_level: '',
-      school: '',
-      address: '',
-      parent_name: '',
-      parent_contact: '',
-      language: 'English',
-    });
-    setActionLoading(false);
-  };
-
-  const handleEditStudent = async (e) => {
-    e.preventDefault();
-    setActionLoading(true);
-    setError('');
-    setSuccess('');
+    
     try {
-      // Create FormData for file upload
-      const formData = new FormData();
-      Object.keys(editFormData).forEach(key => {
-        if (key !== 'profile_picture_preview' && editFormData[key]) {
-          formData.append(key, editFormData[key]);
-        }
+      await studentAPI.banStudent(selectedStudent.id, {
+        reason: suspendReason,
+        ban_duration_hours: 72, // 3 days suspension
       });
       
-      await studentsAPI.update(selectedStudent.id, formData);
-      setSuccess('Student details updated successfully!');
-      setShowEditModal(false);
-      fetchStats();
-      fetchStudents();
-      const response = await studentsAPI.getById(selectedStudent.id);
-      setSelectedStudent(response.data.student);
+      // Update local state
+      setStudents(students.map(s => 
+        s.id === selectedStudent.id ? { ...s, account_status: { ...s.account_status, is_active: false, is_banned: true } } : s
+      ));
+      
+      setSuccess('Student suspended successfully!');
+      setShowSuspendModal(false);
+      setSuspendReason('');
+      setShowDetailsModal(false);
+      setSelectedStudent(null);
     } catch (err) {
-      setError(err.message || 'Failed to update student');
+      setError(err.response?.data?.message || 'Failed to suspend student');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleResetPassword = async (studentId) => {
+  const handleActivate = async () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
+    
     try {
-      const response = await studentsAPI.resetPassword(studentId);
+      await studentAPI.activateStudent(selectedStudent.id);
+      
+      // Update local state
+      setStudents(students.map(s => 
+        s.id === selectedStudent.id ? { ...s, account_status: { ...s.account_status, is_active: true, is_banned: false } } : s
+      ));
+      
+      setSuccess('Student activated successfully!');
+      setShowDetailsModal(false);
+      setSelectedStudent(null);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to activate student');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCreateStudent = async (e) => {
+    e.preventDefault();
+    
+    // Validate required fields
+    if (!createFormData.first_name.trim() || !createFormData.last_name.trim() || !createFormData.email.trim()) {
+      setError('Please fill in all required fields (First Name, Last Name, Email)');
+      return;
+    }
+    
+    setActionLoading(true);
+    setError('');
+    setSuccess('');
+    
+    try {
+      const response = await studentAPI.createStudent({
+        first_name: createFormData.first_name,
+        last_name: createFormData.last_name,
+        email: createFormData.email,
+        phone: createFormData.phone,
+        date_of_birth: createFormData.date_of_birth || undefined,
+        grade_level: createFormData.grade_level,
+        school: createFormData.school,
+        address: createFormData.address,
+        parent_name: createFormData.parent_name,
+        parent_contact: createFormData.parent_contact,
+      });
+      
+      // Add new student to list
+      setStudents([...students, response.data]);
+      
+      setSuccess('Student created successfully! Credentials sent to ' + createFormData.email);
+      setShowCreateModal(false);
+      setCreateFormData({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        date_of_birth: '',
+        grade_level: '',
+        school: '',
+        address: '',
+        parent_name: '',
+        parent_contact: '',
+        language: 'English',
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create student');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleEditStudent = async (e) => {
+    e.preventDefault();
+    
+    setActionLoading(true);
+    setError('');
+    setSuccess('');
+    
+    try {
+      await studentAPI.editStudentDetails(selectedStudent.id, {
+        first_name: editFormData.first_name,
+        last_name: editFormData.last_name,
+        phone: editFormData.phone,
+        date_of_birth: editFormData.date_of_birth,
+        grade_level: editFormData.grade_level,
+        school: editFormData.school,
+        address: editFormData.address,
+        parent_name: editFormData.parent_name,
+        parent_contact: editFormData.parent_contact,
+      });
+      
+      // Update in students list
+      const updatedStudent = {
+        ...selectedStudent,
+        ...editFormData,
+        full_name: `${editFormData.first_name} ${editFormData.last_name}`,
+      };
+      
+      setStudents(students.map(s => s.id === selectedStudent.id ? { ...s, ...editFormData } : s));
+      setSelectedStudent(updatedStudent);
+      setSuccess('Student details updated successfully!');
+      setShowEditModal(false);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to update student');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleResetPassword = async () => {
+    setActionLoading(true);
+    setError('');
+    setSuccess('');
+    
+    try {
+      const response = await studentAPI.resetStudentPassword(selectedStudent.id, true);
+      
       setResetPasswordData({
-        email: response.data.student.email,
+        email: response.data.email,
         temporary_password: response.data.temporary_password,
       });
       setShowResetPasswordModal(true);
       setSuccess('Password reset successfully! Email sent to student.');
     } catch (err) {
-      setError(err.message || 'Failed to reset password');
+      setError(err.response?.data?.message || 'Failed to reset password');
     } finally {
       setActionLoading(false);
     }
@@ -208,7 +318,7 @@ const AdminStudents = () => {
       first_name: selectedStudent.first_name,
       last_name: selectedStudent.last_name,
       email: selectedStudent.email,
-      phone_number: selectedStudent.phone_number,
+      phone: selectedStudent.phone,
       date_of_birth: selectedStudent.date_of_birth,
       grade_level: selectedStudent.grade_level,
       school: selectedStudent.school,
@@ -221,13 +331,9 @@ const AdminStudents = () => {
   };
 
   const getStatusColor = (status) => {
-    const colors = {
-      APPROVED: 'bg-green-100 text-green-700',
-      PENDING: 'bg-yellow-100 text-yellow-700',
-      REJECTED: 'bg-red-100 text-red-700',
-      SUSPENDED: 'bg-orange-100 text-orange-700',
-    };
-    return colors[status] || colors.PENDING;
+    if (status.is_active && !status.is_banned) return 'bg-green-100 text-green-700'; // Active
+    if (!status.is_active && !status.is_banned) return 'bg-yellow-100 text-yellow-700'; // Pending
+    if (status.is_banned) return 'bg-red-100 text-red-700'; // Banned
   };
 
   const getStatusIcon = (status) => {
@@ -243,28 +349,28 @@ const AdminStudents = () => {
   const statsData = [
     { 
       label: 'Total Students', 
-      value: stats.total_students, 
+      value: stats?.total_students || 0, 
       icon: FaUserGraduate, 
       color: 'bg-blue-100 text-blue-700',
       borderColor: 'border-blue-500'
     },
     { 
       label: 'Active Students', 
-      value: stats.approved_students, 
+      value: stats?.active_students || 0, 
       icon: FaCheckCircle, 
       color: 'bg-green-100 text-green-700',
       borderColor: 'border-green-500'
     },
     { 
       label: 'Pending Approval', 
-      value: stats.pending_students, 
+      value: stats?.pending_students || 0, 
       icon: BiLoader, 
       color: 'bg-yellow-100 text-yellow-700',
       borderColor: 'border-yellow-500'
     },
     { 
-      label: 'Suspended', 
-      value: stats.suspended_students, 
+      label: 'Banned', 
+      value: stats?.banned_students || 0, 
       icon: FaExclamationTriangle, 
       color: 'bg-red-100 text-red-700',
       borderColor: 'border-red-500'
@@ -339,7 +445,10 @@ const AdminStudents = () => {
               type="text"
               placeholder="Search by name, email, phone, school..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               className="input-field pl-10"
             />
           </div>
@@ -352,11 +461,10 @@ const AdminStudents = () => {
               }} 
               className="input-field"
             >
-              <option value="all">All Status</option>
+              <option value="all">All Statuses</option>
+              <option value="active">Active</option>
               <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-              <option value="suspended">Suspended</option>
+              <option value="banned">Banned</option>
             </select>
           </div>
         </div>
@@ -391,7 +499,7 @@ const AdminStudents = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {students.map((student) => {
-                    const StatusIcon = getStatusIcon(student.status);
+                    const StatusIcon = getStatusIcon(student.account_status);
                     return (
                       <tr key={student.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">
@@ -408,14 +516,14 @@ const AdminStudents = () => {
                               </div>
                             )}
                             <div>
-                              <p className="font-medium text-gray-900">{student.full_name}</p>
+                              <p className="font-medium text-gray-900">{student.first_name} {student.last_name}</p>
                               <p className="text-sm text-gray-500">{student.grade_level}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <p className="text-gray-900">{student.email}</p>
-                          <p className="text-gray-500">{student.phone_number}</p>
+                          <p className="text-gray-500">{student.phone}</p>
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <p className="text-gray-900">{student.school}</p>
@@ -426,21 +534,39 @@ const AdminStudents = () => {
                           <p className="text-gray-500">{student.parent_contact}</p>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${getStatusColor(student.status)}`}>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${getStatusColor(student.account_status)}`}>
                             <StatusIcon className="text-xs" />
-                            {student.status}
+                            {student.account_status.is_active && !student.account_status.is_banned && 'Active'}
+                            {student.account_status.is_banned && 'Banned'}
+                            {!student.account_status.is_active && !student.account_status.is_banned && 'Pending'}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
                           {new Date(student.created_at).toLocaleDateString()}
                         </td>
                         <td className="px-4 py-3">
-                          <button
-                            onClick={() => handleViewDetails(student)}
-                            className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1"
-                          >
-                            <FaEye /> View
-                          </button>
+                          <div className="flex gap-1 flex-wrap">
+                            <button
+                              onClick={() => handleViewDetails(student)}
+                              className="px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
+                              title="View details"
+                            >
+                              <FaEye /> View
+                            </button>
+                            
+                            {/* Reset Password button - always available */}
+                            <button
+                              onClick={() => {
+                                setSelectedStudent(student);
+                                handleResetPassword();
+                              }}
+                              disabled={actionLoading}
+                              className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
+                              title="Reset password"
+                            >
+                              <FaKey /> Reset
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -525,10 +651,12 @@ const AdminStudents = () => {
                   <h3 className="text-xl font-bold text-gray-900">{selectedStudent.full_name}</h3>
                   <p className="text-gray-600">{selectedStudent.email}</p>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedStudent.status)}`}>
-                      {selectedStudent.status}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedStudent.account_status)}`}>
+                      {selectedStudent.account_status.is_active && !selectedStudent.account_status.is_banned && 'Active'}
+                      {!selectedStudent.account_status.is_active && !selectedStudent.account_status.is_banned && 'Pending'}
+                      {selectedStudent.account_status.is_banned && 'Banned'}
                     </span>
-                    {selectedStudent.is_verified && (
+                    {selectedStudent.email_verified && (
                       <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
                         Email Verified
                       </span>
@@ -551,7 +679,7 @@ const AdminStudents = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Phone Number</label>
-                    <p className="text-gray-900 font-medium">{selectedStudent.phone_number}</p>
+                    <p className="text-gray-900 font-medium">{selectedStudent.phone}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Date of Birth</label>
@@ -613,7 +741,7 @@ const AdminStudents = () => {
                   <div>
                     <label className="text-sm font-medium text-gray-500">Account Status</label>
                     <p className="text-gray-900 font-medium">
-                      {selectedStudent.is_active ? 'Active' : 'Inactive'}
+                      {selectedStudent.account_status.is_active ? 'Active' : 'Inactive'}
                     </p>
                   </div>
                   <div>
@@ -625,7 +753,7 @@ const AdminStudents = () => {
 
               {/* Action Buttons */}
               <div className="flex gap-3 pt-4 border-t">
-                {selectedStudent.status === 'PENDING' && (
+                { selectedStudent.account_status.is_active === false && selectedStudent.account_status.is_banned === false && (
                   <>
                     <button 
                       onClick={() => handleApprove(selectedStudent.id)}
@@ -644,7 +772,7 @@ const AdminStudents = () => {
                   </>
                 )}
                 
-                {selectedStudent.status === 'APPROVED' && (
+                {selectedStudent.account_status.is_active === true && selectedStudent.account_status.is_banned === false && (
                   <>
                     <button 
                       onClick={() => setShowSuspendModal(true)}
@@ -670,7 +798,7 @@ const AdminStudents = () => {
                   </>
                 )}
                 
-                {(selectedStudent.status === 'SUSPENDED' || selectedStudent.status === 'REJECTED') && (
+                {(selectedStudent.account_status.is_active === true && selectedStudent.account_status.is_banned === true) && (
                   <>
                     <button 
                       onClick={() => handleActivate(selectedStudent.id)}
@@ -703,15 +831,18 @@ const AdminStudents = () => {
               Please provide a reason for rejecting <strong>{selectedStudent.full_name}</strong>:
             </p>
             <textarea
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
+              value={reason}
+              onChange={(e) => setreason(e.target.value)}
               className="input-field w-full h-24"
               placeholder="Enter rejection reason..."
             />
+            <p className="text-sm text-gray-500 mt-2">
+              Ban will be permanent. You can activate the student later if needed.
+            </p>
             <div className="flex gap-3 mt-4">
               <button
                 onClick={handleReject}
-                disabled={actionLoading || !rejectReason.trim()}
+                disabled={actionLoading || !reason.trim()}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg disabled:opacity-50"
               >
                 {actionLoading ? 'Processing...' : 'Confirm Reject'}
@@ -719,7 +850,7 @@ const AdminStudents = () => {
               <button
                 onClick={() => {
                   setShowRejectModal(false);
-                  setRejectReason('');
+                  setreason('');
                 }}
                 disabled={actionLoading}
                 className="flex-1 btn-outline"
@@ -847,8 +978,8 @@ const AdminStudents = () => {
                 <input
                   type="tel"
                   required
-                  value={createFormData.phone_number}
-                  onChange={(e) => setCreateFormData({...createFormData, phone_number: e.target.value})}
+                  value={createFormData.phone}
+                  onChange={(e) => setCreateFormData({...createFormData, phone: e.target.value})}
                   className="input-field"
                 />
               </div>
@@ -1045,8 +1176,8 @@ const AdminStudents = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
                   <input
                     type="tel"
-                    value={editFormData.phone_number}
-                    onChange={(e) => setEditFormData({...editFormData, phone_number: e.target.value})}
+                    value={editFormData.phone}
+                    onChange={(e) => setEditFormData({...editFormData, phone: e.target.value})}
                     className="input-field"
                   />
                 </div>
