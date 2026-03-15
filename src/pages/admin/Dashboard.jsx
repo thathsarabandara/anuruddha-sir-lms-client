@@ -12,6 +12,8 @@ import PulseLoader from '../../components/common/PulseLoader';
 import { IoIosTrendingUp } from 'react-icons/io';
 import { MdLocalActivity } from 'react-icons/md';
 import { CiCircleAlert } from 'react-icons/ci';
+import { adminAPI } from '../../api/admin';
+import { toast } from 'react-toastify';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler);
 
@@ -208,13 +210,80 @@ const AdminDashboard = () => {
   };
 
   useEffect(() => {
-    // Simulate loading of dummy data
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
-    
-    return () => clearTimeout(timer);
+    fetchDashboardData();
   }, []);
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      
+      // Fetch all dashboard data in parallel
+      const [dashStats, systemHealth, revenueData, userStats, courseStats, activityLogs] = await Promise.all([
+        adminAPI.getDashboardStats(),
+        adminAPI.getSystemHealth(),
+        adminAPI.getRevenueAnalytics(),
+        adminAPI.getUserStatistics(),
+        adminAPI.getCourseStatistics(),
+        adminAPI.getActivityLogs(1, 8),
+      ]);
+
+      // Process stats data
+      if (dashStats.data) {
+        const processedStats = [
+          { label: 'Total Users', value: dashStats.data.total_users || 0, change: dashStats.data.user_change || '+0%', color: 'blue', icon: FaUsers, detail: 'Across all roles' },
+          { label: 'Active This Month', value: dashStats.data.active_this_month || 0, change: dashStats.data.active_change || '+0%', color: 'green', icon: FaEye, detail: 'User engagement' },
+          { label: 'Total Revenue', value: `$${(dashStats.data.total_revenue || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}`, change: dashStats.data.revenue_change || '+0%', color: 'purple', icon: FaMoneyBillWave, detail: 'Lifetime revenue' },
+          { label: 'Monthly Revenue', value: `$${(dashStats.data.monthly_revenue || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}`, change: dashStats.data.monthly_change || '+0%', color: 'yellow', icon: FaChartBar, detail: 'Last 30 days' },
+          { label: 'Total Courses', value: dashStats.data.total_courses || 0, change: dashStats.data.course_change || '+0%', color: 'indigo', icon: FaBook, detail: `${dashStats.data.published_courses || 0} published` },
+          { label: 'System Health', value: `${systemHealth.data?.uptime || 99.9}%`, change: 'optimal', color: 'teal', icon: FaServer, detail: 'Uptime' },
+        ];
+        setStats(processedStats);
+      }
+
+      // Process activity logs
+      if (activityLogs.data?.activities) {
+        const processedActivities = activityLogs.data.activities.map(activity => ({
+          user: activity.user_name || activity.initiated_by || 'System',
+          action: activity.description || activity.action || 'Unknown action',
+          type: activity.activity_type || activity.type || 'system',
+          time: new Date(activity.timestamp || activity.created_at).toLocaleTimeString(),
+          severity: getActivitySeverity(activity.activity_type || activity.type),
+        }));
+        setRecentActivities(processedActivities.slice(0, 8));
+      }
+
+      // Process pending approvals
+      if (dashStats.data?.pending_approvals) {
+        setPendingApprovals(dashStats.data.pending_approvals.slice(0, 3));
+      }
+
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching dashboard data:', err);
+      toast.error('Failed to load dashboard data');
+      setError(err.message || 'Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getActivitySeverity = (activityType) => {
+    const severityMap = {
+      'approval': 'success',
+      'course': 'success',
+      'payment': 'success',
+      'moderation': 'warning',
+      'ban': 'warning',
+      'system': 'info',
+      'alert': 'warning',
+      'pending': 'warning',
+      'error': 'danger',
+      'success': 'success',
+      'info': 'info',
+      'warning': 'warning',
+    };
+    return severityMap[activityType?.toLowerCase()] || 'info';
+  };
 
   // Loading state
   if (loading) {
