@@ -3,6 +3,8 @@ import { FaBook, FaCalendar, FaCheck, FaCheckCircle, FaTimes, FaEye, FaTrash, Fa
 import { toast } from 'react-toastify';
 import { CgSandClock } from 'react-icons/cg';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
+import { courseAPI } from '../../api/course';
+import { adminAPI } from '../../api/admin';
 
 const AdminCourses = () => {
   // Dummy data
@@ -37,21 +39,49 @@ const AdminCourses = () => {
 
   // Fetch dashboard stats on mount
   useEffect(() => {
-    // No fetch needed with dummy data
-    setStatsLoading(false);
+    fetchDashboardStats();
   }, []);
 
   useEffect(() => {
-    // No fetch needed with dummy data
-    setCoursesLoading(false);
-  }, [filterStatus]);
+    fetchCourses();
+  }, [filterStatus, searchTerm]);
 
-  const fetchDashboardStats = () => {
-    // Dummy data already set
+  const fetchDashboardStats = async () => {
+    try {
+      setStatsLoading(true);
+      const response = await adminAPI.getCourseStatistics();
+      if (response.data) {
+        setStats(response.data);
+      }
+    } catch (err) {
+      console.error('Error fetching course statistics:', err);
+      toast.error('Failed to load course statistics');
+    } finally {
+      setStatsLoading(false);
+    }
   };
 
-  const fetchCourses = () => {
-    // Dummy data already set
+  const fetchCourses = async () => {
+    try {
+      setCoursesLoading(true);
+      // Build filter parameters
+      const status = filterStatus === 'all' ? '' : filterStatus.toUpperCase();
+      const response = await courseAPI.searchCourses(searchTerm, '', '', '', '', null, 1, 50);
+      
+      if (response.data) {
+        // Filter local results by status if needed
+        let courseList = response.data.courses || response.data;
+        if (status) {
+          courseList = courseList.filter(course => course.is_published === (status === 'PUBLISHED'));
+        }
+        setCourses(courseList);
+      }
+    } catch (err) {
+      console.error('Error fetching courses:', err);
+      toast.error('Failed to load courses');
+    } finally {
+      setCoursesLoading(false);
+    }
   };
 
   const getStatusColor = (status) => {
@@ -82,24 +112,65 @@ const AdminCourses = () => {
   const handleApproveCourse = async (courseId) => {
     if (!window.confirm('Are you sure you want to approve this course?')) return;
     
-    toast.success('Course approved successfully');
-    setShowDetailsModal(false);
+    try {
+      setActionLoading(true);
+      await adminAPI.approveCourse(courseId, { notes: '' });
+      toast.success('Course approved successfully');
+      setShowDetailsModal(false);
+      fetchCourses();
+    } catch (err) {
+      console.error('Error approving course:', err);
+      toast.error(err.response?.data?.message || 'Failed to approve course');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleRejectCourse = async (courseId) => {
     if (!window.confirm('Are you sure you want to reject this course?')) return;
     
-    toast.success('Course rejected successfully');
-    setShowDetailsModal(false);
+    try {
+      setActionLoading(true);
+      await adminAPI.rejectCourse(courseId, { reason: '' });
+      toast.success('Course rejected successfully');
+      setShowDetailsModal(false);
+      fetchCourses();
+    } catch (err) {
+      console.error('Error rejecting course:', err);
+      toast.error(err.response?.data?.message || 'Failed to reject course');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleFeatureCourse = async (courseId, currentStatus) => {
-    toast.success(`Course ${!currentStatus ? 'featured' : 'unfeatured'} successfully`);
+    try {
+      setActionLoading(true);
+      // Since we don't have a specific feature endpoint, we can use updateCourse
+      await courseAPI.updateCourse(courseId, { is_featured: !currentStatus });
+      toast.success(`Course ${!currentStatus ? 'featured' : 'unfeatured'} successfully`);
+      fetchCourses();
+    } catch (err) {
+      console.error('Error updating course feature status:', err);
+      toast.error('Failed to update course feature status');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleToggleEnrollments = async (courseId, currentStatus) => {
-    toast.success(`Enrollments ${!currentStatus ? 'enabled' : 'disabled'} successfully`);
-    setSelectedCourse(null);
+    try {
+      setActionLoading(true);
+      await courseAPI.updateCourse(courseId, { enrollments_enabled: !currentStatus });
+      toast.success(`Enrollments ${!currentStatus ? 'enabled' : 'disabled'} successfully`);
+      setSelectedCourse(null);
+      fetchCourses();
+    } catch (err) {
+      console.error('Error toggling enrollments:', err);
+      toast.error('Failed to toggle enrollments');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleSetCommission = async (e) => {
@@ -112,17 +183,37 @@ const AdminCourses = () => {
       return;
     }
 
-    toast.success('Commission percentage updated successfully');
-    setShowCommissionModal(false);
-    setCommissionValue('');
-    setSelectedCourse(null);
+    try {
+      setActionLoading(true);
+      await courseAPI.updateCourse(selectedCourse.id, { commission_percentage: commission });
+      toast.success('Commission percentage updated successfully');
+      setShowCommissionModal(false);
+      setCommissionValue('');
+      setSelectedCourse(null);
+      fetchCourses();
+    } catch (err) {
+      console.error('Error updating commission:', err);
+      toast.error('Failed to update commission');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleDeleteCourse = async (courseId) => {
     if (!window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) return;
     
-    toast.success('Course deleted successfully');
-    setShowDetailsModal(false);
+    try {
+      setActionLoading(true);
+      await courseAPI.deleteCourse(courseId);
+      toast.success('Course deleted successfully');
+      setShowDetailsModal(false);
+      fetchCourses();
+    } catch (err) {
+      console.error('Error deleting course:', err);
+      toast.error(err.response?.data?.message || 'Failed to delete course');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const filteredCourses = courses.filter((course) => {
