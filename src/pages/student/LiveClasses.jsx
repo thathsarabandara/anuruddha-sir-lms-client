@@ -2,6 +2,136 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { FaBook, FaCalendar, FaCheck, FaClock, FaFileVideo, FaUsers, FaVideo, FaSearch, FaFilter, FaTimes, FaGraduationCap } from 'react-icons/fa';
 import { GoDotFill } from 'react-icons/go';
 
+// Dummy Live Classes Data
+const getDummyZoomClasses = () => {
+  const now = new Date();
+  return [
+    {
+      id: 'class-1',
+      title: 'Python Advanced Concepts',
+      subject: 'Programming',
+      instructor: 'John Smith',
+      date: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+      time: '2:00 PM',
+      duration: 60,
+      zoom_link: 'https://zoom.us/j/123456789',
+      meeting_id: '123456789',
+      passcode: '123456',
+      description: 'Deep dive into decorators, generators, and async programming',
+      enrolled_students: 45,
+      status: 'scheduled'
+    },
+    {
+      id: 'class-2',
+      title: 'Web Development Fundamentals',
+      subject: 'Web Development',
+      instructor: 'Sarah Lee',
+      date: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
+      time: '3:30 PM',
+      duration: 90,
+      zoom_link: 'https://zoom.us/j/987654321',
+      meeting_id: '987654321',
+      passcode: '654321',
+      description: 'Learn HTML, CSS, JavaScript basics for web development',
+      enrolled_students: 67,
+      status: 'scheduled'
+    },
+    {
+      id: 'class-3',
+      title: 'Data Science Bootcamp',
+      subject: 'Data Science',
+      instructor: 'Mike Johnson',
+      date: new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString(),
+      time: '1:00 PM',
+      duration: 120,
+      zoom_link: 'https://zoom.us/j/456789123',
+      meeting_id: '456789123',
+      passcode: '789123',
+      description: 'Pandas, NumPy, and data visualization techniques',
+      enrolled_students: 32,
+      status: 'scheduled'
+    },
+    {
+      id: 'class-4',
+      title: 'JavaScript ES6+ Features',
+      subject: 'Programming',
+      instructor: 'Emma Brown',
+      date: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
+      time: '4:00 PM',
+      duration: 75,
+      zoom_link: 'https://zoom.us/j/789123456',
+      meeting_id: '789123456',
+      passcode: '456789',
+      description: 'Arrow functions, promises, async/await patterns',
+      enrolled_students: 55,
+      status: 'scheduled'
+    },
+    {
+      id: 'class-5',
+      title: 'Database Design & SQL',
+      subject: 'Databases',
+      instructor: 'Alex Brown',
+      date: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
+      time: '10:00 AM',
+      duration: 90,
+      zoom_link: 'https://zoom.us/j/321654987',
+      meeting_id: '321654987',
+      passcode: '654987',
+      description: 'Relational databases, normalization, and query optimization',
+      enrolled_students: 41,
+      status: 'completed',
+      recording_link: 'https://example.com/recording/class-5'
+    },
+    {
+      id: 'class-6',
+      title: 'Cloud Computing with AWS',
+      subject: 'Cloud',
+      instructor: 'David Wilson',
+      date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
+      time: '2:30 PM',
+      duration: 120,
+      zoom_link: 'https://zoom.us/j/654987321',
+      meeting_id: '654987321',
+      passcode: '987654',
+      description: 'EC2, S3, Lambda, and serverless architecture',
+      enrolled_students: 38,
+      status: 'completed',
+      recording_link: 'https://example.com/recording/class-6'
+    },
+    {
+      id: 'class-7',
+      title: 'React Hooks Deep Dive',
+      subject: 'Web Development',
+      instructor: 'Sarah Lee',
+      date: new Date(now.getTime() - 72 * 60 * 60 * 1000).toISOString(),
+      time: '3:00 PM',
+      duration: 60,
+      zoom_link: 'https://zoom.us/j/987321654',
+      meeting_id: '987321654',
+      passcode: '321987',
+      description: 'useState, useEffect, useContext, custom hooks',
+      enrolled_students: 72,
+      status: 'completed',
+      recording_link: 'https://example.com/recording/class-7'
+    },
+    {
+      id: 'class-8',
+      title: 'Machine Learning Basics',
+      subject: 'Data Science',
+      instructor: 'Mike Johnson',
+      date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      time: '1:30 PM',
+      duration: 90,
+      zoom_link: 'https://zoom.us/j/123987654',
+      meeting_id: '123987654',
+      passcode: '987123',
+      description: 'Supervised learning, classification, regression algorithms',
+      enrolled_students: 28,
+      status: 'scheduled'
+    }
+  ];
+};
+
 const StudentLiveClasses = () => {
   const [filter, setFilter] = useState('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
@@ -22,8 +152,8 @@ const StudentLiveClasses = () => {
         setLoading(true);
         setError(null);
         
-        const response = await studentCourseAPI.getZoomClasses();
-        const zoomClasses = response.data?.zoom_classes || [];
+        // Use dummy data instead of API call
+        const zoomClasses = getDummyZoomClasses();
         
         // Separate upcoming and completed classes
         const upcoming = zoomClasses.filter(cls => {
@@ -40,7 +170,7 @@ const StudentLiveClasses = () => {
         setCompletedClasses(completed);
         setSelectedStatus([]);
       } catch (err) {
-        console.error('Error fetching zoom classes:', err);
+        console.error('Error loading live classes:', err);
         setError('Failed to load live classes');
       } finally {
         setLoading(false);
