@@ -65,8 +65,8 @@ const AdminStudents = () => {
     try {
       const response = await studentAPI.getStudents(searchTerm, filterStatus, currentPage, 10);
       setStudents(response.data.data.students || []);
-      if (response.data.pagination) {
-        setPagination(response.data.pagination);
+      if (response.data.data.pagination) {
+        setPagination(response.data.data.pagination);
       }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch students');
@@ -78,12 +78,12 @@ const AdminStudents = () => {
 
   useEffect(() => {
     fetchStats();
-    fetchStudents();
-  }, [fetchStudents]);
+  }, []);
 
   useEffect(() => {
-    // Re-fetch when search, filter, or page changes
-  }, [searchTerm, filterStatus, currentPage]);
+    // Fetch students when search, filter, or page changes
+    fetchStudents();
+  }, [fetchStudents]);
 
   const handleViewDetails = async (student) => {
     setSelectedStudent(student);
