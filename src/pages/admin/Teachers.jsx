@@ -2,36 +2,20 @@ import { useState, useEffect, useCallback } from 'react';
 import { FaBook, FaCheck, FaCheckCircle, FaExclamationTriangle, FaGraduationCap, FaTimes, FaEdit, FaSave, FaEye, FaSearch, FaBan, FaUndo, FaClock, FaTimesCircle, FaKey, FaUserPlus } from 'react-icons/fa';
 import { CgSandClock } from 'react-icons/cg';
 import { BiLoader } from 'react-icons/bi';
-import { toast } from 'react-toastify';
 import PulseLoader from '../../components/common/PulseLoader';
+import { teacherAPI } from '../../api/teacher';
 
 const AdminTeachers = () => {
-  // Dummy data
-  const dummyTeachersData = [
-    { id: 1, first_name: 'John', last_name: 'Smith', email: 'john.smith@example.com', contact_number: '0771234567', status: 'active', qualifications: 'M.Sc Mathematics', subjects_taught: 'Mathematics', years_of_experience: 5, bio: 'Experienced mathematics teacher', address: 'Colombo', language: 'English', profile_picture: '', courses: 3 },
-    { id: 2, first_name: 'Sarah', last_name: 'Johnson', email: 'sarah.j@example.com', contact_number: '0772345678', status: 'active', qualifications: 'B.A English', subjects_taught: 'English', years_of_experience: 3, bio: 'English literature specialist', address: 'Kandy', language: 'English', profile_picture: '', courses: 2 },
-    { id: 3, first_name: 'Robert', last_name: 'Davis', email: 'robert.d@example.com', contact_number: '0773456789', status: 'pending', qualifications: 'B.Sc Computer Science', subjects_taught: 'Programming', years_of_experience: 2, bio: 'Software developer turned teacher', address: 'Galle', language: 'English', profile_picture: '', courses: 0 },
-    { id: 4, first_name: 'Emma', last_name: 'Wilson', email: 'emma.w@example.com', contact_number: '0774567890', status: 'active', qualifications: 'D.Sc Physics', subjects_taught: 'Science', years_of_experience: 8, bio: 'Physics and chemistry teacher', address: 'Colombo', language: 'English', profile_picture: '', courses: 4 },
-    { id: 5, first_name: 'Michael', last_name: 'Brown', email: 'michael.b@example.com', contact_number: '0775678901', status: 'suspended', qualifications: 'M.A History', subjects_taught: 'History', years_of_experience: 6, bio: 'History enthusiast', address: 'Matara', language: 'English', profile_picture: '', courses: 1 },
-  ];
-
-  const dummyStats = {
-    total_teachers: 48,
-    active_teachers: 45,
-    pending_teachers: 2,
-    suspended_teachers: 1,
-    rejected_teachers: 0
-  };
-
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [teachers, setTeachers] = useState(dummyTeachersData);
-  const [stats, setStats] = useState(dummyStats);
+  const [teachers, setTeachers] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  // eslint-disable-next-line no-unused-vars
   const [totalPages, setTotalPages] = useState(1);
   const [showModal, setShowModal] = useState(false);
-  const [modalType, setModalType] = useState(''); // 'view', 'edit', 'approve', 'reject', 'suspend', 'reactivate', 'reset'
+  const [modalType, setModalType] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [editFormData, setEditFormData] = useState({});
   const [actionLoading, setActionLoading] = useState(false);
@@ -58,12 +42,31 @@ const AdminTeachers = () => {
     address: '',
     language: 'English',
   });
+
   const fetchTeachers = useCallback(async () => {
-    // Dummy data already set
-  }, [currentPage, filterStatus, searchTerm]);
+    setLoading(true);
+    setError('');
+    try {
+      const response = await teacherAPI.getTeachers(searchTerm, filterStatus, currentPage, 10);
+      setTeachers(response.data.data.teachers || []);
+      if (response.data.data.pagination) {
+        setTotalPages(response.data.data.pagination.total_pages);
+      }
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to fetch teachers');
+      console.error('Error fetching teachers:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, filterStatus, currentPage]);
 
   const fetchStats = async () => {
-    // Dummy stats already set
+    try {
+      const response = await teacherAPI.getTeacherStats();
+      setStats(response.data.data || null);
+    } catch (error) {
+      console.error('Error fetching teacher stats:', error);
+    }
   };
 
   useEffect(() => {
@@ -105,9 +108,22 @@ const AdminTeachers = () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    setSuccess('Teacher approved successfully!');
-    closeModal();
-    setActionLoading(false);
+    
+    try {
+      await teacherAPI.activateTeacher(selectedTeacher.id);
+      
+      // Update local state
+      setTeachers(teachers.map(t => 
+        t.id === selectedTeacher.id ? { ...t, account_status: { ...t.account_status, is_active: true, is_banned: false } } : t
+      ));
+      
+      setSuccess('Teacher approved and activated successfully!');
+      closeModal();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to approve teacher');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleReject = async () => {
@@ -119,10 +135,27 @@ const AdminTeachers = () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    setSuccess('Teacher rejected successfully!');
-    setShowRejectModal(false);
-    setActionReason('');
-    setActionLoading(false);
+    
+    try {
+      await teacherAPI.banTeacher(selectedTeacher.id, {
+        reason: actionReason,
+        ban_duration_hours: null, // Permanent ban
+      });
+      
+      // Update local state
+      setTeachers(teachers.map(t => 
+        t.id === selectedTeacher.id ? { ...t, account_status: { ...t.account_status, is_active: false, is_banned: true } } : t
+      ));
+      
+      setSuccess('Teacher rejected successfully!');
+      setShowRejectModal(false);
+      setActionReason('');
+      closeModal();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to reject teacher');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleSuspend = async () => {
@@ -134,33 +167,82 @@ const AdminTeachers = () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    setSuccess('Teacher suspended successfully!');
-    setShowSuspendModal(false);
-    setActionReason('');
-    setActionLoading(false);
+    
+    try {
+      await teacherAPI.banTeacher(selectedTeacher.id, {
+        reason: actionReason,
+        ban_duration_hours: 72, // 3 days suspension
+      });
+      
+      // Update local state
+      setTeachers(teachers.map(t => 
+        t.id === selectedTeacher.id ? { ...t, account_status: { ...t.account_status, is_active: false, is_banned: true } } : t
+      ));
+      
+      setSuccess('Teacher suspended successfully!');
+      setShowSuspendModal(false);
+      setActionReason('');
+      closeModal();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to suspend teacher');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleReactivate = async () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
-    setSuccess('Teacher reactivated successfully!');
-    closeModal();
-    setActionLoading(false);
+    
+    try {
+      await teacherAPI.activateTeacher(selectedTeacher.id);
+      
+      // Update local state
+      setTeachers(teachers.map(t => 
+        t.id === selectedTeacher.id ? { ...t, account_status: { ...t.account_status, is_active: true, is_banned: false } } : t
+      ));
+      
+      setSuccess('Teacher reactivated successfully!');
+      closeModal();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to reactivate teacher');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const handleUpdateProfile = async (e) => {
+    e.preventDefault();
+    
+    setActionLoading(true);
+    setError('');
+    setSuccess('');
+    
     try {
-      e.preventDefault();
+      await teacherAPI.editTeacherDetails(selectedTeacher.id, {
+        first_name: editFormData.first_name,
+        last_name: editFormData.last_name,
+        phone: editFormData.contact_number,
+        date_of_birth: editFormData.date_of_birth,
+        subject_expertise: editFormData.subjects_taught,
+        years_of_experience: editFormData.years_of_experience,
+        qualifications: editFormData.qualifications,
+        professional_bio: editFormData.bio,
+        address: editFormData.address,
+      });
       
-      setActionLoading(true);
-      setError('');
-      setSuccess('');
+      // Update local state
+      setTeachers(teachers.map(t => 
+        t.id === selectedTeacher.id 
+          ? { ...t, ...editFormData } 
+          : t
+      ));
+      
       setSuccess('Teacher profile updated successfully!');
       setShowEditModal(false);
-      fetchTeachers();
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to update teacher profile');
+      setError(err.response?.data?.message || 'Failed to update teacher profile');
     } finally {
       setActionLoading(false);
     }
@@ -170,16 +252,18 @@ const AdminTeachers = () => {
     setActionLoading(true);
     setError('');
     setSuccess('');
+    
     try {
-      const response = await teachersAPI.resetPassword(selectedTeacher.id);
+      const response = await teacherAPI.resetTeacherPassword(selectedTeacher.id, true);
+      
       setResetPasswordData({
-        email: response.data.teacher.email,
+        email: response.data.email,
         temporary_password: response.data.temporary_password,
       });
       setShowResetPasswordModal(true);
       setSuccess('Password reset successfully! Email sent to teacher.');
-    } catch {
-      setError('Failed to reset password');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to reset password');
     } finally {
       setActionLoading(false);
     }
@@ -203,29 +287,62 @@ const AdminTeachers = () => {
 
   const handleCreateTeacher = async (e) => {
     e.preventDefault();
+    
+    // Validate required fields
+    if (!createFormData.first_name.trim() || !createFormData.last_name.trim() || !createFormData.email.trim()) {
+      setError('Please fill in all required fields (First Name, Last Name, Email)');
+      return;
+    }
+    
     setActionLoading(true);
     setError('');
     setSuccess('');
     
-    setSuccess('Teacher created successfully!');
-    setShowCreateModal(false);
-    setCreateFormData({
-      profile_picture: '',
-      first_name: '',
-      last_name: '',
-      email: '',
-      contact_number: '',
-      qualifications: '',
-      subjects_taught: '',
-      years_of_experience: '',
-      bio: '',
-      address: '',
-      language: 'English',
-    });
-    setActionLoading(false);
+    try {
+      const response = await teacherAPI.createTeacher({
+        first_name: createFormData.first_name,
+        last_name: createFormData.last_name,
+        email: createFormData.email,
+        phone: createFormData.contact_number,
+        date_of_birth: createFormData.date_of_birth || undefined,
+        subject_expertise: createFormData.subjects_taught,
+        years_of_experience: createFormData.years_of_experience,
+        qualifications: createFormData.qualifications,
+        professional_bio: createFormData.bio,
+        address: createFormData.address,
+      });
+      
+      // Add new teacher to list
+      setTeachers([...teachers, response.data]);
+      
+      setSuccess('Teacher created successfully! Credentials sent to ' + createFormData.email);
+      setShowCreateModal(false);
+      setCreateFormData({
+        profile_picture: '',
+        first_name: '',
+        last_name: '',
+        email: '',
+        contact_number: '',
+        qualifications: '',
+        subjects_taught: '',
+        years_of_experience: '',
+        bio: '',
+        address: '',
+        language: 'English',
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to create teacher');
+    } finally {
+      setActionLoading(false);
+    }
   };
 
-  const getStatusColor = (status) => {
+  const getStatusColor = (accountStatus) => {
+    let status = 'PENDING';
+    if (accountStatus?.is_active && !accountStatus?.is_banned) status = 'APPROVED';
+    else if (!accountStatus?.is_active && !accountStatus?.is_banned) status = 'PENDING';
+    else if (accountStatus?.is_banned) status = 'SUSPENDED';
+    
     const colors = {
       APPROVED: 'bg-green-100 text-green-700',
       PENDING: 'bg-yellow-100 text-yellow-700',
@@ -235,7 +352,12 @@ const AdminTeachers = () => {
     return colors[status] || colors.PENDING;
   };
 
-  const getStatusIcon = (status) => {
+  const getStatusIcon = (accountStatus) => {
+    let status = 'PENDING';
+    if (accountStatus?.is_active && !accountStatus?.is_banned) status = 'APPROVED';
+    else if (!accountStatus?.is_active && !accountStatus?.is_banned) status = 'PENDING';
+    else if (accountStatus?.is_banned) status = 'SUSPENDED';
+    
     const icons = {
       APPROVED: FaCheckCircle,
       PENDING: FaClock,
@@ -245,11 +367,18 @@ const AdminTeachers = () => {
     return icons[status] || FaClock;
   };
 
+  const getStatusString = (accountStatus) => {
+    if (accountStatus?.is_active && !accountStatus?.is_banned) return 'APPROVED';
+    if (!accountStatus?.is_active && !accountStatus?.is_banned) return 'PENDING';
+    if (accountStatus?.is_banned) return 'SUSPENDED';
+    return 'PENDING';
+  };
+
   const statsDisplay = [
-    { label: 'Total Teachers', value: stats.total_teachers, icon: FaBook, color: 'bg-blue-100 text-blue-700', borderColor: 'border-blue-500' },
-    { label: 'Active Teachers', value: stats.approved_teachers, icon: FaCheckCircle, color: 'bg-green-100 text-green-700', borderColor: 'border-green-500' },
-    { label: 'Pending Approval', value: stats.pending_teachers, icon: CgSandClock, color: 'bg-yellow-100 text-yellow-700', borderColor: 'border-yellow-500' },
-    { label: 'Suspended', value: stats.suspended_teachers, icon: FaExclamationTriangle, color: 'bg-red-100 text-red-700', borderColor: 'border-red-500' },
+    { label: 'Total Teachers', value: stats?.total_teachers || 0, icon: FaBook, color: 'bg-blue-100 text-blue-700', borderColor: 'border-blue-500' },
+    { label: 'Active Teachers', value: stats?.active_teachers || 0, icon: FaCheckCircle, color: 'bg-green-100 text-green-700', borderColor: 'border-green-500' },
+    { label: 'Pending Teachers', value: stats?.pending_teachers || 0, icon: CgSandClock, color: 'bg-yellow-100 text-yellow-700', borderColor: 'border-yellow-500' },
+    { label: 'Banned Teachers', value: stats?.banned_teachers || 0, icon: FaExclamationTriangle, color: 'bg-red-100 text-red-700', borderColor: 'border-red-500' },
   ];
 
   // Loading state
@@ -320,21 +449,25 @@ const AdminTeachers = () => {
               type="text"
               placeholder="Search by name, email, subject..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               className="input-field pl-10"
             />
           </div>
           <div className="flex items-center space-x-4">
             <select 
               value={filterStatus} 
-              onChange={(e) => setFilterStatus(e.target.value)} 
+              onChange={(e) => {
+                setFilterStatus(e.target.value);
+                setCurrentPage(1);
+              }} 
               className="input-field"
             >
-              <option value="all">All Status</option>
-              <option value="APPROVED">Approved</option>
-              <option value="PENDING">Pending</option>
-              <option value="SUSPENDED">Suspended</option>
-              <option value="REJECTED">Rejected</option>
+              <option value="active">Active</option>
+              <option value="pending">Pending</option>
+              <option value="banned">Banned</option>
             </select>
           </div>
         </div>
@@ -370,7 +503,7 @@ const AdminTeachers = () => {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {teachers.map((teacher) => {
-                    const StatusIcon = getStatusIcon(teacher.status);
+                    const StatusIcon = getStatusIcon(teacher.account_status);
                     return (
                       <tr key={teacher.id} className="hover:bg-gray-50">
                         <td className="px-4 py-3">
@@ -394,14 +527,14 @@ const AdminTeachers = () => {
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <p className="text-gray-900">{teacher.email}</p>
-                          <p className="text-gray-500">{teacher.contact_number || 'N/A'}</p>
+                          <p className="text-gray-500">{teacher.phone || 'N/A'}</p>
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <p className="text-gray-900">{teacher.qualifications || 'N/A'}</p>
                         </td>
                         <td className="px-4 py-3 text-sm">
                           <div className="flex flex-wrap gap-1">
-                            {teacher.subjects_taught ? teacher.subjects_taught.split(',').slice(0, 2).map((subject, index) => (
+                            {teacher.subject_expertise ? teacher.subject_expertise.split(',').slice(0, 2).map((subject, index) => (
                               <span key={index} className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium">
                                 {subject.trim()}
                               </span>
@@ -412,21 +545,89 @@ const AdminTeachers = () => {
                           <p className="text-gray-900">{teacher.years_of_experience} years</p>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${getStatusColor(teacher.status)}`}>
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${getStatusColor(teacher.account_status)}`}>
                             <StatusIcon className="text-xs" />
-                            {teacher.status}
+                            {getStatusString(teacher.account_status)}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-600">
                           {teacher.created_at ? new Date(teacher.created_at).toLocaleDateString() : 'N/A'}
                         </td>
                         <td className="px-4 py-3">
-                          <button
-                            onClick={() => openModal('view', teacher)}
-                            className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1"
-                          >
-                            <FaEye /> View
-                          </button>
+                          <div className="flex gap-1 flex-wrap">
+                            <button
+                              onClick={() => openModal('view', teacher)}
+                              className="px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
+                              title="View details"
+                            >
+                              <FaEye /> View
+                            </button>
+                            
+                            {/* Reset Password button - always available */}
+                            <button
+                              onClick={() => {
+                                setSelectedTeacher(teacher);
+                                handleResetPassword();
+                              }}
+                              disabled={actionLoading}
+                              className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
+                              title="Reset password"
+                            >
+                              <FaKey /> Reset
+                            </button>
+                            
+                            {/* Active/Approved teachers: Show Ban/Suspend button */}
+                            {['active', 'approved'].includes(teacher.status?.toLowerCase()) && (
+                              <button
+                                onClick={() => {
+                                  setSelectedTeacher(teacher);
+                                  setShowSuspendModal(true);
+                                }}
+                                className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
+                              >
+                                <FaBan /> Ban
+                              </button>
+                            )}
+                            
+                            {/* Banned/Suspended teachers: Show Activate button */}
+                            {['banned', 'suspended', 'rejected'].includes(teacher.status?.toLowerCase()) && (
+                              <button
+                                onClick={() => {
+                                  setSelectedTeacher(teacher);
+                                  handleReactivate();
+                                }}
+                                disabled={actionLoading}
+                                className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
+                              >
+                                <FaCheck /> Activate
+                              </button>
+                            )}
+                            
+                            {/* Pending teachers: Show Approve and Reject buttons */}
+                            {teacher.status?.toLowerCase() === 'pending' && (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    setSelectedTeacher(teacher);
+                                    handleApprove();
+                                  }}
+                                  disabled={actionLoading}
+                                  className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
+                                >
+                                  <FaCheck /> Approve
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedTeacher(teacher);
+                                    setShowRejectModal(true);
+                                  }}
+                                  className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
+                                >
+                                  <FaBan /> Reject
+                                </button>
+                              </>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -505,8 +706,8 @@ const AdminTeachers = () => {
                   <h3 className="text-xl font-bold text-gray-900">{selectedTeacher.full_name}</h3>
                   <p className="text-gray-600">{selectedTeacher.email}</p>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTeacher.status)}`}>
-                      {selectedTeacher.status}
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedTeacher.account_status)}`}>
+                      {getStatusString(selectedTeacher.account_status)}
                     </span>
                   </div>
                 </div>
