@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FaFileVideo } from 'react-icons/fa';
-import PulseLoader from '../../components/common/PulseLoader';
+
 
 const AdminSettings = () => {
   const [activeTab, setActiveTab] = useState('general');
