@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
-import PulseLoader from '../../components/common/PulseLoader';
+
 import { adminAPI } from '../../api/admin';
 import { courseAPI } from '../../api/course';
 
@@ -112,10 +112,6 @@ const AdminCourseModeration = () => {
     return badges[status] || 'bg-gray-100 text-gray-800';
   };
 
-  // Loading state
-  if (loading) {
-    return <PulseLoader />;
-  }
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
