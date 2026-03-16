@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { FaBook, FaCalendar, FaCheck, FaGraduationCap, FaSearch, FaTimes } from 'react-icons/fa';
+import { FaBook, FaCalendar, FaCheck, FaGraduationCap, FaSearch, FaTimes, FaVideo, FaEye, FaList } from 'react-icons/fa';
+import StatCard from '../../components/common/StatCard';
 
 const dummyRecordings = [
   { id: 1, title: 'Intro to React', instructor: 'John Doe', date: '2024-03-10', subject: 'JavaScript' },
@@ -13,6 +14,41 @@ const StudentRecordings = () => {
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [subjects, setSubjects] = useState([]);
+
+  const recordingsMetricsConfig = [
+    {
+      label: 'Total Recordings',
+      statsKey: 'totalRecordings',
+      icon: FaVideo,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'All available recordings',
+    },
+    {
+      label: 'Watched',
+      statsKey: 'watched',
+      icon: FaEye,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Viewed recordings',
+    },
+    {
+      label: 'Enrolled Courses',
+      statsKey: 'enrolledCourses',
+      icon: FaBook,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'Courses with recordings',
+    },
+    {
+      label: 'Available to Watch',
+      statsKey: 'available',
+      icon: FaList,
+      bgColor: 'bg-orange-100',
+      textColor: 'text-orange-600',
+      description: 'Unwatched recordings',
+    },
+  ];
 
   const fetchStudentData = () => {
     setLoading(true);
@@ -89,26 +125,15 @@ const StudentRecordings = () => {
         </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Recordings</div>
-          <div className="text-2xl font-bold text-gray-900">{recordings.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Watched</div>
-          <div className="text-2xl font-bold text-green-600">
-            {recordings.filter((r) => r.is_watched).length}
-          </div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">From Enrolled Courses</div>
-          <div className="text-2xl font-bold text-primary-600">{courses.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Available Recordings</div>
-          <div className="text-2xl font-bold text-gray-900">{filteredRecordings.length}</div>
-        </div>
-      </div>
+      <StatCard 
+        stats={{
+          totalRecordings: recordings.length.toString(),
+          watched: recordings.filter(r => r.is_watched).length.toString(),
+          enrolledCourses: courses.length.toString(),
+          available: filteredRecordings.length.toString(),
+        }}
+        metricsConfig={recordingsMetricsConfig}
+      />
 
       {/* Search and Filter */}
       <div className="card mb-6">
