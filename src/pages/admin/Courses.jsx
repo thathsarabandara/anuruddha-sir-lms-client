@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { FaBook, FaCalendar, FaCheck, FaCheckCircle, FaTimes, FaEye, FaTrash, FaToggleOn, FaToggleOff, FaStar, FaExclamationTriangle } from 'react-icons/fa';
 import { CgSandClock } from 'react-icons/cg';
 import StatCard from '../../components/common/StatCard';
+import CourseCard from '../../components/common/CourseCard';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
 
 const AdminCourses = () => {
@@ -237,147 +238,15 @@ const AdminCourses = () => {
       ) : filteredCourses.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredCourses.map((course) => (
-            <div key={course.id} className="group bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden border border-gray-100 hover:border-gray-200">
-              {/* Image Section */}
-              <div className="relative h-44 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
-                {course.thumbnail ? (
-                  <img 
-                    src={getAbsoluteImageUrl(course.thumbnail)} 
-                    alt={course.title} 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
-                    <div className="text-center">
-                      <FaBook className="text-4xl text-indigo-200 mx-auto mb-2" />
-                      <p className="text-sm text-indigo-300 font-medium">No Image</p>
-                    </div>
-                  </div>
-                )}
-                
-                {/* Status Badge */}
-                <div className="absolute top-3 right-3">
-                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(course.status)}`}>
-                    {course.status.toUpperCase()}
-                  </span>
-                </div>
-              </div>
-
-              {/* Content Section */}
-              <div className="p-5">
-                {/* Subject Badge */}
-                <div className="mb-3">
-                  <span className={`inline-block px-2.5 py-1 rounded-md text-xs font-medium ${getSubjectColor(course.subject)}`}>
-                    {course.subject || 'General'}
-                  </span>
-                </div>
-
-                {/* Title */}
-                <h3 className="text-base font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
-                  {course.title}
-                </h3>
-
-                {/* Teacher */}
-                <div className="flex items-center text-sm text-gray-600 mb-4">
-                  <FaBook className="mr-2 text-gray-400 flex-shrink-0" />
-                  <span className="truncate">{course.teacher_name}</span>
-                </div>
-
-                {/* Divider */}
-                <div className="h-px bg-gray-100 mb-4"></div>
-
-                {/* Meta Info */}
-                <div className="space-y-3 mb-4">
-                  {/* Price */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-gray-500">Price</span>
-                    <span className="text-sm font-semibold text-gray-900">
-                      {course.price_type === 'FREE' ? 'Free' : `Rs. ${course.price}`}
-                    </span>
-                  </div>
-
-                  {/* Level */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-medium text-gray-500">Level</span>
-                    <span className="text-sm font-medium text-gray-700">{course.grade_level}</span>
-                  </div>
-
-                  {/* Stats for Published Courses */}
-                  {course.status === 'PUBLISHED' && (
-                    <>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-500">Students</span>
-                        <span className="text-sm font-semibold text-gray-900">{course.total_enrollments}</span>
-                      </div>
-                      {course.average_rating > 0 && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-gray-500">Rating</span>
-                          <span className="flex items-center gap-1">
-                            <FaStar className="text-yellow-400 text-xs" />
-                            <span className="text-sm font-semibold text-gray-900">{course.average_rating.toFixed(1)}</span>
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-gray-500">Revenue</span>
-                        <span className="text-sm font-semibold text-green-600">Rs. {course.total_revenue.toLocaleString()}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Divider */}
-                <div className="h-px bg-gray-100 mb-4"></div>
-
-                {/* Enrollment Status */}
-                <div className="mb-4 flex items-center justify-between text-xs">
-                  <span className="text-gray-500">Enrollments:</span>
-                  <span className={`font-semibold ${course.enrollments_enabled ? 'text-green-600' : 'text-red-600'}`}>
-                    {course.enrollments_enabled ? 'Enabled' : 'Disabled'}
-                  </span>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-2">
-                  <button
-                    onClick={() => handleViewDetails(course)}
-                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg font-medium text-sm transition-colors duration-200 flex items-center justify-center gap-2"
-                    disabled={actionLoading}
-                  >
-                    <FaEye className="text-sm" />
-                    View Details
-                  </button>
-
-                  {course.status === 'PUBLISHED' && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleFeatureCourse(course.id, course.is_featured)}
-                        disabled={actionLoading}
-                        className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors duration-200 ${
-                          course.is_featured
-                            ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                        title={course.is_featured ? 'Unfeature course' : 'Feature course'}
-                      >
-                        {course.is_featured ? '⭐ Featured' : '☆ Feature'}
-                      </button>
-                      <button
-                        onClick={() => handleToggleEnrollments(course.id, course.enrollments_enabled)}
-                        disabled={actionLoading}
-                        className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors duration-200 ${
-                          course.enrollments_enabled
-                            ? 'bg-red-100 text-red-700 hover:bg-red-200'
-                            : 'bg-green-100 text-green-700 hover:bg-green-200'
-                        }`}
-                      >
-                        {course.enrollments_enabled ? 'Off' : 'On'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+            <CourseCard
+              key={course.id}
+              course={course}
+              userType="admin"
+              loading={actionLoading}
+              onViewDetails={handleViewDetails}
+              onFeature={handleFeatureCourse}
+              onToggleEnrollments={handleToggleEnrollments}
+            />
           ))}
         </div>
       ) : (
