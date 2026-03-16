@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowRight, FaCheck, FaGraduationCap, FaTrophy, FaSearch, FaClock, FaClipboardCheck, FaExclamationCircle, FaCheckCircle, FaHourglassHalf, FaTimes, FaCalendarTimes } from 'react-icons/fa';
+import {  FaCheck, FaGraduationCap, FaTrophy, FaSearch, FaClock, FaClipboardCheck, FaExclamationCircle, FaCheckCircle, FaHourglassHalf, FaTimes, FaCalendarTimes, FaFire, FaChartBar } from 'react-icons/fa';
+import StatCard from '../../components/common/StatCard';
 // Removed: API and studentQuizAPI imports - using dummy data instead
 
 const StudentQuizzes = () => {
@@ -34,6 +35,43 @@ const StudentQuizzes = () => {
   
   const [courses, _setCourses] = useState([{ id: 1, title: 'Python 101' }, { id: 2, title: 'OOP Concepts' }]);
   const [stats, _setStats] = useState(dummyStats);
+
+  const quizzesMetricsConfig = [
+    {
+      label: 'Completed',
+      statsKey: 'completed',
+      icon: FaCheckCircle,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'Total quizzes taken',
+    },
+    {
+      label: 'Average Score',
+      statsKey: 'avgScore',
+      icon: FaChartBar,
+      bgColor: 'bg-cyan-100',
+      textColor: 'text-cyan-600',
+      description: 'Overall average',
+      formatter: (value) => `${value}%`,
+    },
+    {
+      label: 'Best Score',
+      statsKey: 'bestScore',
+      icon: FaTrophy,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Highest performance',
+      formatter: (value) => `${value}%`,
+    },
+    {
+      label: 'Total Attempts',
+      statsKey: 'totalAttempts',
+      icon: FaFire,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'Number of attempts',
+    },
+  ];
   const [loading, _setLoading] = useState(false);
 
   useEffect(() => {
@@ -221,24 +259,7 @@ const StudentQuizzes = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Completed</div>
-          <div className="text-2xl font-bold text-gray-900">{stats.completed} Quizzes</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Average Score</div>
-          <div className="text-2xl font-bold text-primary-600">{stats.avgScore}%</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Best Score</div>
-          <div className="text-2xl font-bold text-green-600">{stats.bestScore}%</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Attempts</div>
-          <div className="text-2xl font-bold text-yellow-600">{stats.totalAttempts}</div>
-        </div>
-      </div>
+      <StatCard stats={stats} metricsConfig={quizzesMetricsConfig} />
 
       {loading ? (
         <div className="text-center py-12">
