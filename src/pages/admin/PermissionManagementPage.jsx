@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import PermissionGroupManager from '../../components/admin/PermissionGroupManager';
 import UserPermissionManager from '../../components/admin/UserPermissionManager';
-import PulseLoader from '../../components/common/PulseLoader';
+
 
 const PermissionManagementPage = () => {
   const [activeTab, setActiveTab] = useState('groups'); // 'groups', 'users', 'overview'
