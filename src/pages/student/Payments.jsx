@@ -1,8 +1,44 @@
 import { useState } from 'react';
-import { FaCheck, FaClock, FaCreditCard, FaExclamationTriangle, FaGraduationCap } from 'react-icons/fa';
+import { FaCheck, FaClock, FaCreditCard, FaExclamationTriangle, FaGraduationCap, FaDollarSign, FaBook, FaCalendar } from 'react-icons/fa';
+import StatCard from '../../components/common/StatCard';
 
 const StudentPayments = () => {
   const [selectedTab, setSelectedTab] = useState('history');
+
+  const paymentsMetricsConfig = [
+    {
+      label: 'Total Paid',
+      statsKey: 'totalPaid',
+      icon: FaDollarSign,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Paid amount',
+    },
+    {
+      label: 'Pending',
+      statsKey: 'pending',
+      icon: FaClock,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'Outstanding balance',
+    },
+    {
+      label: 'Next Payment',
+      statsKey: 'nextPayment',
+      icon: FaCalendar,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'Due date',
+    },
+    {
+      label: 'Total Courses',
+      statsKey: 'totalCourses',
+      icon: FaBook,
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-600',
+      description: 'Enrolled courses',
+    },
+  ];
 
   const paymentHistory = [
     {
@@ -101,24 +137,15 @@ const StudentPayments = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Paid</div>
-          <div className="text-2xl font-bold text-green-600">Rs. 41,000</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Pending</div>
-          <div className="text-2xl font-bold text-yellow-600">Rs. 8,000</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Next Payment</div>
-          <div className="text-2xl font-bold text-primary-600">Dec 25</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Courses</div>
-          <div className="text-2xl font-bold text-gray-900">4</div>
-        </div>
-      </div>
+      <StatCard 
+        stats={{
+          totalPaid: 'Rs. 41,000',
+          pending: 'Rs. 8,000',
+          nextPayment: 'Dec 25',
+          totalCourses: '4',
+        }}
+        metricsConfig={paymentsMetricsConfig}
+      />
 
       {/* Tabs */}
       <div className="flex space-x-4 mb-8 border-b">
