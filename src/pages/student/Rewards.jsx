@@ -148,7 +148,6 @@ const StudentRewards = () => {
   ];
 
   // Calculate metrics for stat cards
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const stats = {
     coins: rewardBalance.coins,
     gems: rewardBalance.gems,
