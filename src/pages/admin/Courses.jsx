@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FaBook, FaCalendar, FaCheck, FaCheckCircle, FaTimes, FaEye, FaTrash, FaToggleOn, FaToggleOff, FaStar, FaExclamationTriangle } from 'react-icons/fa';
-import { toast } from 'react-toastify';
 import { CgSandClock } from 'react-icons/cg';
+import StatCard from '../../components/common/StatCard';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
-import { courseAPI } from '../../api/course';
-import { adminAPI } from '../../api/admin';
 
 const AdminCourses = () => {
   // Dummy data
@@ -37,52 +35,16 @@ const AdminCourses = () => {
   const [showCommissionModal, setShowCommissionModal] = useState(false);
   const [commissionValue, setCommissionValue] = useState('');
 
-  // Fetch dashboard stats on mount
+  // Use dummy data without API calls
   useEffect(() => {
-    fetchDashboardStats();
+    setStats(dummyStats);
+    setStatsLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchCourses();
+    setCourses(dummyCourses);
+    setCoursesLoading(false);
   }, [filterStatus, searchTerm]);
-
-  const fetchDashboardStats = async () => {
-    try {
-      setStatsLoading(true);
-      const response = await adminAPI.getCourseStatistics();
-      if (response.data) {
-        setStats(response.data);
-      }
-    } catch (err) {
-      console.error('Error fetching course statistics:', err);
-      toast.error('Failed to load course statistics');
-    } finally {
-      setStatsLoading(false);
-    }
-  };
-
-  const fetchCourses = async () => {
-    try {
-      setCoursesLoading(true);
-      // Build filter parameters
-      const status = filterStatus === 'all' ? '' : filterStatus.toUpperCase();
-      const response = await courseAPI.searchCourses(searchTerm, '', '', '', '', null, 1, 50);
-      
-      if (response.data) {
-        // Filter local results by status if needed
-        let courseList = response.data.courses || response.data;
-        if (status) {
-          courseList = courseList.filter(course => course.is_published === (status === 'PUBLISHED'));
-        }
-        setCourses(courseList);
-      }
-    } catch (err) {
-      console.error('Error fetching courses:', err);
-      toast.error('Failed to load courses');
-    } finally {
-      setCoursesLoading(false);
-    }
-  };
 
   const getStatusColor = (status) => {
     const colors = {
@@ -109,111 +71,64 @@ const AdminCourses = () => {
     setShowDetailsModal(true);
   };
 
-  const handleApproveCourse = async (courseId) => {
+  const handleApproveCourse = (courseId) => {
     if (!window.confirm('Are you sure you want to approve this course?')) return;
-    
-    try {
-      setActionLoading(true);
-      await adminAPI.approveCourse(courseId, { notes: '' });
-      toast.success('Course approved successfully');
+    setActionLoading(true);
+    setTimeout(() => {
       setShowDetailsModal(false);
-      fetchCourses();
-    } catch (err) {
-      console.error('Error approving course:', err);
-      toast.error(err.response?.data?.message || 'Failed to approve course');
-    } finally {
       setActionLoading(false);
-    }
+    }, 300);
   };
 
-  const handleRejectCourse = async (courseId) => {
+  const handleRejectCourse = (courseId) => {
     if (!window.confirm('Are you sure you want to reject this course?')) return;
-    
-    try {
-      setActionLoading(true);
-      await adminAPI.rejectCourse(courseId, { reason: '' });
-      toast.success('Course rejected successfully');
+    setActionLoading(true);
+    setTimeout(() => {
       setShowDetailsModal(false);
-      fetchCourses();
-    } catch (err) {
-      console.error('Error rejecting course:', err);
-      toast.error(err.response?.data?.message || 'Failed to reject course');
-    } finally {
       setActionLoading(false);
-    }
+    }, 300);
   };
 
-  const handleFeatureCourse = async (courseId, currentStatus) => {
-    try {
-      setActionLoading(true);
-      // Since we don't have a specific feature endpoint, we can use updateCourse
-      await courseAPI.updateCourse(courseId, { is_featured: !currentStatus });
-      toast.success(`Course ${!currentStatus ? 'featured' : 'unfeatured'} successfully`);
-      fetchCourses();
-    } catch (err) {
-      console.error('Error updating course feature status:', err);
-      toast.error('Failed to update course feature status');
-    } finally {
+  const handleFeatureCourse = (courseId, currentStatus) => {
+    setActionLoading(true);
+    setTimeout(() => {
       setActionLoading(false);
-    }
+    }, 300);
   };
 
-  const handleToggleEnrollments = async (courseId, currentStatus) => {
-    try {
-      setActionLoading(true);
-      await courseAPI.updateCourse(courseId, { enrollments_enabled: !currentStatus });
-      toast.success(`Enrollments ${!currentStatus ? 'enabled' : 'disabled'} successfully`);
+  const handleToggleEnrollments = (courseId, currentStatus) => {
+    setActionLoading(true);
+    setTimeout(() => {
       setSelectedCourse(null);
-      fetchCourses();
-    } catch (err) {
-      console.error('Error toggling enrollments:', err);
-      toast.error('Failed to toggle enrollments');
-    } finally {
       setActionLoading(false);
-    }
+    }, 300);
   };
 
-  const handleSetCommission = async (e) => {
+  const handleSetCommission = (e) => {
     e.preventDefault();
     if (!selectedCourse) return;
 
     const commission = parseFloat(commissionValue);
     if (isNaN(commission) || commission < 0 || commission > 100) {
-      toast.error('Commission must be between 0 and 100');
       return;
     }
 
-    try {
-      setActionLoading(true);
-      await courseAPI.updateCourse(selectedCourse.id, { commission_percentage: commission });
-      toast.success('Commission percentage updated successfully');
+    setActionLoading(true);
+    setTimeout(() => {
       setShowCommissionModal(false);
       setCommissionValue('');
       setSelectedCourse(null);
-      fetchCourses();
-    } catch (err) {
-      console.error('Error updating commission:', err);
-      toast.error('Failed to update commission');
-    } finally {
       setActionLoading(false);
-    }
+    }, 300);
   };
 
-  const handleDeleteCourse = async (courseId) => {
+  const handleDeleteCourse = (courseId) => {
     if (!window.confirm('Are you sure you want to delete this course? This action cannot be undone.')) return;
-    
-    try {
-      setActionLoading(true);
-      await courseAPI.deleteCourse(courseId);
-      toast.success('Course deleted successfully');
+    setActionLoading(true);
+    setTimeout(() => {
       setShowDetailsModal(false);
-      fetchCourses();
-    } catch (err) {
-      console.error('Error deleting course:', err);
-      toast.error(err.response?.data?.message || 'Failed to delete course');
-    } finally {
       setActionLoading(false);
-    }
+    }, 300);
   };
 
   const filteredCourses = courses.filter((course) => {
@@ -226,13 +141,41 @@ const AdminCourses = () => {
     return matchesSearch && matchesFilter;
   });
 
-  // Build stats for display
-  const courseStats = stats ? [
-    { label: 'Total Courses', value: stats.total_courses || 0, icon: FaBook, color: 'blue' },
-    { label: 'Active Courses', value: stats.active_courses|| 0, icon: FaCheckCircle, color: 'green' },
-    { label: 'Pending Courses', value: stats.pending_courses || 0, icon: CgSandClock, color: 'orange' },
-    { label: 'Suspended Courses', value: stats.suspended_courses || 0, icon: FaExclamationTriangle, color: 'yellow' },
-  ] : [];
+  // Stats metrics configuration for StatCard
+  const adminCoursesMetricsConfig = [
+    { 
+      label: 'Total Courses', 
+      statsKey: 'total_courses', 
+      icon: FaBook, 
+      bgColor: 'bg-blue-100', 
+      textColor: 'text-blue-600', 
+      description: 'all courses' 
+    },
+    { 
+      label: 'Published', 
+      statsKey: 'published_courses', 
+      icon: FaCheckCircle, 
+      bgColor: 'bg-green-100', 
+      textColor: 'text-green-600', 
+      description: 'active courses' 
+    },
+    { 
+      label: 'Draft', 
+      statsKey: 'draft_courses', 
+      icon: CgSandClock, 
+      bgColor: 'bg-orange-100', 
+      textColor: 'text-orange-600', 
+      description: 'pending review' 
+    },
+    { 
+      label: 'Archived', 
+      statsKey: 'archived_courses', 
+      icon: FaExclamationTriangle, 
+      bgColor: 'bg-yellow-100', 
+      textColor: 'text-yellow-600', 
+      description: 'inactive courses' 
+    },
+  ];
 
   return (
     <div className="p-8">
@@ -243,38 +186,8 @@ const AdminCourses = () => {
         </div>
       </div>
 
-      {/* Stats Section with Loading Skeleton */}
-      {statsLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {[...Array(4)].map((_, index) => (
-            <div key={index} className="card">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="h-4 bg-gray-200 rounded mb-2 w-24 animate-pulse"></div>
-                  <div className="h-8 bg-gray-200 rounded w-16 animate-pulse"></div>
-                </div>
-                <div className="h-16 w-16 bg-gray-200 rounded-lg animate-pulse"></div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : courseStats.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          {courseStats.map((stat, index) => (
-            <div key={index} className="card hover:shadow transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                </div>
-                <div className={`text-3xl p-3 rounded-lg bg-${stat.color}-100 text-${stat.color}-700`}>
-                  {stat.icon instanceof Function ? <stat.icon /> : stat.icon}
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : null}
+      {/* Stats Section */}
+      <StatCard stats={stats} metricsConfig={adminCoursesMetricsConfig} loading={statsLoading} />
 
       {/* Filters */}
       <div className="card mb-6">
