@@ -5,11 +5,79 @@ import { MdQuiz } from 'react-icons/md';
 import { toast } from 'react-toastify';
 import QuizFormModal from '../../components/teacher/QuizFormModal';
 import TeacherDashboardStats from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 import { BiLoader } from 'react-icons/bi';
-import { quizAPI } from '../../api/quiz';
 
 const TeacherQuizzes = () => {
   const navigate = useNavigate();
+
+  // Dummy quiz data
+  const dummyQuizzes = [
+    {
+      id: 'quiz-001',
+      title: 'JavaScript Basics',
+      description: 'Test your knowledge on JavaScript fundamentals',
+      is_published: true,
+      total_questions: 10,
+      time_limit_minutes: 30,
+      total_attempts: 25,
+      average_score: 78,
+      quiz_type: 'GRADED',
+      pending_manual_reviews: 0,
+      start_date: '2024-01-15',
+      end_date: '2024-02-15',
+    },
+    {
+      id: 'quiz-002',
+      title: 'React Advanced Patterns',
+      description: 'Advanced React concepts including hooks and state management',
+      is_published: true,
+      total_questions: 15,
+      time_limit_minutes: 45,
+      total_attempts: 18,
+      average_score: 82,
+      quiz_type: 'GRADED',
+      pending_manual_reviews: 2,
+      start_date: '2024-02-01',
+      end_date: '2024-03-01',
+    },
+    {
+      id: 'quiz-003',
+      title: 'Midterm Exam',
+      description: 'Comprehensive midterm examination',
+      is_published: true,
+      total_questions: 30,
+      time_limit_minutes: 120,
+      total_attempts: 45,
+      average_score: 75,
+      quiz_type: 'FINAL_EXAM',
+      pending_manual_reviews: 5,
+      start_date: '2024-03-15',
+      end_date: '2024-04-15',
+    },
+    {
+      id: 'quiz-004',
+      title: 'CSS Flexbox & Grid',
+      description: 'Master CSS layout techniques',
+      is_published: false,
+      total_questions: 8,
+      time_limit_minutes: 25,
+      total_attempts: 0,
+      average_score: 0,
+      quiz_type: 'GRADED',
+      pending_manual_reviews: 0,
+      start_date: null,
+      end_date: null,
+    },
+  ];
+
+  // Dummy dashboard stats
+  const dummyStats = {
+    total_quizzes: 4,
+    published_quizzes: 3,
+    draft_quizzes: 1,
+    quizzes_this_month: 2,
+  };
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -59,31 +127,32 @@ const TeacherQuizzes = () => {
     },
   ];
 
-  // Fetch quizzes from API
+  // Fetch quizzes from dummy data
   const fetchQuizzes = async () => {
     setLoading(true);
     setError('');
     try {
-      const response = await quizAPI.getAllQuizzes();
-      const allQuizzes = response.data?.data || [];
-      setQuizzes(allQuizzes);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setQuizzes(dummyQuizzes);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch quizzes');
-      toast.error('Failed to fetch quizzes');
+      setError('Failed to fetch quizzes',err);
+      toast.error('Failed to fetch quizzes',err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Fetch dashboard statistics from API
+  // Fetch dashboard statistics from dummy data
   const fetchDashboardStats = async () => {
     setStatsLoading(true);
     try {
-      const response = await quizAPI.getTeacherDashboardStats();
-      setDashboardStats(response.data?.data || null);
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 500));
+      setDashboardStats(dummyStats);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load dashboard statistics');
-      toast.error('Failed to load dashboard statistics');
+      setError('Failed to load dashboard statistics',err);
+      toast.error('Failed to load dashboard statistics',err);
     } finally {
       setStatsLoading(false);
     }
@@ -92,7 +161,7 @@ const TeacherQuizzes = () => {
   useEffect(() => {
     fetchQuizzes();
     fetchDashboardStats();
-  }, []);
+  }, [quizzes]);
 
   const handleCreateQuiz = () => {
     setSelectedQuiz(null);
@@ -109,13 +178,14 @@ const TeacherQuizzes = () => {
       return;
     }
     try {
-      await quizAPI.deleteQuiz(quizId);
-      setQuizzes(quizzes.filter(q => q.quiz_id !== quizId));
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 300));
+      const updatedQuizzes = quizzes.filter(q => q.id !== quizId);
+      setQuizzes(updatedQuizzes);
       toast.success('Quiz deleted successfully');
-      fetchQuizzes();
       setSuccessMessage('Quiz deleted successfully');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to delete quiz');
+      toast.error('Failed to delete quiz',err);
       setSuccessMessage('');
     }
   };
@@ -147,6 +217,191 @@ const TeacherQuizzes = () => {
   const quizzesArray = Array.isArray(quizzes) ? quizzes : [];
   const publishedQuizzes = quizzesArray.filter((q) => q.is_published);
   const draftQuizzes = quizzesArray.filter((q) => !q.is_published);
+
+  // Published Quizzes DataTable columns
+  const publishedColumns = [
+    {
+      key: 'title',
+      label: 'Title',
+      searchable: true,
+      width: 'w-1/4',
+    },
+    {
+      key: 'quiz_type',
+      label: 'Type',
+      filterable: true,
+      filterOptions: [
+        { label: 'Graded', value: 'GRADED' },
+        { label: 'Final Exam', value: 'FINAL_EXAM' },
+        { label: 'Practice', value: 'PRACTICE' },
+      ],
+      render: (value) => (
+        <span className={`px-2 py-1 text-xs font-semibold rounded ${
+          value === 'FINAL_EXAM' ? 'bg-red-100 text-red-700' :
+          value === 'GRADED' ? 'bg-blue-100 text-blue-700' :
+          'bg-gray-100 text-gray-700'
+        }`}>
+          {value.replace('_', ' ')}
+        </span>
+      ),
+      width: 'w-24',
+    },
+    {
+      key: 'total_questions',
+      label: 'Questions',
+      render: (value) => <span>{value || 0} Qs</span>,
+      width: 'w-20',
+    },
+    {
+      key: 'time_limit_minutes',
+      label: 'Duration',
+      render: (value) => <span>{value} min</span>,
+      width: 'w-20',
+    },
+    {
+      key: 'total_attempts',
+      label: 'Attempts',
+      render: (value) => <span>{value || 0}</span>,
+      width: 'w-20',
+    },
+    {
+      key: 'average_score',
+      label: 'Avg Score',
+      render: (value) => <span>{Math.round(value || 0)}%</span>,
+      width: 'w-20',
+    },
+    {
+      key: 'pending_manual_reviews',
+      label: 'Pending Review',
+      render: (value) => (
+        <span className={`px-2 py-1 text-xs font-semibold rounded ${
+          value > 0 ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'
+        }`}>
+          {value > 0 ? `${value} Pending` : 'None'}
+        </span>
+      ),
+      width: 'w-32',
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      searchable: false,
+      render: (value, row) => (
+        <div className="flex gap-1 flex-wrap">
+          <button 
+            onClick={() => handleManageQuestions(row.id)}
+            className="px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs font-medium"
+            title="Manage Questions"
+          >
+            Manage
+          </button>
+          <button 
+            onClick={() => handleViewResults(row.id)}
+            className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium"
+            title="View Results"
+          >
+            Results
+          </button>
+          {row.pending_manual_reviews > 0 && (
+            <button 
+              onClick={() => handleGradePending(row.id)}
+              className="px-2 py-1 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-xs font-medium"
+              title="Grade Pending"
+            >
+              Grade
+            </button>
+          )}
+          <button 
+            onClick={() => handleEditQuiz(row)}
+            className="px-2 py-1 border border-gray-300 rounded text-xs font-medium hover:bg-gray-50"
+            title="Edit Quiz"
+          >
+            Edit
+          </button>
+          <button 
+            onClick={() => handleDeleteQuiz(row.id)}
+            className="px-2 py-1 border border-red-300 text-red-600 rounded text-xs font-medium hover:bg-red-50"
+            title="Delete Quiz"
+          >
+            Delete
+          </button>
+        </div>
+      ),
+      width: 'w-56',
+    },
+  ];
+
+  const publishedConfig = {
+    itemsPerPage: 10,
+    searchPlaceholder: 'Search quizzes...',
+    emptyMessage: 'No published quizzes. Create one to get started.',
+  };
+
+  // Draft Quizzes DataTable columns
+  const draftColumns = [
+    {
+      key: 'title',
+      label: 'Title',
+      searchable: true,
+      width: 'w-1/3',
+    },
+    {
+      key: 'total_questions',
+      label: 'Questions',
+      render: (value) => <span>{value || 0} Qs</span>,
+      width: 'w-24',
+    },
+    {
+      key: 'time_limit_minutes',
+      label: 'Duration',
+      render: (value) => <span>{value} min</span>,
+      width: 'w-24',
+    },
+    {
+      key: 'description',
+      label: 'Description',
+      searchable: true,
+      render: (value) => <span className="line-clamp-2">{value || '-'}</span>,
+      width: 'w-1/3',
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      searchable: false,
+      render: (value, row) => (
+        <div className="flex gap-1 flex-wrap">
+          <button 
+            onClick={() => handleManageQuestions(row.id)}
+            className="px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs font-medium"
+            title="Add Questions"
+          >
+            Questions
+          </button>
+          <button 
+            onClick={() => handleEditQuiz(row)}
+            className="px-2 py-1 border border-gray-300 rounded text-xs font-medium hover:bg-gray-50"
+            title="Edit Quiz"
+          >
+            Edit
+          </button>
+          <button 
+            onClick={() => handleDeleteQuiz(row.id)}
+            className="px-2 py-1 border border-red-300 text-red-600 rounded text-xs font-medium hover:bg-red-50"
+            title="Delete Quiz"
+          >
+            Delete
+          </button>
+        </div>
+      ),
+      width: 'w-48',
+    },
+  ];
+
+  const draftConfig = {
+    itemsPerPage: 10,
+    searchPlaceholder: 'Search drafts...',
+    emptyMessage: 'No draft quizzes',
+  };
   if (loading) {
     return (
       <div className="p-8">
@@ -263,191 +518,20 @@ const TeacherQuizzes = () => {
 
           {/* Published Quizzes */}
           {selectedTab === 'published' && (
-            <div className="space-y-4">
-              {publishedQuizzes.length === 0 ? (
-                <div className="card text-center py-12">
-                  <FaClipboardCheck className="mx-auto text-gray-400 text-5xl mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Published Quizzes</h3>
-                  <p className="text-gray-600 mb-4">Create your first quiz to get started</p>
-                  <button onClick={handleCreateQuiz} className="btn-primary">
-                    Create Quiz
-                  </button>
-                </div>
-              ) : (
-                publishedQuizzes.map((quiz) => (
-                  <div key={quiz.id} className="card hover:shadow-lg transition-shadow">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-lg font-bold text-gray-900">{quiz.title}</h3>
-                          {quiz.pending_manual_reviews > 0 && (
-                            <span className="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded">
-                              {quiz.pending_manual_reviews} PENDING
-                            </span>
-                          )}
-                          <span className={`px-2 py-1 text-xs font-semibold rounded ${
-                            quiz.quiz_type === 'FINAL_EXAM' ? 'bg-red-100 text-red-700' :
-                            quiz.quiz_type === 'GRADED' ? 'bg-blue-100 text-blue-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {quiz.quiz_type.replace('_', ' ')}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-3">{quiz.description || 'No description'}</p>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-3">
-                          <div className="flex items-center gap-2">
-                            <FaClipboardCheck className="text-gray-400" />
-                            <span className="text-gray-600">Questions:</span>
-                            <span className="font-medium text-gray-900">{quiz.total_questions || 0}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <FaClock className="text-gray-400" />
-                            <span className="text-gray-600">Duration:</span>
-                            <span className="font-medium text-gray-900">{quiz.time_limit_minutes} min</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <FaUsers className="text-gray-400" />
-                            <span className="text-gray-600">Attempts:</span>
-                            <span className="font-medium text-gray-900">{quiz.total_attempts || 0}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <FaAward className="text-gray-400" />
-                            <span className="text-gray-600">Avg Score:</span>
-                            <span className="font-medium text-gray-900">{Math.round(quiz.average_score || 0)}%</span>
-                          </div>
-                        </div>
-                        
-                        {(quiz.start_date || quiz.end_date) && (
-                          <div className="text-sm text-gray-600">
-                            {quiz.start_date && <span>Starts: {new Date(quiz.start_date).toLocaleDateString()}</span>}
-                            {quiz.start_date && quiz.end_date && <span className="mx-2">•</span>}
-                            {quiz.end_date && <span>Ends: {new Date(quiz.end_date).toLocaleDateString()}</span>}
-                          </div>
-                        )}
-                        
-                        {/* Quiz ID for copying */}
-                        <div className="mt-3 p-2 bg-gray-100 rounded-lg flex items-center justify-between">
-                          <div>
-                            <p className="text-xs text-gray-600 mb-1">Quiz ID:</p>
-                            <code className="text-xs font-mono text-gray-700 break-all">{quiz.id}</code>
-                          </div>
-                          <button
-                            onClick={() => handleCopyQuizId(quiz.id)}
-                            className={`ml-2 p-2 rounded transition-colors ${
-                              copiedId === quiz.id
-                                ? 'bg-green-500 text-white'
-                                : 'bg-gray-300 hover:bg-gray-400 text-gray-800'
-                            }`}
-                            title="Copy Quiz ID"
-                          >
-                            <FaCopy size={14} />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col space-y-2">
-                        <button 
-                          onClick={() => handleManageQuestions(quiz.id)}
-                          className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2"
-                        >
-                          <FaEdit /> Manage Questions
-                        </button>
-                        <button 
-                          onClick={() => handleViewResults(quiz.id)}
-                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2"
-                        >
-                          <FaEye /> View Results
-                        </button>
-                        {quiz.pending_manual_reviews > 0 && (
-                          <button 
-                            onClick={() => handleGradePending(quiz.id)}
-                            className="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2"
-                          >
-                            <FaPencilAlt /> Grade ({quiz.pending_manual_reviews})
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => handleEditQuiz(quiz)}
-                          className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm flex items-center justify-center gap-2"
-                        >
-                          <FaEdit /> Edit Quiz
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteQuiz(quiz.id)}
-                          className="px-4 py-2 border-2 border-red-300 text-red-600 rounded-lg hover:bg-red-50 text-sm flex items-center justify-center gap-2"
-                        >
-                          <FaTrash /> Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+            <DataTable
+              data={publishedQuizzes}
+              columns={publishedColumns}
+              config={publishedConfig}
+            />
           )}
 
           {/* Draft Quizzes */}
           {selectedTab === 'drafts' && (
-            <div className="space-y-4">
-              {draftQuizzes.length === 0 ? (
-                <div className="card text-center py-12">
-                  <FaEdit className="mx-auto text-gray-400 text-5xl mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Draft Quizzes</h3>
-                  <p className="text-gray-600">All your quizzes are published</p>
-                </div>
-              ) : (
-                draftQuizzes.map((quiz) => (
-                  <div key={quiz.id} className="card hover:shadow-lg transition-shadow opacity-75">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <h3 className="text-lg font-bold text-gray-900">{quiz.title}</h3>
-                          <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded">
-                            DRAFT
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600 mb-3">{quiz.description || 'No description'}</p>
-                        
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                          <div className="flex items-center gap-2">
-                            <FaClipboardCheck className="text-gray-400" />
-                            <span className="text-gray-600">Questions:</span>
-                            <span className="font-medium text-gray-900">{quiz.total_questions || 0}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <FaClock className="text-gray-400" />
-                            <span className="text-gray-600">Duration:</span>
-                            <span className="font-medium text-gray-900">{quiz.time_limit_minutes} min</span>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      <div className="flex flex-col space-y-2">
-                        <button 
-                          onClick={() => handleManageQuestions(quiz.id)}
-                          className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium flex items-center justify-center gap-2"
-                        >
-                          <FaEdit /> Add Questions
-                        </button>
-                        <button 
-                          onClick={() => handleEditQuiz(quiz)}
-                          className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm flex items-center justify-center gap-2"
-                        >
-                          <FaEdit /> Edit
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteQuiz(quiz.id)}
-                          className="px-4 py-2 border-2 border-red-300 text-red-600 rounded-lg hover:bg-red-50 text-sm flex items-center justify-center gap-2"
-                        >
-                          <FaTrash /> Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
+            <DataTable
+              data={draftQuizzes}
+              columns={draftColumns}
+              config={draftConfig}
+            />
           )}
         </div>
 
