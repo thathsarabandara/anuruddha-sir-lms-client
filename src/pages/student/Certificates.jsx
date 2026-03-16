@@ -1,6 +1,41 @@
-import { FaAward, FaCheck, FaFilePdf, FaGraduationCap, FaLink, FaTrophy } from 'react-icons/fa';
+import { FaAward, FaCheck, FaFilePdf, FaGraduationCap, FaLink, FaTrophy, FaBook } from 'react-icons/fa';
+import StatCard from '../../components/common/StatCard';
 
 const StudentCertificates = () => {
+  const certificatesMetricsConfig = [
+    {
+      label: 'Total Certificates',
+      statsKey: 'totalCertificates',
+      icon: FaGraduationCap,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'All earned certificates',
+    },
+    {
+      label: 'Course Completions',
+      statsKey: 'completions',
+      icon: FaCheck,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Courses finished',
+    },
+    {
+      label: 'Achievements',
+      statsKey: 'achievements',
+      icon: FaTrophy,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'Special awards',
+    },
+    {
+      label: 'Average Score',
+      statsKey: 'avgScore',
+      icon: FaAward,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'Overall performance',
+    },
+  ];
   const certificates = [
     {
       id: 1,
@@ -81,24 +116,15 @@ const StudentCertificates = () => {
         </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Certificates</div>
-          <div className="text-2xl font-bold text-gray-900">{certificates.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Course Completions</div>
-          <div className="text-2xl font-bold text-green-600">2</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Achievements</div>
-          <div className="text-2xl font-bold text-yellow-600">{achievements.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Average Score</div>
-          <div className="text-2xl font-bold text-primary-600">91.5%</div>
-        </div>
-      </div>
+      <StatCard 
+        stats={{
+          totalCertificates: certificates.length.toString(),
+          completions: '2',
+          achievements: achievements.length.toString(),
+          avgScore: '91.5%',
+        }}
+        metricsConfig={certificatesMetricsConfig}
+      />
 
       {/* Issued Certificates */}
       <div className="mb-12">
