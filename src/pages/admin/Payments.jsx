@@ -12,23 +12,44 @@ import {
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
 import PulseLoader from '../../components/common/PulseLoader';
+import StatCard from '../../components/common/StatCard';
 import { adminAPI } from '../../api/admin';
 
-// eslint-disable-next-line no-unused-vars
-const StatsCard = ({ label, value, icon: Icon, color, subtext }) => (
-  <div className="bg-white rounded-lg shadow p-6 border-l-4" style={{ borderLeftColor: color }}>
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium text-gray-600 uppercase tracking-wide">{label}</p>
-        <p className="text-3xl font-bold text-gray-900 mt-2">{value}</p>
-        {subtext && <p className="text-xs text-gray-500 mt-1">{subtext}</p>}
-      </div>
-      <div className="text-4xl" style={{ color }}>
-        <Icon />
-      </div>
-    </div>
-  </div>
-);
+// ==================== PAYMENTS METRICS CONFIG ====================
+const paymentsMetricsConfig = [
+  {
+    label: 'Total Revenue',
+    statsKey: 'total_revenue_display',
+    icon: FaChartBar,
+    bgColor: 'bg-blue-100',
+    textColor: 'text-blue-600',
+    description: 'All time'
+  },
+  {
+    label: 'Completed Payments',
+    statsKey: 'completed_count',
+    icon: FaCheck,
+    bgColor: 'bg-green-100',
+    textColor: 'text-green-600',
+    description: 'Verified revenue'
+  },
+  {
+    label: 'Pending Review',
+    statsKey: 'pending_total',
+    icon: FaExclamationTriangle,
+    bgColor: 'bg-orange-100',
+    textColor: 'text-orange-600',
+    description: 'Need verification'
+  },
+  {
+    label: 'This Month',
+    statsKey: 'this_month_display',
+    icon: FaCalendarAlt,
+    bgColor: 'bg-purple-100',
+    textColor: 'text-purple-600',
+    description: 'Current month earnings'
+  }
+];
 
 // ==================== PAYMENT DETAILS MODAL ====================
 const PaymentDetailsModal = ({ payment, onClose, onAction, actionLoading }) => {
@@ -747,35 +768,15 @@ const AdminPayments = () => {
         {activeView === 'overview' && stats && (
           <div className="space-y-8">
             {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <StatsCard
-                label="Total Revenue"
-                value={`Rs. ${(stats.total_revenue / 1000).toFixed(1)}K`}
-                icon={FaChartBar}
-                color="#3b82f6"
-                subtext="All time"
-              />
-              <StatsCard
-                label="Completed Payments"
-                value={stats.completed_count}
-                icon={FaCheck}
-                color="#10b981"
-                subtext={`Rs. ${(stats.completed_revenue / 1000).toFixed(1)}K`}
-              />
-              <StatsCard
-                label="Pending Review"
-                value={stats.pending_count + stats.bank_transfer_pending}
-                icon={FaExclamationTriangle}
-                color="#f59e0b"
-                subtext="Need verification"
-              />
-              <StatsCard
-                label="This Month"
-                value={`Rs. ${(stats.this_month / 1000).toFixed(1)}K`}
-                icon={FaCalendarAlt}
-                color="#8b5cf6"
-              />
-            </div>
+            <StatCard
+              stats={{
+                total_revenue_display: `Rs. ${(stats.total_revenue / 1000).toFixed(1)}K`,
+                completed_count: stats.completed_count,
+                pending_total: stats.pending_count + stats.bank_transfer_pending,
+                this_month_display: `Rs. ${(stats.this_month / 1000).toFixed(1)}K`
+              }}
+              metricsConfig={paymentsMetricsConfig}
+            />
 
             {/* Payment Method Breakdown */}
             <div className="bg-white rounded-lg shadow p-6">
