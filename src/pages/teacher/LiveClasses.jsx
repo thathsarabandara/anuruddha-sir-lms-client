@@ -1,8 +1,51 @@
 import { useState } from 'react';
-import { FaCalendar, FaCheck, FaClock, FaLink, FaTimes, FaUsers, FaVideo } from 'react-icons/fa';
+import { FaCalendar, FaCheck, FaClock, FaLink, FaTimes, FaUsers, FaVideo, FaBook, FaCheckCircle } from 'react-icons/fa';
+import StatCard from '../../components/common/StatCard';
 
 const TeacherLiveClasses = () => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+
+  const liveClassesMetricsConfig = [
+    {
+      label: 'This Week',
+      statsKey: 'thisWeek',
+      icon: FaBook,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'Total classes',
+    },
+    {
+      label: 'Upcoming',
+      statsKey: 'upcoming',
+      icon: FaUsers,
+      bgColor: 'bg-cyan-100',
+      textColor: 'text-cyan-600',
+      description: 'Scheduled sessions',
+    },
+    {
+      label: 'Avg Attendance',
+      statsKey: 'avgAttendance',
+      icon: FaCheckCircle,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Average percentage',
+    },
+    {
+      label: 'Total Hours',
+      statsKey: 'totalHours',
+      icon: FaClock,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'Teaching hours',
+    },
+  ];
+
+  const liveClassesStats = {
+    thisWeek: '12',
+    upcoming: '5',
+    avgAttendance: '92%',
+    totalHours: '48.5h',
+  };
 
   const upcomingClasses = [
     {
@@ -75,24 +118,7 @@ const TeacherLiveClasses = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">This Week</div>
-          <div className="text-2xl font-bold text-gray-900">12 Classes</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Upcoming</div>
-          <div className="text-2xl font-bold text-blue-600">{upcomingClasses.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Avg Attendance</div>
-          <div className="text-2xl font-bold text-green-600">92%</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Hours</div>
-          <div className="text-2xl font-bold text-purple-600">48.5h</div>
-        </div>
-      </div>
+      <StatCard stats={liveClassesStats} metricsConfig={liveClassesMetricsConfig} />
 
       {/* Upcoming Classes */}
       <div className="mb-8">
