@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { FaChartBar, FaGraduationCap, FaUserGraduate } from 'react-icons/fa';
+import { FaChartBar, FaGraduationCap, FaUserGraduate, FaStar } from 'react-icons/fa';
 import PulseLoader from '../../components/common/PulseLoader';
+import StatCard from '../../components/common/StatCard';
 
 const AdminReports = () => {
   const [reportType, setReportType] = useState('overview');
@@ -11,6 +12,41 @@ const AdminReports = () => {
     { label: 'Active Students', value: '1,189', change: '+12%', icon: FaUserGraduate, color: 'bg-blue-100 text-blue-700' },
     { label: 'Course Completions', value: '234', change: '+25%', icon: FaGraduationCap, color: 'bg-purple-100 text-purple-700' },
     { label: 'Avg. Satisfaction', value: '4.8/5', change: '+0.2', icon: '⭐', color: 'bg-yellow-100 text-yellow-700' },
+  ];
+
+  const reportsMetricsConfig = [
+    {
+      label: 'Total Revenue',
+      statsKey: 'revenue',
+      icon: FaChartBar,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Total earnings',
+    },
+    {
+      label: 'Active Students',
+      statsKey: 'activeStudents',
+      icon: FaUserGraduate,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'Enrolled students',
+    },
+    {
+      label: 'Course Completions',
+      statsKey: 'completions',
+      icon: FaGraduationCap,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'Finished courses',
+    },
+    {
+      label: 'Avg. Satisfaction',
+      statsKey: 'satisfaction',
+      icon: FaStar,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'Student ratings',
+    },
   ];
 
   const monthlyRevenue = [
@@ -84,20 +120,15 @@ const AdminReports = () => {
       </div>
 
       {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {overviewStats.map((stat, index) => (
-          <div key={index} className="card">
-            <div className="flex items-center justify-between mb-2">
-              <div className={`text-3xl ${stat.color} p-3 rounded-lg`}>{stat.icon}</div>
-              <span className={`text-sm font-medium ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-                {stat.change}
-              </span>
-            </div>
-            <p className="text-sm text-gray-600">{stat.label}</p>
-            <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-          </div>
-        ))}
-      </div>
+      <StatCard 
+        stats={{
+          revenue: 'Rs. 3.2M',
+          activeStudents: '1,189',
+          completions: '234',
+          satisfaction: '4.8/5',
+        }}
+        metricsConfig={reportsMetricsConfig}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Monthly Revenue Trend */}
