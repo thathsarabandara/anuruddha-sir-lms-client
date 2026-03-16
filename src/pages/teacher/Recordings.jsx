@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FaCalendar, FaClock, FaFileVideo, FaTimes } from 'react-icons/fa';
+import { FaCalendar, FaClock, FaFileVideo, FaTimes, FaDatabase, FaEye } from 'react-icons/fa';
+import StatCard from '../../components/common/StatCard';
 
 const TeacherRecordings = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -47,6 +48,50 @@ const TeacherRecordings = () => {
     },
   ];
 
+  const stats = {
+    total_recordings: recordings.length,
+    total_views: recordings.reduce((sum, r) => sum + r.views, 0),
+    total_duration: 24.5,
+    storage_used: 12.8,
+  };
+
+  const metricsConfig = [
+    {
+      label: 'Total Recordings',
+      statsKey: 'total_recordings',
+      icon: FaFileVideo,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'all recordings',
+    },
+    {
+      label: 'Total Views',
+      statsKey: 'total_views',
+      icon: FaEye,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'across all videos',
+    },
+    {
+      label: 'Total Duration',
+      statsKey: 'total_duration',
+      icon: FaClock,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'hours of content',
+      formatter: (value) => `${value} hrs`,
+    },
+    {
+      label: 'Storage Used',
+      statsKey: 'storage_used',
+      icon: FaDatabase,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'storage capacity',
+      formatter: (value) => `${value} GB`,
+    },
+  ];
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
@@ -59,27 +104,7 @@ const TeacherRecordings = () => {
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Recordings</div>
-          <div className="text-2xl font-bold text-gray-900">{recordings.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Views</div>
-          <div className="text-2xl font-bold text-primary-600">
-            {recordings.reduce((sum, r) => sum + r.views, 0)}
-          </div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Duration</div>
-          <div className="text-2xl font-bold text-green-600">24.5 hrs</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Storage Used</div>
-          <div className="text-2xl font-bold text-yellow-600">12.8 GB</div>
-        </div>
-      </div>
+      <StatCard stats={stats} metricsConfig={metricsConfig} />
 
       {/* Recordings List */}
       <div className="space-y-4">
