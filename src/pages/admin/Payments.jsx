@@ -13,6 +13,7 @@ import {
 import { toast } from 'react-toastify';
 import PulseLoader from '../../components/common/PulseLoader';
 import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 import { adminAPI } from '../../api/admin';
 
 // ==================== PAYMENTS METRICS CONFIG ====================
@@ -651,7 +652,7 @@ const AdminPayments = () => {
 
     // Load initial payments
     fetchPayments(1);
-  }, []);
+  }, [fetchPayments]);
 
   // Refetch when filters change
   useEffect(() => {
