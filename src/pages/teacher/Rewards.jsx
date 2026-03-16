@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FaAward, FaCheck, FaFilePdf, FaGem, FaLightbulb, FaTimes, FaTrophy, FaUsers } from 'react-icons/fa';
+import { FaAward, FaCheck, FaFilePdf, FaGem, FaLightbulb, FaTimes, FaTrophy, FaUsers, FaCoins, FaFire } from 'react-icons/fa';
+import StatCard from '../../components/common/StatCard';
 
 const TeacherRewards = () => {
   const [showAssignModal, setShowAssignModal] = useState(false);
@@ -34,6 +35,42 @@ const TeacherRewards = () => {
     { id: 6, title: 'Class Participation', coins: 30, gems: 0, icon: FaAward },
   ];
 
+  // Rewards metrics for StatCard
+  const rewardsMetricsConfig = [
+    {
+      label: 'Total Coins',
+      statsKey: 'coinsDistributed',
+      icon: FaCoins,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'distributed to students',
+    },
+    {
+      label: 'Total Gems',
+      statsKey: 'gemsDistributed',
+      icon: FaGem,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'premium rewards given',
+    },
+    {
+      label: 'This Month',
+      statsKey: 'thisMonth',
+      icon: FaFire,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'rewards distributed',
+    },
+    {
+      label: 'Active Students',
+      statsKey: 'activeStudents',
+      icon: FaUsers,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'earning rewards',
+    },
+  ];
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
@@ -47,40 +84,7 @@ const TeacherRewards = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card bg-gradient-to-br from-yellow-400 to-yellow-600 text-white">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm opacity-90">Total Coins</span>
-            <span className="text-3xl">🪙</span>
-          </div>
-          <div className="text-3xl font-bold">{rewardStats.coinsDistributed}</div>
-          <div className="text-sm opacity-90 mt-1">Distributed to students</div>
-        </div>
-        <div className="card bg-gradient-to-br from-blue-400 to-blue-600 text-white">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm opacity-90">Total Gems</span>
-            <FaGem className="text-3xl" />
-          </div>
-          <div className="text-3xl font-bold">{rewardStats.gemsDistributed}</div>
-          <div className="text-sm opacity-90 mt-1">Premium rewards given</div>
-        </div>
-        <div className="card bg-gradient-to-br from-green-400 to-green-600 text-white">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm opacity-90">This Month</span>
-            <span className="text-3xl">📈</span>
-          </div>
-          <div className="text-3xl font-bold">{rewardStats.thisMonth}</div>
-          <div className="text-sm opacity-90 mt-1">Rewards distributed</div>
-        </div>
-        <div className="card bg-gradient-to-br from-purple-400 to-purple-600 text-white">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm opacity-90">Active Students</span>
-            <FaUsers className="text-3xl" />
-          </div>
-          <div className="text-3xl font-bold">{rewardStats.activeStudents}</div>
-          <div className="text-sm opacity-90 mt-1">Earning rewards</div>
-        </div>
-      </div>
+      <StatCard stats={rewardStats} metricsConfig={rewardsMetricsConfig} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
