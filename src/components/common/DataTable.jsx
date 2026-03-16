@@ -7,53 +7,41 @@ import { FaSearch, FaChevronLeft, FaChevronRight, FaFilter, FaTimes } from 'reac
  * Features:
  * - Search functionality across multiple columns
  * - Dropdown filters for specific columns
- * - Pagination with customizable items per page
+ * - Status filter dropdown (integrated from parent)
+ * - Pagination with customizable items per page resets on filter changes
  * - Responsive design (horizontal scroll on mobile, stack on very small screens)
  * - Customizable column renderers
- * - Sorting capability
  * 
  * @param {Array} data - Array of data objects to display
  * @param {Array} columns - Column configuration array
- *   Each column object should have:
- *   - key: unique identifier (must match data object key)
- *   - label: Column header display text
- *   - width: Optional column width class (e.g., 'w-40')
- *   - render: Optional custom render function (value, row) => JSX
- *   - searchable: Optional boolean to include in search (default: true)
- *   - filterable: Optional boolean, if true shows filter for this column
- *   - filterOptions: Optional array of filter options [{label, value}]
  * @param {Object} config - Configuration object
  *   - itemsPerPage: Number of items per page (default: 10)
  *   - searchPlaceholder: Search input placeholder (default: 'Search...')
  *   - hideSearch: Hide search input (default: false)
  *   - emptyMessage: Message when no data (default: 'No data available')
+ *   - statusFilterLabel: Label for status filter dropdown (default: 'Filter by Status')
+ *   - statusFilterOptions: Array of filter options [{label, value}]
+ *   - statusFilterValue: Current status filter value
+ *   - onStatusFilterChange: Callback when status filter changes
  * @param {boolean} loading - Show loading skeleton
  * 
  * @example
- * const columns = [
- *   {
- *     key: 'name',
- *     label: 'Course Name',
- *     width: 'w-40',
- *     searchable: true,
- *   },
- *   {
- *     key: 'status',
- *     label: 'Status',
- *     filterable: true,
- *     filterOptions: [
- *       { label: 'Excellent', value: 'excellent' },
- *       { label: 'Needs Work', value: 'needs-improvement' },
+ * <DataTable 
+ *   data={teachers}
+ *   columns={[...]}
+ *   config={{
+ *     itemsPerPage: 10,
+ *     searchPlaceholder: 'Search teachers...',
+ *     statusFilterLabel: 'Filter by Status',
+ *     statusFilterOptions: [
+ *       { label: 'All Statuses', value: 'all' },
+ *       { label: 'Active', value: 'active' },
+ *       { label: 'Pending', value: 'pending' },
  *     ],
- *     render: (value) => (
- *       <span className={value === 'excellent' ? 'text-green-600' : 'text-red-600'}>
- *         {value === 'excellent' ? '✓' : '⚠'} {value}
- *       </span>
- *     ),
- *   },
- * ];
- * 
- * <DataTable data={coursesData} columns={columns} config={{ itemsPerPage: 5 }} />
+ *     statusFilterValue: filterStatus,
+ *     onStatusFilterChange: (value) => setFilterStatus(value),
+ *   }}
+ * />
  */
 const DataTable = ({
   data = [],
@@ -66,10 +54,14 @@ const DataTable = ({
     searchPlaceholder = 'Search...',
     hideSearch = false,
     emptyMessage = 'No data available',
+    statusFilterOptions = [],
+    statusFilterValue = null,
+    onStatusFilterChange = null,
+    searchValue = '',
+    onSearchChange = null,
   } = config;
 
   // State
-  const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({});
   const [currentPage, setCurrentPage] = useState(1);
   const [activeFilterColumn, setActiveFilterColumn] = useState(null);
@@ -77,28 +69,29 @@ const DataTable = ({
   // Filter searchable columns
   const searchableColumns = columns.filter(col => col.searchable !== false);
 
-  // Filter data based on search
-  const searchedData = useMemo(() => {
-    if (!searchTerm) return data;
+  // For local search, only search if onSearchChange is NOT provided
+  // If onSearchChange is provided, parent handles the search via API
+  const filteredBySearch = useMemo(() => {
+    if (onSearchChange || !searchValue) return data;
 
     return data.filter(row =>
       searchableColumns.some(col =>
         String(row[col.key])
           .toLowerCase()
-          .includes(searchTerm.toLowerCase())
+          .includes(searchValue.toLowerCase())
       )
     );
-  }, [data, searchTerm, searchableColumns]);
+  }, [data, searchValue, searchableColumns, onSearchChange]);
 
   // Apply column filters
   const filteredData = useMemo(() => {
-    return searchedData.filter(row => {
+    return filteredBySearch.filter(row => {
       return Object.entries(filters).every(([key, value]) => {
         if (!value) return true;
         return String(row[key]).toLowerCase() === String(value).toLowerCase();
       });
     });
-  }, [searchedData, filters]);
+  }, [filteredBySearch, filters]);
 
   // Pagination
   const totalPages = Math.ceil(filteredData.length / itemsPerPage);
@@ -108,7 +101,9 @@ const DataTable = ({
 
   // Reset to first page when filtered
   const handleSearch = (value) => {
-    setSearchTerm(value);
+    if (onSearchChange) {
+      onSearchChange(value);
+    }
     setCurrentPage(1);
   };
 
@@ -122,11 +117,13 @@ const DataTable = ({
 
   const clearFilters = () => {
     setFilters({});
-    setSearchTerm('');
+    if (onSearchChange) {
+      onSearchChange('');
+    }
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = Object.values(filters).some(v => v) || searchTerm;
+  const hasActiveFilters = Object.values(filters).some(v => v) || searchValue;
 
   // Loading skeleton
   if (loading) {
@@ -144,23 +141,38 @@ const DataTable = ({
     <div className="space-y-4">
       {/* Search and Filter Bar */}
       {!hideSearch && (
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <div className="relative flex-1">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+          <div className="relative flex-1 max-w-md">
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               placeholder={searchPlaceholder}
-              value={searchTerm}
+              value={searchValue}
               onChange={(e) => handleSearch(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
+          {/* Status Filter Dropdown */}
+          {statusFilterOptions.length > 0 && onStatusFilterChange && (
+            <select 
+              value={statusFilterValue || 'all'} 
+              onChange={(e) => onStatusFilterChange(e.target.value)} 
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-sm text-gray-700"
+            >
+              {statusFilterOptions.map(option => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          )}
+
           {/* Active Filters Indicator */}
           {hasActiveFilters && (
             <button
               onClick={clearFilters}
-              className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition"
+              className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition whitespace-nowrap"
             >
               <FaTimes size={14} />
               Clear Filters
