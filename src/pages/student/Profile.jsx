@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateUser } from '../../app/slices/authSlice';
 import { isValidEmail, isValidPhone } from '../../utils/helpers';
+import { CgProfile } from "react-icons/cg";
+import { IoLockClosed } from "react-icons/io5";
+import { FaBell } from "react-icons/fa";
 
 const StudentProfile = () => {
   const { user } = useSelector((state) => state.auth);
@@ -10,13 +13,16 @@ const StudentProfile = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    firstName: user?.first_name || '',
+    lastName: user?.last_name || '',
     email: user?.email || '',
     phone: user?.phone || '',
-    dateOfBirth: '2015-03-15',
-    school: 'Royal College Colombo',
-    grade: 'Grade 5',
-    address: 'Colombo 07, Sri Lanka',
+    dateOfBirth: user?.date_of_birth || '',
+    school: user?.school || '',
+    grade: user?.grade_level || '',
+    address: user?.address || '',
+    parentName: user?.parent_name || '',
+    parentContact: user?.parent_contact || '',
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -98,10 +104,8 @@ const StudentProfile = () => {
 
   const notifications = [
     { id: 1, title: 'Email Notifications', description: 'Receive email updates', enabled: true },
-    { id: 2, title: 'Class Reminders', description: 'Get notified before classes', enabled: true },
-    { id: 3, title: 'Quiz Notifications', description: 'Alerts for new quizzes', enabled: true },
-    { id: 4, title: 'Payment Reminders', description: 'Payment due notifications', enabled: true },
-    { id: 5, title: 'Achievement Updates', description: 'New badges and rewards', enabled: false },
+    { id: 2, title: 'Whatsapp Notifications', description: 'Receive Whatsapp Updates', enabled: true },
+    { id: 3, title: 'In app Notifications', description: 'Receive In app Updates', enabled: true },
   ];
 
   return (
@@ -117,52 +121,43 @@ const StudentProfile = () => {
           <div className="card">
             <div className="text-center mb-6">
               <div className="w-24 h-24 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-3xl font-bold">
-                {user?.name?.charAt(0) || 'S'}
+                {user?.first_name?.charAt(0) || ''}
               </div>
-              <h3 className="font-bold text-gray-900">{user?.name || 'Student Name'}</h3>
-              <p className="text-sm text-gray-600">{user?.email || 'student@email.com'}</p>
+              <h3 className="font-bold text-lg text-gray-900">{user?.first_name + ' ' + user?.last_name || ''}</h3>
+              <p className="text-sm font-bold text-gray-600 mt-1">{user?.role || ''}</p>
+              <p className="text-xs font-bold">{user?.username || ''}</p>
             </div>
 
             <div className="space-y-2">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                className={`w-full flex items-center gap-3 text-left px-4 py-2 rounded-lg transition-colors ${
                   activeTab === 'profile'
                     ? 'bg-primary-100 text-primary-700 font-medium'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                👤 Profile Information
+                <CgProfile /> Profile Information
               </button>
               <button
                 onClick={() => setActiveTab('security')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                className={`w-full flex items-center gap-3 text-left px-4 py-2 rounded-lg transition-colors ${
                   activeTab === 'security'
                     ? 'bg-primary-100 text-primary-700 font-medium'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                🔒 Security
+                <IoLockClosed /> Security
               </button>
               <button
                 onClick={() => setActiveTab('notifications')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                className={`w-full flex items-center gap-3 text-left px-4 py-2 rounded-lg transition-colors ${
                   activeTab === 'notifications'
                     ? 'bg-primary-100 text-primary-700 font-medium'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                🔔 Notifications
-              </button>
-              <button
-                onClick={() => setActiveTab('preferences')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'preferences'
-                    ? 'bg-primary-100 text-primary-700 font-medium'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
-              >
-                ⚙️ Preferences
+                <FaBell /> Notifications
               </button>
             </div>
           </div>
@@ -203,17 +198,31 @@ const StudentProfile = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Full Name
+                    First Name
                   </label>
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
+                    name="first_name"
+                    value={formData.firstName}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
                   />
-                  {errors.name && <p className="text-red-600 text-sm mt-1">{errors.name}</p>}
+                  {errors.first_name && <p className="text-red-600 text-sm mt-1">{errors.first_name}</p>}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Last Name
+                  </label>
+                  <input
+                    type="text"
+                    name="last_name"
+                    value={formData.lastName}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
+                  />
+                  {errors.last_name && <p className="text-red-600 text-sm mt-1">{errors.last_name}</p>}
                 </div>
 
                 <div>
@@ -282,6 +291,32 @@ const StudentProfile = () => {
                     type="text"
                     name="grade"
                     value={formData.grade}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Parent Name
+                  </label>
+                  <input
+                    type="text"
+                    name="parentName"
+                    value={formData.parentName}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Parent Contact
+                  </label>
+                  <input
+                    type="text"
+                    name="grade"
+                    value={formData.parentContact}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
@@ -370,16 +405,6 @@ const StudentProfile = () => {
                     </button>
                   </div>
                 </div>
-
-                <div className="pt-6 border-t">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Two-Factor Authentication</h3>
-                  <p className="text-gray-600 mb-4">
-                    Add an extra layer of security to your account
-                  </p>
-                  <button className="btn-outline px-6 py-2">
-                    Enable 2FA
-                  </button>
-                </div>
               </div>
             </div>
           )}
@@ -393,7 +418,7 @@ const StudentProfile = () => {
                 {notifications.map((notification) => (
                   <div key={notification.id} className="flex items-center justify-between py-3 border-b">
                     <div>
-                      <h4 className="font-medium text-gray-900">{notification.title}</h4>
+                      <h4 className="text-large text-gray-900">{notification.title}</h4>
                       <p className="text-sm text-gray-600">{notification.description}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
@@ -406,50 +431,6 @@ const StudentProfile = () => {
                     </label>
                   </div>
                 ))}
-              </div>
-            </div>
-          )}
-
-          {/* Preferences */}
-          {activeTab === 'preferences' && (
-            <div className="card">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Preferences</h2>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Language
-                  </label>
-                  <select className="input-field">
-                    <option>English</option>
-                    <option>Sinhala</option>
-                    <option>Tamil</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Time Zone
-                  </label>
-                  <select className="input-field">
-                    <option>Asia/Colombo (GMT+5:30)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Theme
-                  </label>
-                  <select className="input-field">
-                    <option>Light</option>
-                    <option>Dark</option>
-                    <option>Auto</option>
-                  </select>
-                </div>
-
-                <button className="btn-primary px-6 py-2">
-                  Save Preferences
-                </button>
               </div>
             </div>
           )}
