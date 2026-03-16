@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { FaBook, FaCalendar, FaCheck, FaGraduationCap, FaSearch, FaTimes, FaVideo, FaEye, FaList } from 'react-icons/fa';
+import { FaBook, FaCalendar, FaCheck, FaGraduationCap, FaTimes, FaVideo, FaEye, FaList } from 'react-icons/fa';
 import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 
 const dummyRecordings = [
   { id: 1, title: 'Intro to React', instructor: 'John Doe', date: '2024-03-10', subject: 'JavaScript' },
@@ -78,11 +79,7 @@ const StudentRecordings = () => {
     
     return matchesSearch && matchesSubject;
   });
-
-  const getThumbnailColor = (index) => {
-    const colors = ['bg-green-600', 'bg-purple-600', 'bg-yellow-600', 'bg-red-600', 'bg-blue-600', 'bg-indigo-600'];
-    return colors[index % colors.length];
-  };
+  
 
   const formatDate = (dateString) => {
     if (!dateString) return 'N/A';
@@ -135,152 +132,79 @@ const StudentRecordings = () => {
         metricsConfig={recordingsMetricsConfig}
       />
 
-      {/* Search and Filter */}
-      <div className="card mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 md:space-x-4">
-          <div className="flex-1 relative">
-            <FaSearch className="absolute left-3 top-3 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search recordings by title, course..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field w-full pl-10 pr-10"
-            />
-            {searchTerm && (
-              <button
-                onClick={() => setSearchTerm('')}
-                className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-              >
-                <FaTimes />
-              </button>
-            )}
-          </div>
-          <div className="flex space-x-2 flex-wrap gap-2">
-            <button
-              onClick={() => setFilterSubject('all')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterSubject === 'all'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              All
-            </button>
-            {subjects.length > 0 ? (
-              subjects.map((subject) => (
-                <button
-                  key={subject}
-                  onClick={() => setFilterSubject(subject)}
-                  className={`px-4 py-2 rounded-lg font-medium transition-colors whitespace-nowrap ${
-                    filterSubject === subject
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  {subject.length > 15 ? subject.substring(0, 15) + '...' : subject}
-                </button>
-              ))
-            ) : (
-              <span className="text-gray-500 px-4 py-2">No courses available</span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {loading ? (
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="text-gray-600 mt-4">Loading recordings...</p>
-        </div>
-      ) : (
-      <div>
-      {/* Recordings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredRecordings.map((recording, index) => (
-          <div key={recording.id} className="card hover:shadow-lg transition-shadow">
-            {/* Thumbnail */}
-            <div className={`${getThumbnailColor(index)} text-white p-8 -m-6 mb-4 rounded-t-xl relative`}>
-              <div className="flex items-center justify-center h-32">
-                <div className="text-6xl">▶️</div>
-              </div>
-              <div className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-sm">
-                {formatDuration(recording.duration)}
-              </div>
-              {recording.is_watched && recording.watch_progress > 0 && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
-                  <div
-                    className="h-1 bg-white"
-                    style={{ width: `${recording.watch_progress}%` }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Content */}
-            <div className="space-y-3">
+      {/* Recordings DataTable */}
+      <DataTable
+        data={filteredRecordings}
+        columns={[
+          {
+            key: 'title',
+            label: 'Recording Title',
+            searchable: true,
+            render: (value, recording) => (
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">{recording.title}</h3>
-                <p className="text-sm text-gray-600">{recording.description}</p>
+                <p className="text-sm font-medium text-gray-900">{value}</p>
+                <p className="text-xs text-gray-500">{formatDate(recording.date)}</p>
               </div>
+            ),
+          },
+          {
+            key: 'instructor',
+            label: 'Instructor',
+            searchable: true,
+            render: (value) => <p className="text-sm text-gray-600">{value}</p>,
+          },
+          {
+            key: 'subject',
+            label: 'Subject',
+            searchable: true,
+            filterable: true,
+            filterOptions: subjects.map(subject => ({ label: subject, value: subject })),
+            render: (value) => (
+              <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                {value}
+              </span>
+            ),
+          },
+          {
+            key: 'is_watched',
+            label: 'View Status',
+            render: (value) => (
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${value ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                {value ? 'Watched' : 'Unw atched'}
+              </span>
+            ),
+          },
+          {
+            key: 'duration',
+            label: 'Duration',
+            render: (value) => <p className="text-sm text-gray-600">{formatDuration(value)}</p>,
+          },
+          {
+            key: 'actions',
+            label: 'Actions',
+            render: (_, recording) => (
+              <button onClick={() => console.log('Watch recording:', recording.id)} className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap">
+                <FaEye /> Watch
+              </button>
+            ),
+          },
+        ]}
+        config={{
+          itemsPerPage: 10,
+          searchPlaceholder: 'Search recordings by title, instructor...',
+          hideSearch: false,
+          emptyMessage: 'No recordings found',
+          searchValue: searchTerm,
+          onSearchChange: (value) => {
+            setSearchTerm(value);
+          },
+          statusFilterOptions: subjects.map(subject => ({ label: subject, value: subject })),
+          statusFilterValue: filterSubject,
+          onStatusFilterChange: (value) => setFilterSubject(value),
+        }}
+        loading={loading}
+      />
 
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                <div className="flex items-center space-x-4">
-                  <span>📚 {recording.subject}</span>
-                  <span>👨‍🏫 {recording.instructor}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>📅 {formatDate(recording.created_at || recording.date)}</span>
-                <span>👁️ {recording.views || 0} views</span>
-              </div>
-
-              {recording.is_watched && recording.watch_progress > 0 && recording.watch_progress < 100 && (
-                <div className="flex items-center space-x-2 text-sm">
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-primary-600 h-2 rounded-full"
-                      style={{ width: `${recording.watch_progress}%` }}
-                    />
-                  </div>
-                  <span className="text-gray-600 font-medium">{recording.watch_progress}%</span>
-                </div>
-              )}
-
-              <div className="flex space-x-2 pt-2">
-                <button className="flex-1 btn-primary text-sm py-2">
-                  {recording.is_watched && recording.watch_progress > 0 && recording.watch_progress < 100
-                    ? 'Continue Watching'
-                    : recording.is_watched && recording.watch_progress === 100
-                    ? 'Watch Again'
-                    : 'Watch Now'}
-                </button>
-                <button className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50">
-                  📥
-                </button>
-              </div>
-
-              {recording.is_watched && (
-                <div className="flex items-center text-xs text-green-600">
-                  <FaCheck className="mr-1" />
-                  Watched {recording.watch_progress === 100 ? 'completely' : 'partially'}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredRecordings.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">No recordings found</h3>
-          <p className="text-gray-600">Try adjusting your search or filter</p>
-        </div>
-      )}
-      </div>
-      )}
     </div>
   );
 };
