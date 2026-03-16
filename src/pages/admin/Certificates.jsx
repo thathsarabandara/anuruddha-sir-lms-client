@@ -1,11 +1,13 @@
 import { useState } from 'react';
-import { FaFilePdf, FaGraduationCap, FaTimes, FaTrophy, FaChartLine, FaChartArea, FaStar } from 'react-icons/fa';
+import { FaFilePdf, FaGraduationCap, FaTimes, FaTrophy, FaChartLine, FaChartArea, FaStar, FaEye } from 'react-icons/fa';
 import PulseLoader from '../../components/common/PulseLoader';
 import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 
 const AdminCertificates = () => {
   const [filterType, setFilterType] = useState('all');
-  const [showIssueModal, setShowIssueModal] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  // const [showIssueModal, setShowIssueModal] = useState(false); // TODO: Implement modal for issuing certificates
 
   const certificates = [
     {
@@ -119,7 +121,7 @@ const AdminCertificates = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Certificate Management</h1>
           <p className="text-gray-600">Issue and manage certificates and achievements</p>
         </div>
-        <button onClick={() => setShowIssueModal(true)} className="btn-primary px-6">
+        <button onClick={() => console.log('Issue certificate - modal coming soon')} className="btn-primary px-6">
           + Issue Certificate
         </button>
       </div>
@@ -139,154 +141,121 @@ const AdminCertificates = () => {
           ))}
         </div>
       </div>
-      <div className="card mb-6">
-        <div className="flex items-center justify-between">
-          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="input-field max-w-xs">
-            <option value="all">All Types</option>
-            <option value="completion">Course Completion</option>
-            <option value="achievement">Achievement</option>
-            <option value="participation">Participation</option>
-          </select>
-          <button className="btn-outline px-4 py-2">Export Report</button>
-        </div>
-      </div>
 
-      {/* Certificates Table */}
-      <div className="card">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Certificate ID</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Score</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Issued By</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Issue Date</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredCertificates.map((cert) => (
-                <tr key={cert.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{cert.id}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center">
-                      <div className="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm mr-2">
-                        {cert.student.charAt(0)}
-                      </div>
-                      <span className="text-sm font-medium text-gray-900">{cert.student}</span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{cert.course}</td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getCertTypeColor(cert.type)}`}>
-                      {cert.type.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`font-bold ${cert.score >= 90 ? 'text-green-600' : cert.score >= 75 ? 'text-blue-600' : 'text-gray-600'}`}>
-                      {cert.score}%
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{cert.teacher}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{cert.issueDate}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex space-x-2">
-                      <button className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs">
-                        View
-                      </button>
-                      <button className="px-3 py-1 border border-gray-300 hover:bg-gray-50 rounded text-xs">
-                        Download
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Issue Certificate Modal */}
-      {showIssueModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-2xl w-full p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Issue New Certificate</h2>
-              <button onClick={() => setShowIssueModal(false)} className="text-gray-500 hover:text-gray-700 text-2xl">
-                ×
+      {/* Certificates DataTable */}
+      <DataTable
+        data={filteredCertificates}
+        columns={[
+          {
+            key: 'id',
+            label: 'Certificate ID',
+            searchable: true,
+            render: (value) => <p className="text-sm font-medium text-gray-900">{value}</p>,
+          },
+          {
+            key: 'student',
+            label: 'Student',
+            searchable: true,
+            render: (value) => <p className="text-sm text-gray-900">{value}</p>,
+          },
+          {
+            key: 'course',
+            label: 'Course',
+            searchable: true,
+            render: (value) => <p className="text-sm text-gray-900">{value}</p>,
+          },
+          {
+            key: 'type',
+            label: 'Type',
+            filterable: true,
+            filterOptions: [
+              { label: 'Completion', value: 'completion' },
+              { label: 'Achievement', value: 'achievement' },
+              { label: 'Participation', value: 'participation' },
+            ],
+            render: (value) => (
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getCertTypeColor(value)}`}>
+                {value.charAt(0).toUpperCase() + value.slice(1)}
+              </span>
+            ),
+          },
+          {
+            key: 'teacher',
+            label: 'Teacher',
+            searchable: true,
+            render: (value) => <p className="text-sm text-gray-600">{value}</p>,
+          },
+          {
+            key: 'score',
+            label: 'Score',
+            render: (value) => <p className="text-sm font-medium text-gray-900">{value}%</p>,
+          },
+          {
+            key: 'issueDate',
+            label: 'Issue Date',
+            render: (value) => <p className="text-sm text-gray-600">{value}</p>,
+          },
+          {
+            key: 'status',
+            label: 'Status',
+            render: (value) => (
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${value === 'issued' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                {value.toUpperCase()}
+              </span>
+            ),
+          },
+          {
+            key: 'actions',
+            label: 'Actions',
+            render: (_, cert) => (
+              <button
+                onClick={() => console.log('View certificate:', cert.id)}
+                className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
+              >
+                <FaEye /> View
               </button>
-            </div>
+            ),
+          },
+        ]}
+        config={{
+          itemsPerPage: 10,
+          searchPlaceholder: 'Search by ID, student, course...',
+          hideSearch: false,
+          emptyMessage: 'No certificates found',
+          searchValue: searchTerm,
+          onSearchChange: (value) => {
+            setSearchTerm(value);
+          },
+          statusFilterOptions: [
+            { label: 'All Types', value: 'all' },
+            { label: 'Course Completion', value: 'completion' },
+            { label: 'Achievement', value: 'achievement' },
+            { label: 'Participation', value: 'participation' },
+          ],
+          statusFilterValue: filterType,
+          onStatusFilterChange: (value) => setFilterType(value),
+        }}
+        loading={false}
+      />
 
-            <form className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Student</label>
-                <select className="input-field">
-                  <option>Select Student</option>
-                  <option>Kamal Perera</option>
-                  <option>Nimal Silva</option>
-                  <option>Dilshan Mendis</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Course</label>
-                <select className="input-field">
-                  <option>Select Course</option>
-                  <option>Complete Scholarship Package</option>
-                  <option>Mathematics Excellence</option>
-                  <option>Science Mastery</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Certificate Type</label>
-                <select className="input-field">
-                  <option value="completion">Course Completion</option>
-                  <option value="achievement">Achievement</option>
-                  <option value="participation">Participation</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Final Score (%)</label>
-                  <input type="number" className="input-field" placeholder="85" min="0" max="100" />
+      {/* Achievement Badges */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-gray-900 mb-6">Achievement Badges</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {achievements.map((achievement, idx) => {
+            const IconComponent = achievement.icon;
+            return (
+              <div key={idx} className="card text-center p-6">
+                <div className={`${achievement.color} w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3`}>
+                  <IconComponent className="text-xl" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Issue Date</label>
-                  <input type="date" className="input-field" />
-                </div>
+                <h3 className="font-semibold text-gray-900 mb-1">{achievement.name}</h3>
+                <p className="text-2xl font-bold text-primary-600">{achievement.count}</p>
               </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Additional Comments (Optional)
-                </label>
-                <textarea rows="3" className="input-field" placeholder="Add any special notes or achievements..." />
-              </div>
-
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <p className="text-sm text-gray-700">
-                  <strong>Note:</strong> The certificate will be automatically sent to the student's email and will be
-                  available in their profile.
-                </p>
-              </div>
-
-              <div className="flex space-x-3 pt-4">
-                <button type="submit" className="flex-1 btn-primary">
-                  Issue Certificate
-                </button>
-                <button type="button" onClick={() => setShowIssueModal(false)} className="btn-outline px-6">
-                  Cancel
-                </button>
-              </div>
-            </form>
-          </div>
+            );
+          })}
         </div>
-      )}
+      </div>
     </div>
   );
 };
