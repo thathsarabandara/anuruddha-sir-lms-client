@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FaChartBar, FaGraduationCap, FaUserGraduate, FaStar } from 'react-icons/fa';
-import PulseLoader from '../../components/common/PulseLoader';
+
 import StatCard from '../../components/common/StatCard';
 
 const AdminReports = () => {
