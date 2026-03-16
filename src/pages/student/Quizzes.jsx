@@ -1,9 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {  FaCheck, FaGraduationCap, FaTrophy, FaSearch, FaClock, FaClipboardCheck, FaExclamationCircle, FaCheckCircle, FaHourglassHalf, FaTimes, FaCalendarTimes, FaFire, FaChartBar, FaEye } from 'react-icons/fa';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
-// Removed: API and studentQuizAPI imports - using dummy data instead
 
 const StudentQuizzes = () => {
   const navigate = useNavigate();
@@ -83,13 +82,13 @@ const StudentQuizzes = () => {
     // Dummy search - quizzes already loaded
   }, [searchTerm, courseFilter, filter]);
 
-  const handleStartQuiz = (quizId) => {
+  const handleStartQuiz = useCallback((quizId) => {
     navigate(`/student/quiz/${quizId}/take`);
-  };
+  }, [navigate]);
 
-  const handleViewResults = (quizId, attemptId) => {
+  const handleViewResults = useCallback((quizId, attemptId) => {
     navigate(`/student/quiz/${quizId}/results/${attemptId}`);
-  };
+  }, [navigate]);
 
   const getQuizStatus = (quiz) => {
     if (quiz.user_attempts >= quiz.max_attempts) {
@@ -103,6 +102,109 @@ const StudentQuizzes = () => {
     }
     return { text: 'Available', color: 'green', icon: FaCheckCircle };
   };
+
+  // Define table columns
+  const tableColumns = useMemo(() => [
+    { 
+      key: 'title', 
+      label: 'Quiz',
+      render: (_, row) => (
+        <div>
+          <p className="font-semibold text-gray-900">{row.title}</p>
+          <p className="text-xs text-gray-500">{row.course_title}</p>
+        </div>
+      )
+    },
+    { 
+      key: 'quiz_type', 
+      label: 'Type',
+      render: (_, row) => (
+        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+          row.quiz_type === 'FINAL_EXAM' ? 'bg-red-100 text-red-700' :
+          row.quiz_type === 'GRADED' ? 'bg-blue-100 text-blue-700' :
+          'bg-gray-100 text-gray-700'
+        }`}>
+          {row.quiz_type.replace('_', ' ')}
+        </span>
+      )
+    },
+    { 
+      key: 'total_questions', 
+      label: 'Questions',
+      render: (_, row) => `${row.total_questions || 0} Q`
+    },
+    { 
+      key: 'time_limit_minutes', 
+      label: 'Duration',
+      render: (_, row) => `${row.time_limit_minutes} min`
+    },
+    { 
+      key: 'passing_score', 
+      label: 'Passing Score',
+      render: (_, row) => `${row.passing_score}%`
+    },
+    { 
+      key: 'user_attempts', 
+      label: 'Attempts',
+      render: (_, row) => `${row.user_attempts}/${row.max_attempts}`
+    },
+    { 
+      key: 'user_best_score', 
+      label: 'Best Score',
+      render: (_, row) => row.user_best_score !== null ? `${Math.round(row.user_best_score)}%` : '-'
+    },
+    { 
+      key: 'status', 
+      label: 'Status',
+      render: (_, row) => {
+        const status = getQuizStatus(row);
+        const StatusIcon = status.icon;
+        return (
+          <span className={`px-2 py-1 bg-${status.color}-100 text-${status.color}-700 text-xs font-semibold rounded-full flex items-center gap-1 w-fit`}>
+            <StatusIcon className="text-xs" /> {status.text}
+          </span>
+        );
+      }
+    },
+    { 
+      key: 'actions', 
+      label: 'Actions',
+      render: (_, row) => {
+        const status = getQuizStatus(row);
+        return (
+          <div className="flex gap-2">
+            {(status.text === 'Available' || status.text === 'Upcoming') && row.user_attempts < row.max_attempts ? (
+              <button 
+                onClick={() => handleStartQuiz(row.id)}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold transition-all"
+              >
+                {row.user_attempts > 0 ? 'Retry' : 'Start'}
+              </button>
+            ) : status.text === 'Completed' ? (
+              <div className="flex gap-2 flex-wrap">
+                <button 
+                  onClick={() => handleViewResults(row.id, row.last_attempt_id)}
+                  className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-bold transition-all"
+                >
+                  Results
+                </button>
+                {row.user_attempts < row.max_attempts && (
+                  <button 
+                    onClick={() => handleStartQuiz(row.id)}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold transition-all"
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
+            ) : (
+              <span className="text-xs text-gray-500 font-medium">-</span>
+            )}
+          </div>
+        );
+      }
+    }
+  ], [handleStartQuiz, handleViewResults]);
 
   // Filter quizzes based on course filter
   const getFilteredQuizzes = (quizzesList) => {
@@ -139,109 +241,23 @@ const StudentQuizzes = () => {
   const filteredUpcoming = getFilteredQuizzes(upcomingQuizzes);
   const filteredMissed = getFilteredQuizzes(missedQuizzes);
 
-  const renderQuizCard = (quiz, type = 'available') => {
-    const status = getQuizStatus(quiz);
-    const StatusIcon = status.icon;
-    
-    return (
-      <div key={quiz.id} className="card hover:shadow-lg transition-shadow">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center space-x-2 mb-2 flex-wrap gap-2">
-              <h3 className="text-lg font-bold text-gray-900">{quiz.title}</h3>
-              <span className={`px-3 py-1 bg-${status.color}-100 text-${status.color}-700 text-xs font-semibold rounded-full flex items-center gap-1`}>
-                <StatusIcon className="text-xs" /> {status.text}
-              </span>
-              <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                quiz.quiz_type === 'FINAL_EXAM' ? 'bg-red-100 text-red-700' :
-                quiz.quiz_type === 'GRADED' ? 'bg-blue-100 text-blue-700' :
-                'bg-gray-100 text-gray-700'
-              }`}>
-                {quiz.quiz_type.replace('_', ' ')}
-              </span>
-            </div>
-            <p className="text-sm text-primary-600 font-medium mb-3">{quiz.course_title}</p>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
-              <div className="flex items-center gap-2">
-                <FaClipboardCheck className="text-blue-500" />
-                <div>
-                  <span className="text-gray-600">Questions:</span>
-                  <span className="ml-1 font-medium text-gray-900">{quiz.total_questions || 0}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <FaClock className="text-orange-500" />
-                <div>
-                  <span className="text-gray-600">Duration:</span>
-                  <span className="ml-1 font-medium text-gray-900">{quiz.time_limit_minutes} min</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <FaCheck className="text-green-500" />
-                <div>
-                  <span className="text-gray-600">Passing:</span>
-                  <span className="ml-1 font-medium text-gray-900">{quiz.passing_score}%</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <FaTrophy className="text-yellow-500" />
-                <div>
-                  <span className="text-gray-600">Attempts:</span>
-                  <span className="ml-1 font-medium text-gray-900">{quiz.user_attempts}/{quiz.max_attempts}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="flex items-center space-x-4 text-sm flex-wrap gap-3">
-              {quiz.user_best_score !== null && (
-                <span className="text-gray-600">
-                  Best Score: <span className="font-medium text-green-600">{Math.round(quiz.user_best_score)}%</span>
-                </span>
-              )}
-              {quiz.end_date && (
-                <span className="text-gray-600">
-                  Due: <span className="font-medium text-gray-900">{new Date(quiz.end_date).toLocaleDateString()}</span>
-                </span>
-              )}
-            </div>
-          </div>
-          
-          <div className="ml-4">
-            {type === 'available' && quiz.user_attempts < quiz.max_attempts && status.text === 'Available' ? (
-              <button 
-                onClick={() => handleStartQuiz(quiz.id)}
-                className="btn-primary px-6"
-              >
-                {quiz.user_attempts > 0 ? 'Retry Quiz' : 'Start Quiz'}
-              </button>
-            ) : type === 'completed' ? (
-              <div className="flex flex-col gap-2">
-                <button 
-                  onClick={() => handleViewResults(quiz.id, quiz.last_attempt_id)}
-                  className="btn-primary px-6"
-                >
-                  View Results
-                </button>
-                {quiz.user_attempts < quiz.max_attempts && (
-                  <button 
-                    onClick={() => handleStartQuiz(quiz.id)}
-                    className="btn-secondary px-6"
-                  >
-                    Retry
-                  </button>
-                )}
-              </div>
-            ) : (
-              <button className="btn-secondary px-6" disabled>
-                {status.text}
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    );
+  // Get current filtered data based on active tab
+  const getDisplayData = () => {
+    switch(filter) {
+      case 'completed':
+        return filteredCompleted;
+      case 'missed':
+        return filteredMissed;
+      case 'upcoming':
+        return filteredUpcoming;
+      case 'expired':
+        return filteredExpired;
+      default:
+        return filteredAvailable;
+    }
   };
+
+  const displayData = getDisplayData();
 
   return (
     <div className="p-8">
@@ -269,8 +285,8 @@ const StudentQuizzes = () => {
         </div>
       ) : (
         <div>
-          {/* Tabs */}
-          <div className="flex flex-wrap gap-2 mb-6 border-b">
+          {/* Filter Tabs */}
+          <div className="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-4">
             {[
               { id: 'available', label: 'Available', icon: FaHourglassHalf, count: filteredAvailable.length },
               { id: 'completed', label: 'Completed', icon: FaCheckCircle, count: filteredCompleted.length },
@@ -283,56 +299,35 @@ const StudentQuizzes = () => {
                 <button
                   key={tab.id}
                   onClick={() => setFilter(tab.id)}
-                  className={`pb-3 px-4 font-medium transition-colors flex items-center gap-2 ${
+                  className={`pb-3 px-4 font-semibold transition-all flex items-center gap-2 ${
                     filter === tab.id
-                      ? 'text-primary-600 border-b-2 border-primary-600'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  <TabIcon />
+                  <TabIcon className="text-sm" />
                   {tab.label} ({tab.count})
                 </button>
               );
             })}
           </div>
 
-          {/* Search and Filter Section */}
-          <div className="mb-6 space-y-4">
-            {/* Search Bar - Search by title, course, or ID */}
-            <div className="relative">
-              <FaSearch className="absolute left-3 top-3 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search quizzes by title, course, or ID..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
-              />
-              {searchTerm && (
-                <button
-                  onClick={() => setSearchTerm('')}
-                  className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
-                >
-                  <FaTimes />
-                </button>
-              )}
-            </div>
-
-            {/* Course Filter Dropdown */}
-            {courses.length > 0 && (
-              <div className="relative">
+          {/* Course Filter Dropdown */}
+          {courses.length > 0 && (
+            <div className="mb-6">
+              <div className="relative w-full md:w-64">
                 <div 
                   onClick={() => setShowCourseDropdown(!showCourseDropdown)}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white cursor-pointer hover:border-primary-600 transition-colors"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white cursor-pointer hover:border-blue-600 transition-colors font-medium text-gray-700"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="text-gray-700">
+                    <span>
                       {courseFilter === 'all' 
                         ? 'All Courses' 
                         : courses.find(c => c.id === courseFilter)?.title || 'Select Course'
                       }
                     </span>
-                    <FaSearch className="text-gray-400" />
+                    <FaSearch className="text-gray-400 text-sm" />
                   </div>
                 </div>
 
@@ -345,7 +340,7 @@ const StudentQuizzes = () => {
                         placeholder="Search courses..."
                         value={courseSearchTerm}
                         onChange={(e) => setCourseSearchTerm(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-600"
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
                         onClick={(e) => e.stopPropagation()}
                       />
                     </div>
@@ -359,7 +354,7 @@ const StudentQuizzes = () => {
                           setCourseSearchTerm('');
                         }}
                         className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors ${
-                          courseFilter === 'all' ? 'bg-primary-50 text-primary-600 font-medium' : 'text-gray-700'
+                          courseFilter === 'all' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
                         }`}
                       >
                         <div className="flex items-center justify-between">
@@ -377,7 +372,7 @@ const StudentQuizzes = () => {
                             setCourseSearchTerm('');
                           }}
                           className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors border-b border-gray-100 ${
-                            courseFilter === course.id ? 'bg-primary-50 text-primary-600 font-medium' : 'text-gray-700'
+                            courseFilter === course.id ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
                           }`}
                         >
                           <div className="flex items-center justify-between">
@@ -396,15 +391,34 @@ const StudentQuizzes = () => {
                   </div>
                 )}
               </div>
-            )}
+            </div>
+          )}
 
-            {/* Active Filters Display */}
-            <div className="flex flex-wrap gap-2 items-center">
+          {/* Data Table with Search and Pagination */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow">
+            <DataTable
+              columns={tableColumns}
+              data={displayData}
+              config={{
+                itemsPerPage: 10,
+                searchPlaceholder: 'Search quizzes by title or course...',
+                hideSearch: false,
+                emptyMessage: 'No quizzes found',
+                searchValue: searchTerm,
+                onSearchChange: (value) => setSearchTerm(value),
+              }}
+              loading={loading}
+            />
+          </div>
+
+          {/* Active Filters Display */}
+          {(searchTerm || courseFilter !== 'all') && (
+            <div className="flex flex-wrap gap-2 items-center mt-4">
               {searchTerm && (
                 <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-2">
                   Search: {searchTerm}
                   <button onClick={() => setSearchTerm('')} className="hover:text-blue-900">
-                    <FaTimes />
+                    <FaTimes className="text-xs" />
                   </button>
                 </span>
               )}
@@ -412,109 +426,9 @@ const StudentQuizzes = () => {
                 <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium flex items-center gap-2">
                   Course: {courses.find(c => c.id === courseFilter)?.title}
                   <button onClick={() => setCourseFilter('all')} className="hover:text-green-900">
-                    <FaTimes />
+                    <FaTimes className="text-xs" />
                   </button>
                 </span>
-              )}
-            </div>
-          </div>
-
-          {/* Available Quizzes */}
-          {filter === 'available' && (
-            <div className="space-y-4">
-              {filteredAvailable.length > 0 ? (
-                <div>
-                  <p className="text-sm text-gray-600 mb-3 font-medium">
-                    Showing {filteredAvailable.length} available {filteredAvailable.length === 1 ? 'quiz' : 'quizzes'}
-                  </p>
-                  {filteredAvailable.map((quiz) => renderQuizCard(quiz, 'available'))}
-                </div>
-              ) : (
-                <div className="card text-center py-12">
-                  <FaClipboardCheck className="mx-auto text-gray-400 text-5xl mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Available Quizzes</h3>
-                  <p className="text-gray-600">Check back later for new quizzes</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Completed Quizzes */}
-          {filter === 'completed' && (
-            <div className="space-y-4">
-              {filteredCompleted.length > 0 ? (
-                <div>
-                  <p className="text-sm text-gray-600 mb-3 font-medium">
-                    Showing {filteredCompleted.length} completed {filteredCompleted.length === 1 ? 'quiz' : 'quizzes'}
-                  </p>
-                  {filteredCompleted.map((quiz) => renderQuizCard(quiz, 'completed'))}
-                </div>
-              ) : (
-                <div className="card text-center py-12">
-                  <FaTrophy className="mx-auto text-gray-400 text-5xl mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Completed Quizzes</h3>
-                  <p className="text-gray-600">Start taking quizzes to see your results here</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Missed Quizzes */}
-          {filter === 'missed' && (
-            <div className="space-y-4">
-              {filteredMissed.length > 0 ? (
-                <div>
-                  <p className="text-sm text-gray-600 mb-3 font-medium">
-                    Showing {filteredMissed.length} missed {filteredMissed.length === 1 ? 'quiz' : 'quizzes'}
-                  </p>
-                  {filteredMissed.map((quiz) => renderQuizCard(quiz, 'missed'))}
-                </div>
-              ) : (
-                <div className="card text-center py-12">
-                  <FaCalendarTimes className="mx-auto text-gray-400 text-5xl mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Missed Quizzes</h3>
-                  <p className="text-gray-600">Great! You haven't missed any quizzes</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Upcoming Quizzes */}
-          {filter === 'upcoming' && (
-            <div className="space-y-4">
-              {filteredUpcoming.length > 0 ? (
-                <div>
-                  <p className="text-sm text-gray-600 mb-3 font-medium">
-                    Showing {filteredUpcoming.length} upcoming {filteredUpcoming.length === 1 ? 'quiz' : 'quizzes'}
-                  </p>
-                  {filteredUpcoming.map((quiz) => renderQuizCard(quiz, 'upcoming'))}
-                </div>
-              ) : (
-                <div className="card text-center py-12">
-                  <FaClock className="mx-auto text-gray-400 text-5xl mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Upcoming Quizzes</h3>
-                  <p className="text-gray-600">All scheduled quizzes have started</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Expired Quizzes */}
-          {filter === 'expired' && (
-            <div className="space-y-4">
-              {filteredExpired.length > 0 ? (
-                <div>
-                  <p className="text-sm text-gray-600 mb-3 font-medium">
-                    Showing {filteredExpired.length} expired {filteredExpired.length === 1 ? 'quiz' : 'quizzes'}
-                  </p>
-                  {filteredExpired.map((quiz) => renderQuizCard(quiz, 'expired'))}
-                </div>
-              ) : (
-                <div className="card text-center py-12">
-                  <FaExclamationCircle className="mx-auto text-gray-400 text-5xl mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Expired Quizzes</h3>
-                  <p className="text-gray-600">All your quizzes are still active</p>
-                </div>
               )}
             </div>
           )}
