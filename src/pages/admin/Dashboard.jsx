@@ -9,7 +9,7 @@ import {
 } from 'react-icons/fa';
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler } from 'chart.js';
-import PulseLoader from '../../components/common/PulseLoader';
+
 import StatCard from '../../components/common/StatCard';
 import { IoIosTrendingUp } from 'react-icons/io';
 import { MdLocalActivity } from 'react-icons/md';
@@ -264,10 +264,6 @@ const AdminDashboard = () => {
     setError(null);
   };
 
-  // Loading state
-  if (loading) {
-    return <PulseLoader />;
-  }
 
   // Error state
   if (error) {
