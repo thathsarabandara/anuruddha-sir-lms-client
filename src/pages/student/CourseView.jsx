@@ -11,8 +11,6 @@ import {
   FaVideo,
   FaLock
 } from 'react-icons/fa';
-import ReviewForm from '../../components/common/ReviewForm';
-import ReviewsList from '../../components/common/ReviewsList';
 
 const CourseView = () => {
   const { courseId } = useParams();
@@ -353,17 +351,6 @@ const CourseView = () => {
                 </div>
               ))}
             </div>
-          </div>
-        )}
-
-        {/* Reviews Tab */}
-        {activeTab === 'reviews' && (
-          <div className="max-w-4xl space-y-8">
-            {/* Review Form */}
-            <ReviewForm courseId={courseId} onReviewSubmitted={() => window.location.reload()} />
-
-            {/* Reviews List */}
-            <ReviewsList courseId={courseId} isStudent={true} />
           </div>
         )}
       </div>
