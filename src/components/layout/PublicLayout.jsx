@@ -1,5 +1,5 @@
-import TopNav from './TopNav';
-import Footer from './Footer';
+import TopNav from '../common/TopNav';
+import Footer from '../common/Footer';
 import { Outlet } from 'react-router-dom';
 import PageLoader from '../common/PageLoader';
 import { usePageLoader } from '../../hooks/usePageLoader';
