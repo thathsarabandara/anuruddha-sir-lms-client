@@ -1,25 +1,18 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FaCheckCircle, FaExclamationTriangle, FaGraduationCap, FaTimes, FaUserGraduate, FaTimesCircle, FaClock, FaSearch, FaEye, FaCheck, FaBan, FaUndo, FaUserPlus, FaEdit, FaKey } from 'react-icons/fa';
+import { FaCheckCircle, FaExclamationTriangle, FaGraduationCap, FaTimes, FaUserGraduate, FaTimesCircle, FaClock, FaEye, FaCheck, FaBan, FaUndo, FaUserPlus, FaEdit, FaKey } from 'react-icons/fa';
 import { BiLoader } from 'react-icons/bi';
 import PulseLoader from '../../components/common/PulseLoader';
 import { studentAPI } from '../../api/student';
 import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 
 const AdminStudents = () => {
   const [students, setStudents] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({
-    current_page: 1,
-    total_pages: 1,
-    total_count: 0,
-    page_size: 10,
-    has_next: false,
-    has_previous: false,
-  });
   
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -66,9 +59,6 @@ const AdminStudents = () => {
     try {
       const response = await studentAPI.getStudents(searchTerm, filterStatus, currentPage, 10);
       setStudents(response.data.data.students || []);
-      if (response.data.data.pagination) {
-        setPagination(response.data.data.pagination);
-      }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch students');
       console.error('Error fetching students:', err);
@@ -347,36 +337,6 @@ const AdminStudents = () => {
     return icons[status] || FaClock;
   };
 
-  const statsData = [
-    { 
-      label: 'Total Students', 
-      value: stats?.total_students || 0, 
-      icon: FaUserGraduate, 
-      color: 'bg-blue-100 text-blue-700',
-      borderColor: 'border-blue-500'
-    },
-    { 
-      label: 'Active Students', 
-      value: stats?.active_students || 0, 
-      icon: FaCheckCircle, 
-      color: 'bg-green-100 text-green-700',
-      borderColor: 'border-green-500'
-    },
-    { 
-      label: 'Pending Approval', 
-      value: stats?.pending_students || 0, 
-      icon: BiLoader, 
-      color: 'bg-yellow-100 text-yellow-700',
-      borderColor: 'border-yellow-500'
-    },
-    { 
-      label: 'Banned', 
-      value: stats?.banned_students || 0, 
-      icon: FaExclamationTriangle, 
-      color: 'bg-red-100 text-red-700',
-      borderColor: 'border-red-500'
-    },
-  ];
 
   const studentsMetricsConfig = [
     {
@@ -466,185 +426,139 @@ const AdminStudents = () => {
         metricsConfig={studentsMetricsConfig}
       />
 
-      {/* Filters */}
-      <div className="card mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 gap-4">
-          <div className="flex-1 max-w-md relative">
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name, email, phone, school..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="input-field pl-10"
-            />
-          </div>
-          <div className="flex items-center space-x-4">
-            <select 
-              value={filterStatus} 
-              onChange={(e) => {
-                setFilterStatus(e.target.value);
-                setCurrentPage(1);
-              }} 
-              className="input-field"
-            >
-              <option value="all">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="pending">Pending</option>
-              <option value="banned">Banned</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Students Table */}
-      <div className="card">
-        <div className="overflow-x-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <BiLoader className="animate-spin text-4xl text-primary-600" />
-              <span className="ml-3 text-gray-600">Loading students...</span>
-            </div>
-          ) : students.length === 0 ? (
-            <div className="text-center py-12">
-              <FaUserGraduate className="mx-auto text-6xl text-gray-300 mb-4" />
-              <p className="text-gray-500 text-lg">No students found</p>
-            </div>
-          ) : (
-            <>
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Student</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">School & Grade</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Parent Info</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Join Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {students.map((student) => {
-                    const StatusIcon = getStatusIcon(student.account_status);
-                    return (
-                      <tr key={student.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center">
-                            {student.profile_picture ? (
-                              <img 
-                                src={student.profile_picture} 
-                                alt={student.full_name}
-                                className="w-10 h-10 rounded-full object-cover mr-3"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                                {student.first_name?.charAt(0)}{student.last_name?.charAt(0)}
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-medium text-gray-900">{student.first_name} {student.last_name}</p>
-                              <p className="text-sm text-gray-500">{student.grade_level}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <p className="text-gray-900">{student.email}</p>
-                          <p className="text-gray-500">{student.phone}</p>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <p className="text-gray-900">{student.school}</p>
-                          <p className="text-gray-500">Grade {student.grade_level}</p>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <p className="text-gray-900">{student.parent_name}</p>
-                          <p className="text-gray-500">{student.parent_contact}</p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${getStatusColor(student.account_status)}`}>
-                            <StatusIcon className="text-xs" />
-                            {student.account_status.is_active && !student.account_status.is_banned && 'Active'}
-                            {student.account_status.is_banned && 'Banned'}
-                            {!student.account_status.is_active && !student.account_status.is_banned && 'Pending'}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
-                          {new Date(student.created_at).toLocaleDateString()}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-1 flex-wrap">
-                            <button
-                              onClick={() => handleViewDetails(student)}
-                              className="px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
-                              title="View details"
-                            >
-                              <FaEye /> View
-                            </button>
-                            
-                            {/* Reset Password button - always available */}
-                            <button
-                              onClick={() => {
-                                setSelectedStudent(student);
-                                handleResetPassword();
-                              }}
-                              disabled={actionLoading}
-                              className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
-                              title="Reset password"
-                            >
-                              <FaKey /> Reset
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-
-              {/* Pagination */}
-              {pagination.total_pages > 1 && (
-                <div className="flex items-center justify-between border-t px-4 py-3">
-                  <div className="text-sm text-gray-700">
-                    Showing {((currentPage - 1) * pagination.page_size) + 1} to {Math.min(currentPage * pagination.page_size, pagination.total_count)} of {pagination.total_count} students
+      {/* Students Table with Integrated Filters */}
+      <DataTable
+        data={students}
+        columns={[
+          {
+            key: 'full_name',
+            label: 'Student',
+            searchable: true,
+            render: (value, student) => (
+              <div className="flex items-center">
+                {student.profile_picture ? (
+                  <img 
+                    src={student.profile_picture} 
+                    alt={student.full_name}
+                    className="w-10 h-10 rounded-full object-cover mr-3"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                    {student.first_name?.charAt(0)}{student.last_name?.charAt(0)}
                   </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setCurrentPage(currentPage - 1)}
-                      disabled={!pagination.has_previous}
-                      className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                    >
-                      Previous
-                    </button>
-                    {[...Array(pagination.total_pages)].map((_, i) => (
-                      <button
-                        key={i + 1}
-                        onClick={() => setCurrentPage(i + 1)}
-                        className={`px-3 py-1 border rounded text-sm ${
-                          currentPage === i + 1
-                            ? 'bg-primary-600 text-white border-primary-600'
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setCurrentPage(currentPage + 1)}
-                      disabled={!pagination.has_next}
-                      className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                    >
-                      Next
-                    </button>
-                  </div>
+                )}
+                <div>
+                  <p className="font-medium text-gray-900">{student.first_name} {student.last_name}</p>
+                  <p className="text-sm text-gray-500">{student.grade_level}</p>
                 </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+              </div>
+            ),
+          },
+          {
+            key: 'email',
+            label: 'Contact',
+            searchable: true,
+            render: (value, student) => (
+              <div className="text-sm">
+                <p className="text-gray-900">{student.email}</p>
+                <p className="text-gray-500">{student.phone}</p>
+              </div>
+            ),
+          },
+          {
+            key: 'school',
+            label: 'School & Grade',
+            searchable: true,
+            render: (value, student) => (
+              <div className="text-sm">
+                <p className="text-gray-900">{student.school}</p>
+                <p className="text-gray-500">Grade {student.grade_level}</p>
+              </div>
+            ),
+          },
+          {
+            key: 'parent_name',
+            label: 'Parent Info',
+            render: (value, student) => (
+              <div className="text-sm">
+                <p className="text-gray-900">{student.parent_name}</p>
+                <p className="text-gray-500">{student.parent_contact}</p>
+              </div>
+            ),
+          },
+          {
+            key: 'account_status',
+            label: 'Status',
+            render: (value) => {
+              const StatusIcon = getStatusIcon(value);
+              return (
+                <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${getStatusColor(value)}`}>
+                  <StatusIcon className="text-xs" />
+                  {value.is_active && !value.is_banned && 'Active'}
+                  {value.is_banned && 'Banned'}
+                  {!value.is_active && !value.is_banned && 'Pending'}
+                </span>
+              );
+            },
+          },
+          {
+            key: 'created_at',
+            label: 'Join Date',
+            render: (value) => <p className="text-sm text-gray-600">{new Date(value).toLocaleDateString()}</p>,
+          },
+          {
+            key: 'actions',
+            label: 'Actions',
+            render: (_, student) => (
+              <div className="flex gap-1 flex-wrap">
+                <button
+                  onClick={() => handleViewDetails(student)}
+                  className="px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
+                  title="View details"
+                >
+                  <FaEye /> View
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setSelectedStudent(student);
+                    handleResetPassword();
+                  }}
+                  disabled={actionLoading}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
+                  title="Reset password"
+                >
+                  <FaKey /> Reset
+                </button>
+              </div>
+            ),
+          },
+        ]}
+        config={{
+          itemsPerPage: 10,
+          searchPlaceholder: 'Search by name, email, phone, school...',
+          hideSearch: false,
+          emptyMessage: 'No students found',
+          searchValue: searchTerm,
+          onSearchChange: (value) => {
+            setSearchTerm(value);
+            setCurrentPage(1);
+          },
+          statusFilterLabel: 'Filter by Status',
+          statusFilterOptions: [
+            { label: 'All Statuses', value: 'all' },
+            { label: 'Active', value: 'active' },
+            { label: 'Pending', value: 'pending' },
+            { label: 'Banned', value: 'banned' },
+          ],
+          statusFilterValue: filterStatus,
+          onStatusFilterChange: (value) => {
+            setFilterStatus(value);
+            setCurrentPage(1);
+          },
+        }}
+        loading={loading}
+      />
 
       {/* Student Details Modal */}
       {showDetailsModal && selectedStudent && (
