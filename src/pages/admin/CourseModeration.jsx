@@ -1,92 +1,175 @@
+/* eslint-disable react-hooks/exhaustive-deps */
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect } from 'react';
 import { toast } from 'react-toastify';
 
-import { adminAPI } from '../../api/admin';
-import { courseAPI } from '../../api/course';
+// Dummy courses data
+const DUMMY_COURSES = [
+  {
+    id: 1,
+    title: 'Introduction to Python Programming',
+    teacher_name: 'Dr. Amarasiri',
+    category: { name: 'Programming' },
+    subject: { name: 'Computer Science' },
+    grade_level: { name: '11-12' },
+    price: '5000',
+    status: 'PUBLISHED',
+    approval_status: 'APPROVED',
+    is_featured: true,
+    total_enrollments: 245,
+    commission_rate: 15,
+    thumbnail: 'https://via.placeholder.com/300x200?text=Python',
+    description: 'A comprehensive introduction to Python programming for beginners.',
+    average_rating: 4.5,
+    rejection_reason: null
+  },
+  {
+    id: 2,
+    title: 'Web Development with React',
+    teacher_name: 'Eng. Silva',
+    category: { name: 'Web Development' },
+    subject: { name: 'Information Technology' },
+    grade_level: { name: '12' },
+    price: '7500',
+    status: 'PUBLISHED',
+    approval_status: 'PENDING',
+    is_featured: false,
+    total_enrollments: 0,
+    commission_rate: 20,
+    thumbnail: 'https://via.placeholder.com/300x200?text=React',
+    description: 'Learn modern web development using React and JavaScript.',
+    average_rating: 0,
+    rejection_reason: null
+  },
+  {
+    id: 3,
+    title: 'Advanced Mathematics',
+    teacher_name: 'Prof. Jayakody',
+    category: { name: 'Mathematics' },
+    subject: { name: 'Mathematics' },
+    grade_level: { name: 'A/L' },
+    price: '3000',
+    status: 'PUBLISHED',
+    approval_status: 'APPROVED',
+    is_featured: false,
+    total_enrollments: 156,
+    commission_rate: 10,
+    thumbnail: 'https://via.placeholder.com/300x200?text=Math',
+    description: 'Master advanced mathematical concepts for A-Level exams.',
+    average_rating: 4.8,
+    rejection_reason: null
+  },
+  {
+    id: 4,
+    title: 'English Literature',
+    teacher_name: 'Mrs. Fernando',
+    category: { name: 'Languages' },
+    subject: { name: 'English' },
+    grade_level: { name: '10-12' },
+    price: '2500',
+    status: 'PUBLISHED',
+    approval_status: 'REJECTED',
+    is_featured: false,
+    total_enrollments: 0,
+    commission_rate: 12,
+    thumbnail: 'https://via.placeholder.com/300x200?text=Literature',
+    description: 'Explore classic and contemporary English literature.',
+    average_rating: 0,
+    rejection_reason: 'Course content does not meet minimum standards. Please add more resources and improve course structure.'
+  },
+  {
+    id: 5,
+    title: 'Digital Marketing Fundamentals',
+    teacher_name: 'Mr. Perera',
+    category: { name: 'Business' },
+    subject: { name: 'Marketing' },
+    grade_level: { name: 'Professional' },
+    price: '6000',
+    status: 'PUBLISHED',
+    approval_status: 'PENDING',
+    is_featured: false,
+    total_enrollments: 0,
+    commission_rate: 25,
+    thumbnail: 'https://via.placeholder.com/300x200?text=Marketing',
+    description: 'Complete guide to digital marketing strategies and tools.',
+    average_rating: 0,
+    rejection_reason: null
+  },
+];
 
 const AdminCourseModeration = () => {
   const [courses, setCourses] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending'); // pending, approved, rejected, all
   const [selectedCourse, setSelectedCourse] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showCommissionModal, setShowCommissionModal] = useState(false);
   const [commissionRate, setCommissionRate] = useState('');
 
+  const fetchCourses = () => {
+    let filteredCourses = DUMMY_COURSES;
+    
+    if (filter !== 'all') {
+      filteredCourses = DUMMY_COURSES.filter(c => 
+        c.approval_status.toLowerCase() === filter.toLowerCase()
+      );
+    }
+    
+    setCourses(filteredCourses);
+  };
+
   useEffect(() => {
     fetchCourses();
   }, [filter]);
 
-  const fetchCourses = async () => {
-    try {
-      setLoading(true);
-      const response = await adminAPI.getCourseModeration(1, 50, filter === 'all' ? '' : filter);
-      const courseList = response.data.courses || response.data;
-      setCourses(Array.isArray(courseList) ? courseList : []);
-      setLoading(false);
-    } catch (err) {
-      toast.error('Failed to fetch courses');
-      setLoading(false);
-      console.error(err);
-    }
-  };
-
-  const handleApproveCourse = async (courseId) => {
+  const handleApproveCourse = (courseId) => {
     if (!window.confirm('Are you sure you want to approve this course?')) return;
 
-    try {
-      await adminAPI.approveCourse(courseId, { notes: '' });
-      toast.success('Course approved successfully');
-      fetchCourses();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to approve course');
-      console.error(err);
-    }
+    const updatedCourses = courses.map(c => 
+      c.id === courseId ? { ...c, approval_status: 'APPROVED' } : c
+    );
+    setCourses(updatedCourses);
+    toast.success('Course approved successfully');
   };
 
-  const handleRejectCourse = async (courseId) => {
+  const handleRejectCourse = (courseId) => {
     const reason = window.prompt('Enter rejection reason (optional):');
+    if (reason === null) return;
     
-    try {
-      await adminAPI.rejectCourse(courseId, { 
-        reason: reason || 'No reason provided'
-      });
-      toast.success('Course rejected successfully');
-      fetchCourses();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to reject course');
-      console.error(err);
-    }
+    const updatedCourses = courses.map(c => 
+      c.id === courseId 
+        ? { ...c, approval_status: 'REJECTED', rejection_reason: reason || 'No reason provided' } 
+        : c
+    );
+    setCourses(updatedCourses);
+    toast.success('Course rejected successfully');
   };
 
-  const handleFeatureCourse = async (courseId, currentStatus) => {
-    try {
-      await courseAPI.updateCourse(courseId, { is_featured: !currentStatus });
-      toast.success(!currentStatus ? 'Course featured' : 'Course unfeatured');
-      fetchCourses();
-    } catch (err) {
-      toast.error('Failed to update course');
-      console.error(err);
-    }
+  const handleFeatureCourse = (courseId, currentStatus) => {
+    const updatedCourses = courses.map(c => 
+      c.id === courseId ? { ...c, is_featured: !currentStatus } : c
+    );
+    setCourses(updatedCourses);
+    toast.success(!currentStatus ? 'Course featured' : 'Course unfeatured');
   };
 
-  const handleSetCommission = async (e) => {
+  const handleSetCommission = (e) => {
     e.preventDefault();
     if (!selectedCourse) return;
 
-    try {
-      await adminCourseAPI.setCommission(selectedCourse.id, { 
-        commission_rate: parseFloat(commissionRate) 
-      });
-      toast.success('Commission rate updated');
-      setShowCommissionModal(false);
-      setCommissionRate('');
-      setSelectedCourse(null);
-      fetchCourses();
-    } catch (err) {
-      toast.error('Failed to set commission');
-      console.error(err);
+    const newRate = parseFloat(commissionRate);
+    if (isNaN(newRate) || newRate < 0 || newRate > 100) {
+      toast.error('Please enter a valid commission rate between 0 and 100');
+      return;
     }
+
+    const updatedCourses = courses.map(c => 
+      c.id === selectedCourse.id ? { ...c, commission_rate: newRate } : c
+    );
+    setCourses(updatedCourses);
+    toast.success('Commission rate updated');
+    setShowCommissionModal(false);
+    setCommissionRate('');
+    setSelectedCourse(null);
   };
 
   const openCommissionModal = (course) => {
@@ -194,11 +277,7 @@ const AdminCourseModeration = () => {
       </div>
 
       {/* Courses Table */}
-      {loading ? (
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        </div>
-      ) : courses.length > 0 ? (
+      {courses.length > 0 ? (
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
@@ -262,14 +341,14 @@ const AdminCourseModeration = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex flex-col gap-1">
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusBadge(course.status)}`}>
+                      <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${getStatusBadge(course.status)}`}>
                         {course.status}
                       </span>
-                      <span className={`px-2 py-1 rounded text-xs font-medium ${getStatusBadge(course.approval_status)}`}>
+                      <span className={`px-2 py-1 rounded text-xs font-medium whitespace-nowrap ${getStatusBadge(course.approval_status)}`}>
                         {course.approval_status}
                       </span>
                       {course.is_featured && (
-                        <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                        <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium whitespace-nowrap">
                           ⭐ Featured
                         </span>
                       )}
@@ -279,7 +358,7 @@ const AdminCourseModeration = () => {
                     {course.total_enrollments || 0}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">
-                    {course.commission_rate || 10}%
+                    {course.commission_rate}%
                   </td>
                   <td className="px-6 py-4 text-right text-sm font-medium space-x-2">
                     <button
@@ -332,7 +411,7 @@ const AdminCourseModeration = () => {
           <h3 className="text-xl font-semibold text-gray-900 mb-2">No courses found</h3>
           <p className="text-gray-600">No courses match the selected filter</p>
         </div>
-      )}
+      )}{}
 
       {/* Course Details Modal */}
       {showDetailsModal && selectedCourse && (
@@ -366,15 +445,15 @@ const AdminCourseModeration = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <span className="text-sm text-gray-500">Category:</span>
-                    <span className="ml-2 font-medium">{selectedCourse.category?.name}</span>
+                    <span className="ml-2 font-medium">{selectedCourse.category.name}</span>
                   </div>
                   <div>
                     <span className="text-sm text-gray-500">Subject:</span>
-                    <span className="ml-2 font-medium">{selectedCourse.subject?.name}</span>
+                    <span className="ml-2 font-medium">{selectedCourse.subject.name}</span>
                   </div>
                   <div>
                     <span className="text-sm text-gray-500">Grade Level:</span>
-                    <span className="ml-2 font-medium">{selectedCourse.grade_level?.name}</span>
+                    <span className="ml-2 font-medium">{selectedCourse.grade_level.name}</span>
                   </div>
                   <div>
                     <span className="text-sm text-gray-500">Price:</span>
@@ -394,7 +473,7 @@ const AdminCourseModeration = () => {
                   </div>
                   <div>
                     <span className="text-sm text-gray-500">Commission:</span>
-                    <span className="ml-2 font-medium">{selectedCourse.commission_rate || 10}%</span>
+                    <span className="ml-2 font-medium">{selectedCourse.commission_rate}%</span>
                   </div>
                 </div>
 
