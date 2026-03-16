@@ -204,6 +204,13 @@ export const quizAPI = {
   // ──────────────────────────────────────────────────────────────────────────
 
   /**
+   * Get teacher dashboard statistics
+   * @returns {Promise} Dashboard stats (total, published, draft, this month)
+   */
+  getTeacherDashboardStats: () =>
+    axiosInstance.get("/quiz/dashboard/teacher-stats"),
+
+  /**
    * Get quiz statistics (instructor view)
    * @param {string} quizId - Quiz ID
    * @returns {Promise} Quiz statistics (avg score, participation, etc.)
