@@ -8,9 +8,9 @@ const StudentQuizzes = () => {
   
   // Dummy data
   const dummyQuizzes = [
-    { id: 1, title: 'Python Basics', course: 'Python 101', status: 'available', questions: 15, passingScore: 10, timeLimit: 60 },
-    { id: 2, title: 'Advanced OOP', course: 'OOP Concepts', status: 'completed', questions: 20, passingScore: 14, score: 16, completionDate: '2024-01-20' },
-    { id: 3, title: 'Data Structures', course: 'DSA Course', status: 'available', questions: 18, passingScore: 13, timeLimit: 90 },
+    { id: 1, title: 'Python Basics', course_title: 'Python 101', course_id: 1, status: 'available', quiz_type: 'GRADED', total_questions: 15, passing_score: 70, time_limit_minutes: 60, user_attempts: 0, max_attempts: 3, user_best_score: null, end_date: null },
+    { id: 2, title: 'Advanced OOP', course_title: 'OOP Concepts', course_id: 2, status: 'completed', quiz_type: 'GRADED', total_questions: 20, passing_score: 70, time_limit_minutes: 90, user_attempts: 2, max_attempts: 3, user_best_score: 80, end_date: '2024-02-20', last_attempt_id: 1 },
+    { id: 3, title: 'Data Structures', course_title: 'DSA Course', course_id: 1, status: 'available', quiz_type: 'FINAL_EXAM', total_questions: 18, passing_score: 75, time_limit_minutes: 120, user_attempts: 1, max_attempts: 2, user_best_score: 65, end_date: '2024-03-30' },
   ];
   
   const dummyStats = {
@@ -32,7 +32,7 @@ const StudentQuizzes = () => {
   const [upcomingQuizzes, _setUpcomingQuizzes] = useState([]);
   const [expiredQuizzes, _setExpiredQuizzes] = useState([]);
   
-  const [courses, _setCourses] = useState([{ id: 1, name: 'Python 101' }, { id: 2, name: 'OOP Concepts' }]);
+  const [courses, _setCourses] = useState([{ id: 1, title: 'Python 101' }, { id: 2, title: 'OOP Concepts' }]);
   const [stats, _setStats] = useState(dummyStats);
   const [loading, _setLoading] = useState(false);
 
