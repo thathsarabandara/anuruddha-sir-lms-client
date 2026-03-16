@@ -1,14 +1,70 @@
+import { useState } from 'react';
 import { FaBook, FaClock, FaDollarSign, FaGraduationCap, FaUserGraduate, FaUsers, FaVideo, FaChartLine, FaAward, FaFire, FaLightbulb, FaCheckCircle, FaComments, FaCertificate } from 'react-icons/fa';
 import { IoIosTrendingUp } from 'react-icons/io';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, AreaChart, Area } from 'recharts';
+import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
+import ErrorComponent from '../../components/common/ErrorComponent';
+import SuccessComponent from '../../components/common/SuccessComponent';
 
 const TeacherDashboard = () => {
-  // Core Statistics
-  const stats = [
-    { label: 'Total Students', value: '890', subtext: '+34 this month', icon: FaUserGraduate, color: 'bg-blue-600' },
-    { label: 'Active Courses', value: '12', subtext: '8 published', icon: FaBook, color: 'bg-green-600' },
-    { label: 'Monthly Revenue', value: '$1,250', subtext: '+27.6% growth', icon: FaDollarSign, color: 'bg-yellow-600' },
-    { label: 'Avg Rating', value: '4.6/5', subtext: '187 reviews', icon: FaAward, color: 'bg-purple-600' },
+
+  const [statLoading, setStatLoading] = useState(false);
+  const [error, setEror] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [revenueTrendLoading, setRevenueTrendLoading] = useState(false);
+  const [revenueByCoursesLoading, setRevenueByCoursesLoading] = useState(false);
+  const [coursePerformanceLoading, setCoursePerformanceLoading] = useState(false);
+  const [studentAnalyticsLoading, setStudentAnalyticsLoading] = useState(false);
+  const [quizManagementLoading, setQuizManagementLoading] = useState(false);
+  const [topPerformersLoading, setTopPerformersLoading] = useState(false);
+  const [todayClassesLoading, setodayClassesLoading] = useState(false);
+  const [recommendationsLoading, setRecommendationsLoading] = useState(false);
+  const [courseHealthLoading, setCourseHealthLoading] = useState(false);
+  
+  // Core Statistics - Object format for StatCard
+  const dashboardStats = {
+    total_students: 890,
+    active_courses: 12,
+    monthly_revenue: 1250,
+    avg_rating: 4.6,
+  };
+
+  const statsMetricsConfig = [
+    {
+      label: 'Total Students',
+      statsKey: 'total_students',
+      icon: FaUsers,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'enrolled students',
+    },
+    {
+      label: 'Active Courses',
+      statsKey: 'active_courses',
+      icon: FaBook,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'running courses',
+    },
+    {
+      label: 'Monthly Revenue',
+      statsKey: 'monthly_revenue',
+      icon: FaDollarSign,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'total revenue',
+      formatter: (value) => `$${value.toLocaleString()}`,
+    },
+    {
+      label: 'Avg Rating',
+      statsKey: 'avg_rating',
+      icon: FaAward,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'average rating',
+      formatter: (value) => `${value}/5`,
+    },
   ];
 
   // Revenue Chart Data
@@ -103,6 +159,73 @@ const TeacherDashboard = () => {
     { id: 2, studentName: 'Jane Smith', quizName: 'Web Dev Quiz', course: 'Web Development', submitted: '2:15 PM' },
   ];
 
+  // Courses Performance Table Configuration
+  const coursesPerformanceColumns = [
+    {
+      key: 'name',
+      label: 'Course Name',
+      searchable: true,
+    },
+    {
+      key: 'enrollments',
+      label: 'Enrollments',
+      searchable: false,
+    },
+    {
+      key: 'revenue',
+      label: 'Revenue',
+      render: (value) => `$${value}`,
+    },
+    {
+      key: 'rating',
+      label: 'Rating',
+      render: (value) => (
+        <span className="inline-flex items-center">
+          <span className="text-yellow-400">★</span>
+          <span className="ml-1 font-semibold text-slate-700">{value}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'completion',
+      label: 'Completion',
+      render: (value) => (
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-16 bg-slate-200 rounded-full h-2">
+            <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${value}%` }}></div>
+          </div>
+          <span className="text-sm font-semibold text-slate-700 min-w-max">{value}%</span>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      filterable: true,
+      filterOptions: [
+        { label: 'Excellent', value: 'excellent' },
+        { label: 'Needs Improvement', value: 'needs-improvement' },
+      ],
+      render: (value) => (
+        <span
+          className={`px-3 py-1 text-xs font-semibold rounded-full ${
+            value === 'excellent'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-700'
+          }`}
+        >
+          {value === 'excellent' ? '✓ Excellent' : '⚠ Needs Work'}
+        </span>
+      ),
+    },
+  ];
+
+  const coursesTableConfig = {
+    itemsPerPage: 5,
+    searchPlaceholder: 'Search courses...',
+    emptyMessage: 'No courses found',
+  };
+
 
 
   return (
@@ -121,27 +244,13 @@ const TeacherDashboard = () => {
           </div>
         </div>
       </div>
-
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 space-y-6">
+        <ErrorComponent message={error} />
+        <SuccessComponent message={success} />
         
         {/* Core Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-          {stats.map((stat, index) => (
-            <div key={index} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-6">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-xs md:text-sm text-slate-600 font-medium">{stat.label}</p>
-                  <p className="text-2xl md:text-3xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                  <p className="text-xs text-green-600 font-medium mt-1">{stat.subtext}</p>
-                </div>
-                <div className={`${stat.color} text-white p-3 md:p-4 rounded-lg`}>
-                  <stat.icon className="text-2xl md:text-3xl" />
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <StatCard stats={dashboardStats} metricsConfig={statsMetricsConfig} loading={statLoading}/>
 
         {/* Revenue & Course Performance Section */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -220,50 +329,12 @@ const TeacherDashboard = () => {
             </div>
             <FaBook className="text-green-600 text-2xl" />
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-slate-200">
-                  <th className="text-left py-3 px-4 text-sm font-semibold text-slate-700">Course Name</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-slate-700">Enrollments</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-slate-700">Revenue</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-slate-700">Rating</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-slate-700">Completion</th>
-                  <th className="text-center py-3 px-4 text-sm font-semibold text-slate-700">Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                {coursesPerformance.map((course) => (
-                  <tr key={course.id} className="border-b border-slate-100 hover:bg-slate-50">
-                    <td className="py-4 px-4 font-medium text-gray-900">{course.name}</td>
-                    <td className="py-4 px-4 text-center text-slate-700">{course.enrollments}</td>
-                    <td className="py-4 px-4 text-center text-slate-700 font-semibold">${course.revenue}</td>
-                    <td className="py-4 px-4 text-center">
-                      <span className="inline-flex items-center">
-                        <span className="text-yellow-400">★</span>
-                        <span className="ml-1 font-semibold text-slate-700">{course.rating}</span>
-                      </span>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <div className="flex items-center justify-center">
-                        <div className="w-16 bg-slate-200 rounded-full h-2 mr-2">
-                          <div className="bg-blue-600 h-2 rounded-full" style={{ width: `${course.completion}%` }}></div>
-                        </div>
-                        <span className="text-sm font-semibold text-slate-700">{course.completion}%</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4 text-center">
-                      <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                        course.status === 'excellent' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                      }`}>
-                        {course.status === 'excellent' ? '✓ Excellent' : '⚠ Needs Work'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DataTable
+            data={coursesPerformance}
+            columns={coursesPerformanceColumns}
+            config={coursesTableConfig}
+            loading={coursePerformanceLoading}
+          />
         </div>
 
         {/* Student Management & Analytics */}
