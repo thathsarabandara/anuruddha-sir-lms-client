@@ -5,28 +5,97 @@ import {
   FaUsers, FaEye, FaClock, FaMoneyBillWave,
   FaExclamationTriangle, FaInfoCircle, FaDownload, FaFilter,
   FaSearch, FaBell, FaShieldAlt,
+  FaClipboardCheck,
 } from 'react-icons/fa';
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler } from 'chart.js';
 import PulseLoader from '../../components/common/PulseLoader';
+import StatCard from '../../components/common/StatCard';
 import { IoIosTrendingUp } from 'react-icons/io';
 import { MdLocalActivity } from 'react-icons/md';
 import { CiCircleAlert } from 'react-icons/ci';
-import { adminAPI } from '../../api/admin';
-import { toast } from 'react-toastify';
 
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler);
 
 const AdminDashboard = () => {
-  // Dummy data
-  const dummyStats = [
-    { label: 'Total Users', value: 2345, change: '+8.2%', color: 'blue', icon: FaUsers, detail: 'Across all roles' },
-    { label: 'Active This Month', value: 1450, change: '+12%', color: 'green', icon: FaEye, detail: 'User engagement' },
-    { label: 'Total Revenue', value: '$125.4K', change: '+24%', color: 'purple', icon: FaMoneyBillWave, detail: 'Lifetime revenue' },
-    { label: 'Monthly Revenue', value: '$12.3K', change: '+9.7%', color: 'yellow', icon: FaChartBar, detail: 'Last 30 days' },
-    { label: 'Total Courses', value: 156, change: '+5%', color: 'indigo', icon: FaBook, detail: '142 published' },
-    { label: 'System Health', value: '99.98%', change: 'optimal', color: 'teal', icon: FaServer, detail: 'Uptime' },
+ 
+  const adminMetricsConfig = [
+    {
+      label: 'Total Users',
+      statsKey: 'totalUsers',
+      icon: FaUsers,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'Across all roles',
+    },
+    {
+      label: 'New Students',
+      statsKey: 'students',
+      icon: FaUsers,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'new this month',
+    },
+    {
+      label: 'Active This Month',
+      statsKey: 'activeThisMonth',
+      icon: FaEye,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'User engagement',
+    },
+    {
+      label: 'Total Revenue',
+      statsKey: 'totalRevenue',
+      icon: FaMoneyBillWave,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'Lifetime revenue',
+    },
+    {
+      label: 'Monthly Revenue',
+      statsKey: 'monthlyRevenue',
+      icon: FaChartBar,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'Last 30 days',
+    },
+    {
+      label: 'Total Courses',
+      statsKey: 'totalCourses',
+      icon: FaBook,
+      bgColor: 'bg-indigo-100',
+      textColor: 'text-indigo-600',
+      description: '142 published',
+    },
+    {
+      label: 'Total Quizzes',
+      statsKey: 'totalQuizzes',
+      icon: FaClipboardCheck,
+      bgColor: 'bg-pink-100',
+      textColor: 'text-pink-600',
+      description: 'All quizzes created',
+    },
+    {
+      label: 'System Health',
+      statsKey: 'systemHealth',
+      icon: FaServer,
+      bgColor: 'bg-teal-100',
+      textColor: 'text-teal-600',
+      description: 'Uptime',
+    },
   ];
+
+  const adminStats = {
+    totalUsers: 2345,
+    students: 1890,
+    activeThisMonth: 1450,
+    totalRevenue: '$125.4K',
+    monthlyRevenue: '$12.3K',
+    totalCourses: 156,
+    totalQuizzes: 234,
+    systemHealth: '99.98%',
+  };
 
   const dummyRecentActivities = [
     { user: 'Dr. James Wilson', action: 'User account approved', type: 'approval', time: '14:30', severity: 'success' },
@@ -140,7 +209,6 @@ const AdminDashboard = () => {
     { id: 2, title: 'Copyright Issue', type: 'lesson', reporter: 'Legal Team', date: '2024-03-08', status: 'new' }
   ];
 
-  const [stats, setStats] = useState(dummyStats);
   const [recentActivities, setRecentActivities] = useState(dummyRecentActivities);
   const [pendingApprovals, setPendingApprovals] = useState(dummyPendingApprovals);
   const [systemAlerts, setSystemAlerts] = useState(dummySystemAlerts);
@@ -181,108 +249,19 @@ const AdminDashboard = () => {
     return colors[severity] || colors.info;
   };
 
-  const getColorBg = (color) => {
-    const colorMap = {
-      blue: 'bg-blue-50 border-blue-200',
-      green: 'bg-green-50 border-green-200',
-      purple: 'bg-purple-50 border-purple-200',
-      yellow: 'bg-yellow-50 border-yellow-200',
-      indigo: 'bg-indigo-50 border-indigo-200',
-      orange: 'bg-orange-50 border-orange-200',
-      teal: 'bg-teal-50 border-teal-200',
-      red: 'bg-red-50 border-red-200',
-    };
-    return colorMap[color] || 'bg-gray-50 border-gray-200';
-  };
 
-  const getColorIcon = (color) => {
-    const colorMap = {
-      blue: 'text-blue-600',
-      green: 'text-green-600',
-      purple: 'text-purple-600',
-      yellow: 'text-yellow-600',
-      indigo: 'text-indigo-600',
-      orange: 'text-orange-600',
-      teal: 'text-teal-600',
-      red: 'text-red-600',
-    };
-    return colorMap[color] || 'text-gray-600';
-  };
 
   useEffect(() => {
     fetchDashboardData();
   }, []);
 
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      
-      // Fetch all dashboard data in parallel
-      const [dashStats, systemHealth, revenueData, userStats, courseStats, activityLogs] = await Promise.all([
-        adminAPI.getDashboardStats(),
-        adminAPI.getSystemHealth(),
-        adminAPI.getRevenueAnalytics(),
-        adminAPI.getUserStatistics(),
-        adminAPI.getCourseStatistics(),
-        adminAPI.getActivityLogs(1, 8),
-      ]);
-
-      // Process stats data
-      if (dashStats.data) {
-        const processedStats = [
-          { label: 'Total Users', value: dashStats.data.total_users || 0, change: dashStats.data.user_change || '+0%', color: 'blue', icon: FaUsers, detail: 'Across all roles' },
-          { label: 'Active This Month', value: dashStats.data.active_this_month || 0, change: dashStats.data.active_change || '+0%', color: 'green', icon: FaEye, detail: 'User engagement' },
-          { label: 'Total Revenue', value: `$${(dashStats.data.total_revenue || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}`, change: dashStats.data.revenue_change || '+0%', color: 'purple', icon: FaMoneyBillWave, detail: 'Lifetime revenue' },
-          { label: 'Monthly Revenue', value: `$${(dashStats.data.monthly_revenue || 0).toLocaleString('en-US', {maximumFractionDigits: 0})}`, change: dashStats.data.monthly_change || '+0%', color: 'yellow', icon: FaChartBar, detail: 'Last 30 days' },
-          { label: 'Total Courses', value: dashStats.data.total_courses || 0, change: dashStats.data.course_change || '+0%', color: 'indigo', icon: FaBook, detail: `${dashStats.data.published_courses || 0} published` },
-          { label: 'System Health', value: `${systemHealth.data?.uptime || 99.9}%`, change: 'optimal', color: 'teal', icon: FaServer, detail: 'Uptime' },
-        ];
-        setStats(processedStats);
-      }
-
-      // Process activity logs
-      if (activityLogs.data?.activities) {
-        const processedActivities = activityLogs.data.activities.map(activity => ({
-          user: activity.user_name || activity.initiated_by || 'System',
-          action: activity.description || activity.action || 'Unknown action',
-          type: activity.activity_type || activity.type || 'system',
-          time: new Date(activity.timestamp || activity.created_at).toLocaleTimeString(),
-          severity: getActivitySeverity(activity.activity_type || activity.type),
-        }));
-        setRecentActivities(processedActivities.slice(0, 8));
-      }
-
-      // Process pending approvals
-      if (dashStats.data?.pending_approvals) {
-        setPendingApprovals(dashStats.data.pending_approvals.slice(0, 3));
-      }
-
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching dashboard data:', err);
-      toast.error('Failed to load dashboard data');
-      setError(err.message || 'Failed to load dashboard data');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getActivitySeverity = (activityType) => {
-    const severityMap = {
-      'approval': 'success',
-      'course': 'success',
-      'payment': 'success',
-      'moderation': 'warning',
-      'ban': 'warning',
-      'system': 'info',
-      'alert': 'warning',
-      'pending': 'warning',
-      'error': 'danger',
-      'success': 'success',
-      'info': 'info',
-      'warning': 'warning',
-    };
-    return severityMap[activityType?.toLowerCase()] || 'info';
+  const fetchDashboardData = () => {
+    // Use dummy data without API calls
+    setRecentActivities(dummyRecentActivities);
+    setPendingApprovals(dummyPendingApprovals);
+    setSystemAlerts(dummySystemAlerts);
+    setLoading(false);
+    setError(null);
   };
 
   // Loading state
@@ -331,33 +310,7 @@ const AdminDashboard = () => {
 
       <div className="px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Grid - Mobile First */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3 mb-8">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <div key={index} className={`group rounded-lg p-4 bg-white border border-slate-200 hover:shadow-md hover:border-slate-300 transition-all duration-300 ${getColorBg(stat.color)}`}>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <p className="text-xs sm:text-sm text-gray-600 font-medium truncate">{stat.label}</p>
-                    <p className="text-lg sm:text-xl font-bold text-gray-900 mt-2">{stat.value}</p>
-                    <p className="text-xs text-gray-500 mt-2">{stat.detail}</p>
-                  </div>
-                  <div className={`ml-2 p-2 rounded-lg bg-white bg-opacity-50 group-hover:bg-opacity-100 transition-all ${getColorIcon(stat.color)}`}>
-                    <Icon className="text-lg" />
-                  </div>
-                </div>
-                <div className="mt-3 flex items-end justify-between">
-                  <span className={`text-xs font-semibold ${stat.change.includes('+') ? 'text-green-600' : 'text-red-600'}`}>
-                    {stat.change}
-                  </span>
-                  <div className="w-12 h-1 bg-gray-200 rounded-full overflow-hidden">
-                    <div className={`h-full ${stat.change.includes('+') ? 'bg-green-500' : 'bg-red-500'}`} style={{width: `${Math.abs(parseInt(stat.change))}%`}}></div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <StatCard stats={adminStats} metricsConfig={adminMetricsConfig} />
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
