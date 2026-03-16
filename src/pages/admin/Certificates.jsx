@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { FaFilePdf, FaGraduationCap, FaTimes, FaTrophy } from 'react-icons/fa';
+import { FaFilePdf, FaGraduationCap, FaTimes, FaTrophy, FaChartLine } from 'react-icons/fa';
 import PulseLoader from '../../components/common/PulseLoader';
+import StatCard from '../../components/common/StatCard';
 
 const AdminCertificates = () => {
   const [filterType, setFilterType] = useState('all');
@@ -49,28 +50,47 @@ const AdminCertificates = () => {
     },
   ];
 
-  const achievements = [
-    { name: 'Top Performer', count: 45, icon: FaTrophy, color: 'bg-yellow-100 text-yellow-700' },
-    { name: 'Perfect Attendance', count: 78, icon: '⭐', color: 'bg-blue-100 text-blue-700' },
-    { name: 'Quiz Master', count: 34, icon: FaFilePdf, color: 'bg-green-100 text-green-700' },
-    { name: 'Fast Learner', count: 56, icon: '⚡', color: 'bg-purple-100 text-purple-700' },
-  ];
-
-  const stats = [
-    { label: 'Total Issued', value: '1,234', icon: FaGraduationCap, color: 'bg-blue-100 text-blue-700' },
-    { label: 'This Month', value: '89', icon: '📈', color: 'bg-green-100 text-green-700' },
-    { label: 'Pending', value: '12', icon: '⏳', color: 'bg-orange-100 text-orange-700' },
-    { label: 'Achievements', value: '456', icon: FaTrophy, color: 'bg-yellow-100 text-yellow-700' },
-  ];
-
-  const getCertTypeColor = (type) => {
-    const colors = {
-      completion: 'bg-green-100 text-green-700',
-      achievement: 'bg-yellow-100 text-yellow-700',
-      participation: 'bg-blue-100 text-blue-700',
-    };
-    return colors[type] || colors.participation;
+  const statsData = {
+    total_issued: 1234,
+    this_month: 89,
+    pending: 12,
+    achievements: 456,
   };
+
+  const metricsConfig = [
+    {
+      label: 'Total Issued',
+      statsKey: 'total_issued',
+      icon: FaGraduationCap,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'certificates overall',
+    },
+    {
+      label: 'This Month',
+      statsKey: 'this_month',
+      icon: FaChartLine,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'recent issuances',
+    },
+    {
+      label: 'Pending',
+      statsKey: 'pending',
+      icon: '⏳',
+      bgColor: 'bg-orange-100',
+      textColor: 'text-orange-600',
+      description: 'awaiting approval',
+    },
+    {
+      label: 'Achievements',
+      statsKey: 'achievements',
+      icon: FaTrophy,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'badge badges awarded',
+    },
+  ];
 
   const filteredCertificates = certificates.filter((cert) => {
     return filterType === 'all' || cert.type === filterType;
@@ -88,34 +108,7 @@ const AdminCertificates = () => {
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <div key={index} className="card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              </div>
-              <div className={`text-3xl ${stat.color} p-3 rounded-lg`}>{stat.icon}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Achievements Summary */}
-      <div className="card mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Achievement Badges Issued</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {achievements.map((achievement, index) => (
-            <div key={index} className={`p-4 rounded-lg ${achievement.color}`}>
-              <div className="text-3xl mb-2">{achievement.icon}</div>
-              <p className="font-bold text-gray-900">{achievement.name}</p>
-              <p className="text-2xl font-bold">{achievement.count}</p>
-            </div>
-          ))}
-        </div>
-      </div>
+      <StatCard stats={statsData} metricsConfig={metricsConfig} />
 
       {/* Filter */}
       <div className="card mb-6">
