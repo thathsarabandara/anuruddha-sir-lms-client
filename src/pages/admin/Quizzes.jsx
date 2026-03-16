@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { FaBook, FaCalendar,  FaChartBar, FaCheck, FaCheckCircle, FaFilePdf, FaTimes } from 'react-icons/fa';
+import { FaBook, FaCalendar,  FaChartBar, FaCheck, FaCheckCircle, FaFilePdf, FaTimes, FaHourglassHalf } from 'react-icons/fa';
 import PulseLoader from '../../components/common/PulseLoader';
+import StatCard from '../../components/common/StatCard';
 
 const AdminQuizzes = () => {
   const [filterStatus, setFilterStatus] = useState('all');
@@ -69,6 +70,41 @@ const AdminQuizzes = () => {
     { label: 'Total Submissions', value: '4,567', icon: FaChartBar, color: 'bg-purple-100 text-purple-700' },
   ];
 
+  const quizzesMetricsConfig = [
+    {
+      label: 'Total Quizzes',
+      statsKey: 'total',
+      icon: FaFilePdf,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'All quizzes in system',
+    },
+    {
+      label: 'Published',
+      statsKey: 'published',
+      icon: FaCheckCircle,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Active quizzes',
+    },
+    {
+      label: 'Pending Review',
+      statsKey: 'pending',
+      icon: FaHourglassHalf,
+      bgColor: 'bg-orange-100',
+      textColor: 'text-orange-600',
+      description: 'Awaiting approval',
+    },
+    {
+      label: 'Total Submissions',
+      statsKey: 'submissions',
+      icon: FaChartBar,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'All attempts',
+    },
+  ];
+
   const getStatusColor = (status) => {
     const colors = {
       published: 'bg-green-100 text-green-700',
@@ -96,19 +132,15 @@ const AdminQuizzes = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <div key={index} className="card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              </div>
-              <div className={`text-3xl ${stat.color} p-3 rounded-lg`}>{stat.icon}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <StatCard 
+        stats={{
+          total: '156',
+          published: '142',
+          pending: '8',
+          submissions: '4,567',
+        }}
+        metricsConfig={quizzesMetricsConfig}
+      />
 
       {/* Filters */}
       <div className="card mb-6">
