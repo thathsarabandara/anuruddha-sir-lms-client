@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {  FaCheck, FaGraduationCap, FaTrophy, FaSearch, FaClock, FaClipboardCheck, FaExclamationCircle, FaCheckCircle, FaHourglassHalf, FaTimes, FaCalendarTimes, FaFire, FaChartBar } from 'react-icons/fa';
+import {  FaCheck, FaGraduationCap, FaTrophy, FaSearch, FaClock, FaClipboardCheck, FaExclamationCircle, FaCheckCircle, FaHourglassHalf, FaTimes, FaCalendarTimes, FaFire, FaChartBar, FaEye } from 'react-icons/fa';
 import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 // Removed: API and studentQuizAPI imports - using dummy data instead
 
 const StudentQuizzes = () => {
