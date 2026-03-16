@@ -100,7 +100,7 @@ const AdminManagement = () => {
     {
       label: 'Inactive',
       statsKey: 'inactive',
-      icon: '⏸️',
+      icon: FaTimes,
       bgColor: 'bg-gray-100',
       textColor: 'text-gray-600',
       description: 'not active',
