@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FaFilePdf, FaGraduationCap, FaTimes, FaTrophy, FaChartLine, FaChartArea, FaStar, FaEye } from 'react-icons/fa';
-import PulseLoader from '../../components/common/PulseLoader';
+
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 
