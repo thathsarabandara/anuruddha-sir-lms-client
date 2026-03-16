@@ -3,6 +3,7 @@ import { Pie, Bar, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler } from 'chart.js';
 import { RiEnglishInput } from 'react-icons/ri';
 import { MdOutlineLanguage } from 'react-icons/md';
+import StatCard from '../../components/common/StatCard';
 import DashStat from '../../components/student/DashStat';
 import ProgressStat from '../../components/student/PorgressStat';
 import QuizCard from '../../components/student/QuizCard';
@@ -80,36 +81,47 @@ const StudentDashboard = () => {
     }
   ];
 
-  const overallStats = [
+  const studentMetricsConfig = [
     {
       label: 'Courses Enrolled',
-      value: '7',
-      subtext: 'Total courses enrolled',
+      statsKey: 'coursesEnrolled',
       icon: FaChartLine,
-      color: 'bg-gradient-to-br from-blue-50 to-blue-100'
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'Total courses enrolled',
     },
     {
       label: 'Quizzes Completed',
-      value: '18',
-      subtext: 'Total quizzes completed',
+      statsKey: 'quizzesCompleted',
       icon: FaFire,
-      color: 'bg-gradient-to-br from-orange-50 to-orange-100'
+      bgColor: 'bg-orange-100',
+      textColor: 'text-orange-600',
+      description: 'Total quizzes completed',
     },
     {
       label: 'Certificates Earned',
-      value: '34',
-      subtext: 'Total certificates earned',
+      statsKey: 'certificatesEarned',
       icon: FaCheckCircle,
-      color: 'bg-gradient-to-br from-green-50 to-green-100'
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Total certificates earned',
     },
     {
       label: 'Avg Quiz Score',
-      value: '76%',
-      subtext: 'Across all assessments',
+      statsKey: 'avgQuizScore',
       icon: FaTrophy,
-      color: 'bg-gradient-to-br from-purple-50 to-purple-100'
-    }
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'Across all assessments',
+    },
   ];
+
+  const studentStats = {
+    coursesEnrolled: 10,
+    quizzesCompleted: 15,
+    certificatesEarned: 5,
+    avgQuizScore: 85,
+  };
 
   const upcomingClasses = [
     { subject: 'Mathematics', time: 'Today, 4:00 PM', status: 'upcoming' },
@@ -563,11 +575,7 @@ const StudentDashboard = () => {
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Key Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-          {overallStats.map((stat, index) => (
-            <DashStat  key={index} title={stat.label} value={stat.value} icon={stat.icon} colorClass={stat.color} subtext={stat.subtext} />
-          ))}
-        </div>
+        <StatCard stats={studentStats} metricsConfig={studentMetricsConfig} />
 
         {/* Subject Progress Cards */}
         <div className="mb-10">
