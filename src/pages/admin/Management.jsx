@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { FaBook, FaCalendar,  FaChartBar, FaCheckCircle, FaFilePdf, FaGraduationCap, FaTimes, FaUserGraduate } from 'react-icons/fa';
+import { FaBook, FaCalendar,  FaChartBar, FaCheckCircle, FaFilePdf, FaGraduationCap, FaTimes, FaUserGraduate, FaStar } from 'react-icons/fa';
 import PulseLoader from '../../components/common/PulseLoader';
+import StatCard from '../../components/common/StatCard';
 
 const AdminManagement = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -64,11 +65,46 @@ const AdminManagement = () => {
     { key: 'settings', label: 'System Settings', icon: '⚙️' },
   ];
 
-  const stats = [
-    { label: 'Total Admins', value: '8', icon: '👤', color: 'bg-blue-100 text-blue-700' },
-    { label: 'Super Admins', value: '2', icon: '⭐', color: 'bg-yellow-100 text-yellow-700' },
-    { label: 'Active Admins', value: '6', icon: FaCheckCircle, color: 'bg-green-100 text-green-700' },
-    { label: 'Inactive', value: '2', icon: '⏸️', color: 'bg-gray-100 text-gray-700' },
+  const statsData = {
+    total_admins: 8,
+    super_admins: 2,
+    active_admins: 6,
+    inactive: 2,
+  };
+
+  const metricsConfig = [
+    {
+      label: 'Total Admins',
+      statsKey: 'total_admins',
+      icon: FaUserGraduate,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'all administrators',
+    },
+    {
+      label: 'Super Admins',
+      statsKey: 'super_admins',
+      icon: FaStar,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'full access',
+    },
+    {
+      label: 'Active Admins',
+      statsKey: 'active_admins',
+      icon: FaCheckCircle,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'currently active',
+    },
+    {
+      label: 'Inactive',
+      statsKey: 'inactive',
+      icon: '⏸️',
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-600',
+      description: 'not active',
+    },
   ];
 
   const getRoleBadge = (role) => {
@@ -99,20 +135,7 @@ const AdminManagement = () => {
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <div key={index} className="card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              </div>
-              <div className={`text-3xl ${stat.color} p-3 rounded-lg`}>{stat.icon}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <StatCard stats={statsData} metricsConfig={metricsConfig} />
 
       {/* Admins Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
