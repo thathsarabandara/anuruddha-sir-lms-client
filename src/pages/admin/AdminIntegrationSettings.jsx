@@ -7,7 +7,7 @@ import {
   LoadingSpinner,
   IntegrationStatusCard,
 } from '../components/IntegrationComponents';
-import PulseLoader from '../../components/common/PulseLoader';
+
 
 const AdminIntegrationSettings = () => {
   const navigate = useNavigate();
