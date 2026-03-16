@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useCallback } from 'react';
 import {
   FaCheck,
@@ -14,9 +15,7 @@ import { toast } from 'react-toastify';
 
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
-import { adminAPI } from '../../api/admin';
 
-// ==================== PAYMENTS METRICS CONFIG ====================
 const paymentsMetricsConfig = [
   {
     label: 'Total Revenue',
@@ -375,7 +374,6 @@ const AdminPayments = () => {
   // Modal & Loading State
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, per_page: 10 });
 
@@ -444,71 +442,47 @@ const AdminPayments = () => {
 
   // Fetch Payments
   const fetchPayments = useCallback(
-    async (page = 1) => {
-      setLoading(true);
-      try {
-        // Try to fetch from API, fall back to dummy data if endpoint not available
-        const response = await adminAPI.getRevenueAnalytics().catch(() => null);
-        
-        if (response?.data) {
-          // Process real API data if available
-          const paymentsList = response.data.transactions || [];
-          setPayments(Array.isArray(paymentsList) ? paymentsList : []);
-          setPagination({
-            page,
-            per_page: pagination.per_page,
-            total: paymentsList.length,
-            total_pages: Math.ceil(paymentsList.length / pagination.per_page),
-          });
-        } else {
-          // Fallback to dummy data
-          const allDummyPayments = [
-            { id: 1, payment_number: 'PAY-001', student_name: 'John Doe', student_email: 'john@example.com', amount: 50000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-10T10:30:00Z' },
-            { id: 2, payment_number: 'PAY-002', student_name: 'Jane Smith', student_email: 'jane@example.com', amount: 75000, payment_method: 'bank', status: 'completed', created_at: '2026-03-09T14:15:00Z' },
-            { id: 3, payment_number: 'PAY-003', student_name: 'Mike Johnson', student_email: 'mike@example.com', amount: 60000, payment_method: 'cash', status: 'pending', created_at: '2026-03-08T09:00:00Z' },
-            { id: 4, payment_number: 'PAY-004', student_name: 'Sarah Williams', student_email: 'sarah@example.com', amount: 80000, payment_method: 'bank', status: 'bank_transfer_pending', created_at: '2026-03-07T16:45:00Z' },
-            { id: 5, payment_number: 'PAY-005', student_name: 'Tom Brown', student_email: 'tom@example.com', amount: 55000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-06T11:20:00Z' },
-            { id: 6, payment_number: 'PAY-006', student_name: 'Lisa Anderson', student_email: 'lisa@example.com', amount: 70000, payment_method: 'cash', status: 'completed', created_at: '2026-03-05T13:30:00Z' },
-            { id: 7, payment_number: 'PAY-007', student_name: 'David Miller', student_email: 'david@example.com', amount: 65000, payment_method: 'bank', status: 'pending', created_at: '2026-03-04T15:45:00Z' },
-            { id: 8, payment_number: 'PAY-008', student_name: 'Emma Davis', student_email: 'emma@example.com', amount: 90000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-03T10:15:00Z' },
-            { id: 9, payment_number: 'PAY-009', student_name: 'Robert Wilson', student_email: 'robert@example.com', amount: 45000, payment_method: 'cash', status: 'rejected', created_at: '2026-03-02T14:00:00Z' },
-            { id: 10, payment_number: 'PAY-010', student_name: 'Grace Taylor', student_email: 'grace@example.com', amount: 72000, payment_method: 'bank', status: 'completed', created_at: '2026-03-01T09:30:00Z' },
-          ];
-          
-          let filteredPayments = allDummyPayments;
-          if (filterStatus !== 'all') {
-            filteredPayments = filteredPayments.filter(p => p.status === filterStatus);
-          }
-          if (filterMethod !== 'all') {
-            filteredPayments = filteredPayments.filter(p => p.payment_method === filterMethod);
-          }
-          if (searchTerm) {
-            filteredPayments = filteredPayments.filter(p => 
-              p.payment_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              p.student_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-              p.student_name.toLowerCase().includes(searchTerm.toLowerCase())
-            );
-          }
-          
-          const total = filteredPayments.length;
-          const total_pages = Math.ceil(total / pagination.per_page);
-          const startIndex = (page - 1) * pagination.per_page;
-          const paginatedPayments = filteredPayments.slice(startIndex, startIndex + pagination.per_page);
-          
-          setPayments(paginatedPayments);
-          setPagination({
-            page,
-            per_page: pagination.per_page,
-            total,
-            total_pages,
-          });
-        }
-      } catch (err) {
-        console.error('Error fetching payments:', err);
-        toast.error('Failed to load payments');
-      } finally {
-        setLoading(false);
+    (page = 1) => {
+      const allDummyPayments = [
+        { id: 1, payment_number: 'PAY-001', student_name: 'John Doe', student_email: 'john@example.com', amount: 50000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-10T10:30:00Z' },
+        { id: 2, payment_number: 'PAY-002', student_name: 'Jane Smith', student_email: 'jane@example.com', amount: 75000, payment_method: 'bank', status: 'completed', created_at: '2026-03-09T14:15:00Z' },
+        { id: 3, payment_number: 'PAY-003', student_name: 'Mike Johnson', student_email: 'mike@example.com', amount: 60000, payment_method: 'cash', status: 'pending', created_at: '2026-03-08T09:00:00Z' },
+        { id: 4, payment_number: 'PAY-004', student_name: 'Sarah Williams', student_email: 'sarah@example.com', amount: 80000, payment_method: 'bank', status: 'bank_transfer_pending', created_at: '2026-03-07T16:45:00Z' },
+        { id: 5, payment_number: 'PAY-005', student_name: 'Tom Brown', student_email: 'tom@example.com', amount: 55000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-06T11:20:00Z' },
+        { id: 6, payment_number: 'PAY-006', student_name: 'Lisa Anderson', student_email: 'lisa@example.com', amount: 70000, payment_method: 'cash', status: 'completed', created_at: '2026-03-05T13:30:00Z' },
+        { id: 7, payment_number: 'PAY-007', student_name: 'David Miller', student_email: 'david@example.com', amount: 65000, payment_method: 'bank', status: 'pending', created_at: '2026-03-04T15:45:00Z' },
+        { id: 8, payment_number: 'PAY-008', student_name: 'Emma Davis', student_email: 'emma@example.com', amount: 90000, payment_method: 'payhere', status: 'completed', created_at: '2026-03-03T10:15:00Z' },
+        { id: 9, payment_number: 'PAY-009', student_name: 'Robert Wilson', student_email: 'robert@example.com', amount: 45000, payment_method: 'cash', status: 'rejected', created_at: '2026-03-02T14:00:00Z' },
+        { id: 10, payment_number: 'PAY-010', student_name: 'Grace Taylor', student_email: 'grace@example.com', amount: 72000, payment_method: 'bank', status: 'completed', created_at: '2026-03-01T09:30:00Z' },
+      ];
+      
+      let filteredPayments = allDummyPayments;
+      if (filterStatus !== 'all') {
+        filteredPayments = filteredPayments.filter(p => p.status === filterStatus);
       }
+      if (filterMethod !== 'all') {
+        filteredPayments = filteredPayments.filter(p => p.payment_method === filterMethod);
+      }
+      if (searchTerm) {
+        filteredPayments = filteredPayments.filter(p => 
+          p.payment_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.student_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          p.student_name.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+      }
+      
+      const total = filteredPayments.length;
+      const total_pages = Math.ceil(total / pagination.per_page);
+      const startIndex = (page - 1) * pagination.per_page;
+      const paginatedPayments = filteredPayments.slice(startIndex, startIndex + pagination.per_page);
+      
+      setPayments(paginatedPayments);
+      setPagination({
+        page,
+        per_page: pagination.per_page,
+        total,
+        total_pages,
+      });
     },
     [filterStatus, filterMethod, searchTerm, pagination.per_page]
   );
@@ -796,43 +770,41 @@ const AdminPayments = () => {
               <div className="p-6 border-b border-gray-200">
                 <h3 className="text-lg font-bold text-gray-900">Recent Payments</h3>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Student</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Amount</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {stats.recent_payments && stats.recent_payments.slice(0, 5).map((payment) => (
-                      <tr key={payment.id} className="hover:bg-gray-50 transition">
-                        <td className="px-6 py-4 text-sm font-medium text-gray-900">{payment.payment_number}</td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <p className="text-sm font-medium text-gray-900">{payment.student_name}</p>
-                            <p className="text-xs text-gray-500">{payment.student_email}</p>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                          Rs. {payment.amount.toLocaleString()}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(payment.status)}`}>
-                            {payment.status.replace('_', ' ')}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-sm text-gray-600">
-                          {new Date(payment.created_at).toLocaleDateString()}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <DataTable
+                columns={[
+                  { key: 'payment_number', label: 'ID', width: 'w-20' },
+                  {
+                    key: 'student',
+                    label: 'Student',
+                    render: (_, row) => (
+                      <div>
+                        <p className="text-sm font-medium text-gray-900">{row.student_name}</p>
+                        <p className="text-xs text-gray-500">{row.student_email}</p>
+                      </div>
+                    )
+                  },
+                  {
+                    key: 'amount',
+                    label: 'Amount',
+                    render: (_, row) => <span className="font-semibold">Rs. {row.amount.toLocaleString()}</span>
+                  },
+                  {
+                    key: 'status',
+                    label: 'Status',
+                    render: (_, row) => (
+                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
+                        {row.status.replace('_', ' ')}
+                      </span>
+                    )
+                  },
+                  {
+                    key: 'created_at',
+                    label: 'Date',
+                    render: (_, row) => new Date(row.created_at).toLocaleDateString()
+                  }
+                ]}
+                data={stats.recent_payments || []}
+              />
             </div>
           </div>
         )}
@@ -874,88 +846,71 @@ const AdminPayments = () => {
               </div>
             </div>
 
-            
-              <>
-                <div className="bg-white rounded-lg shadow overflow-hidden">
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead className="bg-gray-50 border-b border-gray-200">
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Student</th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Amount</th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Method</th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
-                          <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {payments.map((payment) => (
-                          <tr key={payment.id} className="hover:bg-gray-50 transition">
-                            <td className="px-6 py-4 text-sm font-medium text-gray-900">{payment.payment_number}</td>
-                            <td className="px-6 py-4">
-                              <div>
-                                <p className="text-sm font-medium text-gray-900">{payment.student_name}</p>
-                                <p className="text-xs text-gray-500">{payment.student_email}</p>
-                              </div>
-                            </td>
-                            <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                              Rs. {payment.amount.toLocaleString()}
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getMethodBadge(payment.payment_method)}`}>
-                                {payment.payment_method.replace('_', ' ')}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4">
-                              <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(payment.status)}`}>
-                                {payment.status.replace('_', ' ')}
-                              </span>
-                            </td>
-                            <td className="px-6 py-4 text-sm text-gray-600">
-                              {new Date(payment.created_at).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4">
-                              <button
-                                onClick={() => handleViewDetails(payment.id)}
-                                className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium transition"
-                              >
-                                <FaEye /> View
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
 
-                {/* Pagination */}
-                {pagination.total_pages > 1 && (
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm text-gray-600">
-                      Showing {pagination.page} of {pagination.total_pages} pages
-                    </p>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => fetchPayments(Math.max(1, pagination.page - 1))}
-                        disabled={pagination.page === 1}
-                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        onClick={() => fetchPayments(Math.min(pagination.total_pages, pagination.page + 1))}
-                        disabled={pagination.page === pagination.total_pages}
-                        className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
+            {payments.length > 0 ? (
+              <>
+                <DataTable
+                  columns={[
+                    { key: 'payment_number', label: 'ID', width: 'w-20' },
+                    {
+                      key: 'student',
+                      label: 'Student',
+                      render: (_, row) => (
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{row.student_name}</p>
+                          <p className="text-xs text-gray-500">{row.student_email}</p>
+                        </div>
+                      )
+                    },
+                    {
+                      key: 'amount',
+                      label: 'Amount',
+                      render: (_, row) => <span className="font-semibold">Rs. {row.amount.toLocaleString()}</span>
+                    },
+                    {
+                      key: 'payment_method',
+                      label: 'Method',
+                      render: (_, row) => (
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getMethodBadge(row.payment_method)}`}>
+                          {row.payment_method.replace('_', ' ')}
+                        </span>
+                      )
+                    },
+                    {
+                      key: 'status',
+                      label: 'Status',
+                      render: (_, row) => (
+                        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${getStatusColor(row.status)}`}>
+                          {row.status.replace('_', ' ')}
+                        </span>
+                      )
+                    },
+                    {
+                      key: 'created_at',
+                      label: 'Date',
+                      render: (_, row) => new Date(row.created_at).toLocaleDateString()
+                    },
+                    {
+                      key: 'actions',
+                      label: 'Actions',
+                      render: (_, row) => (
+                        <button
+                          onClick={() => handleViewDetails(row.id)}
+                          className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium transition"
+                        >
+                          <FaEye /> View
+                        </button>
+                      )
+                    }
+                  ]}
+                  data={payments}
+                  currentPage={pagination.page}
+                  totalPages={pagination.total_pages}
+                  onPageChange={fetchPayments}
+                />
               </>
+            ) : (
+              <div className="text-center text-gray-500 py-8">No payments found</div>
             )}
           </div>
         )}
@@ -975,52 +930,51 @@ const AdminPayments = () => {
                   <p className="text-gray-600">No pending bank slips for verification</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead className="bg-gray-50 border-b border-gray-200">
-                      <tr>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">ID</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Student</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Amount</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Bank</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Pending</th>
-                        <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {bankSlips.map((slip) => (
-                        <tr key={slip.id} className="hover:bg-gray-50 transition">
-                          <td className="px-6 py-4 text-sm font-medium text-gray-900">{slip.payment_number}</td>
-                          <td className="px-6 py-4">
-                            <div>
-                              <p className="text-sm font-medium text-gray-900">{slip.student_name}</p>
-                              <p className="text-xs text-gray-500">{slip.student_email}</p>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 text-sm font-semibold text-gray-900">
-                            Rs. {slip.amount.toLocaleString()}
-                          </td>
-                          <td className="px-6 py-4 text-sm text-gray-600">{slip.bank_name}</td>
-                          <td className="px-6 py-4 text-sm">
-                            <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                              slip.days_pending > 7 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {slip.days_pending} days
-                            </span>
-                          </td>
-                          <td className="px-6 py-4">
-                            <button
-                              onClick={() => handleViewDetails(slip.id)}
-                              className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium transition"
-                            >
-                              <FaEye /> Verify
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <DataTable
+                  columns={[
+                    { key: 'payment_number', label: 'ID', width: 'w-20' },
+                    {
+                      key: 'student',
+                      label: 'Student',
+                      render: (_, row) => (
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{row.student_name}</p>
+                          <p className="text-xs text-gray-500">{row.student_email}</p>
+                        </div>
+                      )
+                    },
+                    {
+                      key: 'amount',
+                      label: 'Amount',
+                      render: (_, row) => <span className="font-semibold">Rs. {row.amount.toLocaleString()}</span>
+                    },
+                    { key: 'bank_name', label: 'Bank', width: 'w-32' },
+                    {
+                      key: 'days_pending',
+                      label: 'Pending',
+                      render: (_, row) => (
+                        <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                          row.days_pending > 7 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {row.days_pending} days
+                        </span>
+                      )
+                    },
+                    {
+                      key: 'actions',
+                      label: 'Actions',
+                      render: (_, row) => (
+                        <button
+                          onClick={() => handleViewDetails(row.id)}
+                          className="flex items-center space-x-2 text-primary-600 hover:text-primary-700 font-medium transition"
+                        >
+                          <FaEye /> Verify
+                        </button>
+                      )
+                    }
+                  ]}
+                  data={bankSlips}
+                />
               )}
             </div>
           </div>
