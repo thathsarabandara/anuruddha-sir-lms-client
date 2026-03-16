@@ -1,4 +1,5 @@
-import { FaBook, FaLightbulb } from 'react-icons/fa';
+import { FaBook, FaLightbulb, FaDollarSign, FaChartLine, FaClipboardCheck, FaCoins } from 'react-icons/fa';
+import StatCard from '../../components/common/StatCard';
 
 const TeacherRevenue = () => {
   const revenueStats = {
@@ -34,6 +35,52 @@ const TeacherRevenue = () => {
 
   const maxRevenue = Math.max(...monthlyData.map((m) => m.revenue));
 
+  // Revenue stats for StatCard
+  const revenueMetricsConfig = [
+    {
+      label: 'This Month',
+      statsKey: 'thisMonth',
+      icon: FaChartLine,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'current month earnings',
+      formatter: (value) => `Rs. ${(value / 1000).toFixed(0)}K`,
+    },
+    {
+      label: 'Total Revenue',
+      statsKey: 'total',
+      icon: FaDollarSign,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'all time earnings',
+      formatter: (value) => `Rs. ${(value / 1000000).toFixed(2)}M`,
+    },
+    {
+      label: 'Pending Verification',
+      statsKey: 'pending',
+      icon: FaClipboardCheck,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: '2 payments pending',
+      formatter: (value) => `Rs. ${(value / 1000).toFixed(0)}K`,
+    },
+    {
+      label: 'Avg per Student',
+      statsKey: 'avgPerStudent',
+      icon: FaCoins,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: '323 total students',
+      formatter: (value) => `Rs. ${value.toFixed(1)}K`,
+    },
+  ];
+
+  // Add calculated value for average per student
+  const revenueStatsWithAvg = {
+    ...revenueStats,
+    avgPerStudent: (revenueStats.total / 323 / 1000),
+  };
+
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -42,30 +89,7 @@ const TeacherRevenue = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card bg-gradient-to-br from-green-400 to-green-600 text-white">
-          <div className="text-sm opacity-90 mb-1">This Month</div>
-          <div className="text-3xl font-bold">Rs. {(revenueStats.thisMonth / 1000).toFixed(0)}K</div>
-          <div className="text-sm opacity-90 mt-2">
-            ↑ {(((revenueStats.thisMonth - revenueStats.lastMonth) / revenueStats.lastMonth) * 100).toFixed(1)}% from last month
-          </div>
-        </div>
-        <div className="card bg-gradient-to-br from-blue-400 to-blue-600 text-white">
-          <div className="text-sm opacity-90 mb-1">Total Revenue</div>
-          <div className="text-3xl font-bold">Rs. {(revenueStats.total / 1000000).toFixed(2)}M</div>
-          <div className="text-sm opacity-90 mt-2">All time earnings</div>
-        </div>
-        <div className="card bg-gradient-to-br from-yellow-400 to-yellow-600 text-white">
-          <div className="text-sm opacity-90 mb-1">Pending Verification</div>
-          <div className="text-3xl font-bold">Rs. {(revenueStats.pending / 1000).toFixed(0)}K</div>
-          <div className="text-sm opacity-90 mt-2">2 payments pending</div>
-        </div>
-        <div className="card bg-gradient-to-br from-purple-400 to-purple-600 text-white">
-          <div className="text-sm opacity-90 mb-1">Avg per Student</div>
-          <div className="text-3xl font-bold">Rs. {(revenueStats.total / 323 / 1000).toFixed(1)}K</div>
-          <div className="text-sm opacity-90 mt-2">323 total students</div>
-        </div>
-      </div>
+      <StatCard stats={revenueStatsWithAvg} metricsConfig={revenueMetricsConfig} />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Main Content */}
