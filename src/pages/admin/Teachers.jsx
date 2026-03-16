@@ -3,6 +3,7 @@ import { FaBook, FaCheck, FaCheckCircle, FaExclamationTriangle, FaGraduationCap,
 import { CgSandClock } from 'react-icons/cg';
 import { BiLoader } from 'react-icons/bi';
 import PulseLoader from '../../components/common/PulseLoader';
+import StatCard from '../../components/common/StatCard';
 import { teacherAPI } from '../../api/teacher';
 
 const AdminTeachers = () => {
@@ -381,6 +382,41 @@ const AdminTeachers = () => {
     { label: 'Banned Teachers', value: stats?.banned_teachers || 0, icon: FaExclamationTriangle, color: 'bg-red-100 text-red-700', borderColor: 'border-red-500' },
   ];
 
+  const teachersMetricsConfig = [
+    {
+      label: 'Total Teachers',
+      statsKey: 'total',
+      icon: FaBook,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'All registered teachers',
+    },
+    {
+      label: 'Active Teachers',
+      statsKey: 'active',
+      icon: FaCheckCircle,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Currently teaching',
+    },
+    {
+      label: 'Pending Teachers',
+      statsKey: 'pending',
+      icon: CgSandClock,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'Awaiting verification',
+    },
+    {
+      label: 'Banned Teachers',
+      statsKey: 'banned',
+      icon: FaExclamationTriangle,
+      bgColor: 'bg-red-100',
+      textColor: 'text-red-600',
+      description: 'Suspended accounts',
+    },
+  ];
+
   // Loading state
   if (loading) {
     return <PulseLoader />;
@@ -424,21 +460,15 @@ const AdminTeachers = () => {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {statsDisplay.map((stat, index) => (
-          <div key={index} className={`card border-l-4 ${stat.borderColor}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-              </div>
-              <div className={`text-3xl ${stat.color} p-3 rounded-lg`}>
-                <stat.icon />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <StatCard 
+        stats={{
+          total: (stats?.total_teachers || 0).toString(),
+          active: (stats?.active_teachers || 0).toString(),
+          pending: (stats?.pending_teachers || 0).toString(),
+          banned: (stats?.banned_teachers || 0).toString(),
+        }}
+        metricsConfig={teachersMetricsConfig}
+      />
 
       {/* Filters */}
       <div className="card mb-6">
