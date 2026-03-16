@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { FaCheck, FaClock, FaCreditCard, FaExclamationTriangle, FaGraduationCap, FaDollarSign, FaBook, FaCalendar } from 'react-icons/fa';
 import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 
 const StudentPayments = () => {
   const [selectedTab, setSelectedTab] = useState('history');
+  const [searchTerm, setSearchTerm] = useState('');
 
   const paymentsMetricsConfig = [
     {
@@ -181,55 +183,85 @@ const StudentPayments = () => {
         </button>
       </div>
 
-      {/* Payment History */}
+      {/* Payment History with DataTable */}
       {selectedTab === 'history' && (
-        <div className="space-y-4">
-          {paymentHistory.map((payment) => (
-            <div key={payment.id} className="card">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-4 flex-1">
-                  <div className="bg-green-100 text-green-600 p-3 rounded-lg">
-                    <FaCheck className="text-2xl" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="text-lg font-bold text-gray-900">{payment.course}</h3>
-                      <span className="px-2 py-1 bg-green-100 text-green-600 text-xs font-semibold rounded">
-                        PAID
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <div className="text-gray-600">Invoice No.</div>
-                        <div className="font-medium text-gray-900">{payment.invoiceNo}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-600">Amount</div>
-                        <div className="font-medium text-gray-900">Rs. {payment.amount.toLocaleString()}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-600">Date</div>
-                        <div className="font-medium text-gray-900">{payment.date}</div>
-                      </div>
-                      <div>
-                        <div className="text-gray-600">Method</div>
-                        <div className="font-medium text-gray-900">{payment.method}</div>
-                      </div>
-                    </div>
-                    <div className="text-xs text-gray-600 mt-2">
-                      Transaction ID: {payment.transactionId}
-                    </div>
-                  </div>
-                </div>
-                <div className="flex space-x-2">
-                  <button className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-                    Download Receipt
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <DataTable
+          data={paymentHistory}
+          columns={[
+            {
+              key: 'invoiceNo',
+              label: 'Invoice No.',
+              searchable: true,
+              render: (value) => <p className="text-sm font-medium text-gray-900">{value}</p>,
+            },
+            {
+              key: 'course',
+              label: 'Course',
+              searchable: true,
+              render: (value) => <p className="text-sm text-gray-900">{value}</p>,
+            },
+            {
+              key: 'amount',
+              label: 'Amount',
+              render: (value) => <p className="text-sm font-medium text-gray-900">Rs. {value.toLocaleString()}</p>,
+            },
+            {
+              key: 'date',
+              label: 'Date',
+              render: (value) => <p className="text-sm text-gray-600">{value}</p>,
+            },
+            {
+              key: 'status',
+              label: 'Status',
+              filterable: true,
+              filterOptions: [
+                { label: 'All', value: 'all' },
+                { label: 'Paid', value: 'paid' },
+                { label: 'Pending', value: 'pending' },
+              ],
+              render: (value) => (
+                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${value === 'paid' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
+                  {value.toUpperCase()}
+                </span>
+              ),
+            },
+            {
+              key: 'method',
+              label: 'Payment Method',
+              render: (value) => <p className="text-sm text-gray-600">{value}</p>,
+            },
+            {
+              key: 'transactionId',
+              label: 'Transaction ID',
+              render: (value) => <p className="text-xs text-gray-600">{value}</p>,
+            },
+            {
+              key: 'actions',
+              label: 'Actions',
+              render: (_, payment) => (
+                <button onClick={() => console.log('Download receipt:', payment.invoiceNo)} className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs transition whitespace-nowrap">
+                  Download
+                </button>
+              ),
+            },
+          ]}
+          config={{
+            itemsPerPage: 8,
+            searchPlaceholder: 'Search by invoice or course...',
+            hideSearch: false,
+            emptyMessage: 'No payment history found',
+            searchValue: searchTerm,
+            onSearchChange: setSearchTerm,
+            statusFilterOptions: [
+              { label: 'All', value: 'all' },
+              { label: 'Paid', value: 'paid' },
+              { label: 'Pending', value: 'pending' },
+            ],
+            statusFilterValue: 'all',
+            onStatusFilterChange: () => {},
+          }}
+          loading={false}
+        />
       )}
 
       {/* Pending Payments */}
