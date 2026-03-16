@@ -1,7 +1,10 @@
 import { FaAward, FaCheck, FaFilePdf, FaGraduationCap, FaLink, FaTrophy, FaBook } from 'react-icons/fa';
 import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
+import { FaEye } from 'react-icons/fa';
 
 const StudentCertificates = () => {
+  
   const certificatesMetricsConfig = [
     {
       label: 'Total Certificates',
