@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { FaCalendar, FaTimes, FaUsers } from 'react-icons/fa';
+import { FaCalendar, FaTimes, FaUsers, FaBullhorn, FaEye } from 'react-icons/fa';
+import StatCard from '../../components/common/StatCard';
 
 const TeacherAnnouncements = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -43,6 +44,48 @@ const TeacherAnnouncements = () => {
     },
   ];
 
+  const stats = {
+    total_announcements: announcements.length,
+    published_count: announcements.filter((a) => a.status === 'published').length,
+    total_views: announcements.reduce((sum, a) => sum + a.views, 0),
+    this_week: 3,
+  };
+
+  const metricsConfig = [
+    {
+      label: 'Total Announcements',
+      statsKey: 'total_announcements',
+      icon: FaBullhorn,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'all announcements',
+    },
+    {
+      label: 'Published',
+      statsKey: 'published_count',
+      icon: FaUsers,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'active now',
+    },
+    {
+      label: 'Total Views',
+      statsKey: 'total_views',
+      icon: FaEye,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'student views',
+    },
+    {
+      label: 'This Week',
+      statsKey: 'this_week',
+      icon: FaCalendar,
+      bgColor: 'bg-orange-100',
+      textColor: 'text-orange-600',
+      description: 'new posts',
+    },
+  ];
+
   return (
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
@@ -55,29 +98,7 @@ const TeacherAnnouncements = () => {
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Announcements</div>
-          <div className="text-2xl font-bold text-gray-900">{announcements.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Published</div>
-          <div className="text-2xl font-bold text-green-600">
-            {announcements.filter((a) => a.status === 'published').length}
-          </div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Views</div>
-          <div className="text-2xl font-bold text-primary-600">
-            {announcements.reduce((sum, a) => sum + a.views, 0)}
-          </div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">This Week</div>
-          <div className="text-2xl font-bold text-gray-900">3</div>
-        </div>
-      </div>
+      <StatCard stats={stats} metricsConfig={metricsConfig} />
 
       {/* Announcements List */}
       <div className="space-y-4">
