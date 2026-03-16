@@ -92,6 +92,15 @@ const AdminCertificates = () => {
     },
   ];
 
+  const getCertTypeColor = (type) => {
+    const colors = {
+      completion: 'bg-green-100 text-green-700',
+      achievement: 'bg-yellow-100 text-yellow-700',
+      participation: 'bg-blue-100 text-blue-700',
+    };
+    return colors[type] || colors.participation;
+  };
+
   const filteredCertificates = certificates.filter((cert) => {
     return filterType === 'all' || cert.type === filterType;
   });
