@@ -1,20 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
-import { FaBook, FaCheck, FaCheckCircle, FaExclamationTriangle, FaGraduationCap, FaTimes, FaEdit, FaSave, FaEye, FaSearch, FaBan, FaUndo, FaClock, FaTimesCircle, FaKey, FaUserPlus } from 'react-icons/fa';
+import { FaBook, FaCheck, FaCheckCircle, FaExclamationTriangle, FaGraduationCap, FaTimes, FaEdit, FaSave, FaEye, FaBan, FaUndo, FaClock, FaTimesCircle, FaKey, FaUserPlus } from 'react-icons/fa';
 import { CgSandClock } from 'react-icons/cg';
 import { BiLoader } from 'react-icons/bi';
 import PulseLoader from '../../components/common/PulseLoader';
 import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 import { teacherAPI } from '../../api/teacher';
 
 const AdminTeachers = () => {
-  const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [teachers, setTeachers] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  // eslint-disable-next-line no-unused-vars
-  const [totalPages, setTotalPages] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [modalType, setModalType] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState(null);
@@ -50,9 +49,6 @@ const AdminTeachers = () => {
     try {
       const response = await teacherAPI.getTeachers(searchTerm, filterStatus, currentPage, 10);
       setTeachers(response.data.data.teachers || []);
-      if (response.data.data.pagination) {
-        setTotalPages(response.data.data.pagination.total_pages);
-      }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch teachers');
       console.error('Error fetching teachers:', err);
@@ -112,8 +108,6 @@ const AdminTeachers = () => {
     
     try {
       await teacherAPI.activateTeacher(selectedTeacher.id);
-      
-      // Update local state
       setTeachers(teachers.map(t => 
         t.id === selectedTeacher.id ? { ...t, account_status: { ...t.account_status, is_active: true, is_banned: false } } : t
       ));
@@ -375,13 +369,6 @@ const AdminTeachers = () => {
     return 'PENDING';
   };
 
-  const statsDisplay = [
-    { label: 'Total Teachers', value: stats?.total_teachers || 0, icon: FaBook, color: 'bg-blue-100 text-blue-700', borderColor: 'border-blue-500' },
-    { label: 'Active Teachers', value: stats?.active_teachers || 0, icon: FaCheckCircle, color: 'bg-green-100 text-green-700', borderColor: 'border-green-500' },
-    { label: 'Pending Teachers', value: stats?.pending_teachers || 0, icon: CgSandClock, color: 'bg-yellow-100 text-yellow-700', borderColor: 'border-yellow-500' },
-    { label: 'Banned Teachers', value: stats?.banned_teachers || 0, icon: FaExclamationTriangle, color: 'bg-red-100 text-red-700', borderColor: 'border-red-500' },
-  ];
-
   const teachersMetricsConfig = [
     {
       label: 'Total Teachers',
@@ -470,243 +457,189 @@ const AdminTeachers = () => {
         metricsConfig={teachersMetricsConfig}
       />
 
-      {/* Filters */}
-      <div className="card mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 gap-4">
-          <div className="flex-1 max-w-md relative">
-            <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Search by name, email, subject..."
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setCurrentPage(1);
-              }}
-              className="input-field pl-10"
-            />
-          </div>
-          <div className="flex items-center space-x-4">
-            <select 
-              value={filterStatus} 
-              onChange={(e) => {
-                setFilterStatus(e.target.value);
-                setCurrentPage(1);
-              }} 
-              className="input-field"
-            >
-              <option value="all">All Statuses</option>
-              <option value="active">Active</option>
-              <option value="pending">Pending</option>
-              <option value="banned">Banned</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
-      {/* Teachers Table */}
-      <div className="card">
-        <div className="overflow-x-auto">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <BiLoader className="animate-spin text-4xl text-primary-600" />
-              <span className="ml-3 text-gray-600">Loading teachers...</span>
-            </div>
-          ) : teachers.length === 0 ? (
-            <div className="text-center py-12">
-              <FaBook className="mx-auto text-6xl text-gray-300 mb-4" />
-              <p className="text-gray-500 text-lg">No teachers found</p>
-            </div>
-          ) : (
-            <>
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teacher</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qualifications</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Subjects</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Experience</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Join Date</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {teachers.map((teacher) => {
-                    const StatusIcon = getStatusIcon(teacher.account_status);
-                    return (
-                      <tr key={teacher.id} className="hover:bg-gray-50">
-                        <td className="px-4 py-3">
-                          <div className="flex items-center">
-                            {teacher.profile_picture ? (
-                              <img 
-                                src={teacher.profile_picture} 
-                                alt={teacher.full_name}
-                                className="w-10 h-10 rounded-full object-cover mr-3"
-                              />
-                            ) : (
-                              <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
-                                {teacher.first_name?.charAt(0)}{teacher.last_name?.charAt(0)}
-                              </div>
-                            )}
-                            <div>
-                              <p className="font-medium text-gray-900">{teacher.full_name}</p>
-                              <p className="text-sm text-gray-500">{teacher.years_of_experience} yrs exp</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <p className="text-gray-900">{teacher.email}</p>
-                          <p className="text-gray-500">{teacher.phone || 'N/A'}</p>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <p className="text-gray-900">{teacher.qualifications || 'N/A'}</p>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <div className="flex flex-wrap gap-1">
-                            {teacher.subject_expertise ? teacher.subject_expertise.split(',').slice(0, 2).map((subject, index) => (
-                              <span key={index} className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium">
-                                {subject.trim()}
-                              </span>
-                            )) : <span className="text-gray-500">N/A</span>}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          <p className="text-gray-900">{teacher.years_of_experience} years</p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${getStatusColor(teacher.account_status)}`}>
-                            <StatusIcon className="text-xs" />
-                            {getStatusString(teacher.account_status)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-600">
-                          {teacher.created_at ? new Date(teacher.created_at).toLocaleDateString() : 'N/A'}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex gap-1 flex-wrap">
-                            <button
-                              onClick={() => openModal('view', teacher)}
-                              className="px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
-                              title="View details"
-                            >
-                              <FaEye /> View
-                            </button>
-                            
-                            {/* Reset Password button - always available */}
-                            <button
-                              onClick={() => {
-                                setSelectedTeacher(teacher);
-                                handleResetPassword();
-                              }}
-                              disabled={actionLoading}
-                              className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
-                              title="Reset password"
-                            >
-                              <FaKey /> Reset
-                            </button>
-                            
-                            {/* Active/Approved teachers: Show Ban/Suspend button */}
-                            {teacher.account_status.is_active === true && teacher.account_status.is_banned === false && (
-                              <button
-                                onClick={() => {
-                                  setSelectedTeacher(teacher);
-                                  setShowSuspendModal(true);
-                                }}
-                                className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
-                              >
-                                <FaBan /> Ban
-                              </button>
-                            )}
-                            
-                            {/* Banned/Suspended teachers: Show Activate button */}
-                            {teacher.account_status.is_banned === true && teacher.account_status.is_active === false && (
-                              <button
-                                onClick={() => {
-                                  setSelectedTeacher(teacher);
-                                  handleReactivate();
-                                }}
-                                disabled={actionLoading}
-                                className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
-                              >
-                                <FaCheck /> Activate
-                              </button>
-                            )}
-                            
-                            {/* Pending teachers: Show Approve and Reject buttons */}
-                            {teacher.account_status.is_active === false && teacher.account_status.is_banned === false && (
-                              <>
-                                <button
-                                  onClick={() => {
-                                    setSelectedTeacher(teacher);
-                                    handleApprove();
-                                  }}
-                                  disabled={actionLoading}
-                                  className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
-                                >
-                                  <FaCheck /> Approve
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setSelectedTeacher(teacher);
-                                    setShowRejectModal(true);
-                                  }}
-                                  className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
-                                >
-                                  <FaBan /> Reject
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-
-              {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t px-4 py-3">
-                  <div className="text-sm text-gray-700">
-                    Page {currentPage} of {totalPages}
+      {/* Teachers Table with Integrated Filters */}
+      <DataTable
+        data={teachers}
+        columns={[
+          {
+            key: 'full_name',
+            label: 'Teacher',
+            searchable: true,
+            render: (value, teacher) => (
+              <div className="flex items-center">
+                {teacher.profile_picture ? (
+                  <img 
+                    src={teacher.profile_picture} 
+                    alt={teacher.full_name}
+                    className="w-10 h-10 rounded-full object-cover mr-3"
+                  />
+                ) : (
+                  <div className="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                    {teacher.first_name?.charAt(0)}{teacher.last_name?.charAt(0)}
                   </div>
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                    >
-                      Previous
-                    </button>
-                    {[...Array(Math.min(totalPages, 5))].map((_, i) => (
-                      <button
-                        key={i + 1}
-                        onClick={() => setCurrentPage(i + 1)}
-                        className={`px-3 py-1 border rounded text-sm ${
-                          currentPage === i + 1
-                            ? 'bg-primary-600 text-white border-primary-600'
-                            : 'hover:bg-gray-50'
-                        }`}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-3 py-1 border rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-                    >
-                      Next
-                    </button>
-                  </div>
+                )}
+                <div>
+                  <p className="font-medium text-gray-900">{teacher.full_name}</p>
+                  <p className="text-sm text-gray-500">{teacher.years_of_experience} yrs exp</p>
                 </div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
+              </div>
+            ),
+          },
+          {
+            key: 'email',
+            label: 'Contact',
+            searchable: true,
+            render: (value, teacher) => (
+              <div className="text-sm">
+                <p className="text-gray-900">{teacher.email}</p>
+                <p className="text-gray-500">{teacher.phone || 'N/A'}</p>
+              </div>
+            ),
+          },
+          {
+            key: 'qualifications',
+            label: 'Qualifications',
+            searchable: true,
+            render: (value) => <p className="text-sm text-gray-900">{value || 'N/A'}</p>,
+          },
+          {
+            key: 'subject_expertise',
+            label: 'Subjects',
+            render: (value) => (
+              <div className="flex flex-wrap gap-1">
+                {value ? value.split(',').slice(0, 2).map((subject, index) => (
+                  <span key={index} className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium">
+                    {subject.trim()}
+                  </span>
+                )) : <span className="text-gray-500">N/A</span>}
+              </div>
+            ),
+          },
+          {
+            key: 'years_of_experience',
+            label: 'Experience',
+            render: (value) => <p className="text-sm text-gray-900">{value} years</p>,
+          },
+          {
+            key: 'account_status',
+            label: 'Status',
+            render: (value) => {
+              const StatusIcon = getStatusIcon(value);
+              return (
+                <span className={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${getStatusColor(value)}`}>
+                  <StatusIcon className="text-xs" />
+                  {getStatusString(value)}
+                </span>
+              );
+            },
+          },
+          {
+            key: 'created_at',
+            label: 'Join Date',
+            render: (value) => <p className="text-sm text-gray-600">{value ? new Date(value).toLocaleDateString() : 'N/A'}</p>,
+          },
+          {
+            key: 'actions',
+            label: 'Actions',
+            render: (_, teacher) => (
+              <div className="flex gap-1 flex-wrap">
+                <button
+                  onClick={() => openModal('view', teacher)}
+                  className="px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
+                  title="View details"
+                >
+                  <FaEye /> View
+                </button>
+                
+                <button
+                  onClick={() => {
+                    setSelectedTeacher(teacher);
+                    handleResetPassword();
+                  }}
+                  disabled={actionLoading}
+                  className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
+                  title="Reset password"
+                >
+                  <FaKey /> Reset
+                </button>
+                
+                {teacher.account_status.is_active === true && teacher.account_status.is_banned === false && (
+                  <button
+                    onClick={() => {
+                      setSelectedTeacher(teacher);
+                      setShowSuspendModal(true);
+                    }}
+                    className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
+                  >
+                    <FaBan /> Ban
+                  </button>
+                )}
+                
+                {teacher.account_status.is_banned === true && teacher.account_status.is_active === false && (
+                  <button
+                    onClick={() => {
+                      setSelectedTeacher(teacher);
+                      handleReactivate();
+                    }}
+                    disabled={actionLoading}
+                    className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
+                  >
+                    <FaCheck /> Activate
+                  </button>
+                )}
+                
+                {teacher.account_status.is_active === false && teacher.account_status.is_banned === false && (
+                  <>
+                    <button
+                      onClick={() => {
+                        setSelectedTeacher(teacher);
+                        handleApprove();
+                      }}
+                      disabled={actionLoading}
+                      className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
+                    >
+                      <FaCheck /> Approve
+                    </button>
+                    <button
+                      onClick={() => {
+                        setSelectedTeacher(teacher);
+                        setShowRejectModal(true);
+                      }}
+                      className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
+                    >
+                      <FaBan /> Reject
+                    </button>
+                  </>
+                )}
+              </div>
+            ),
+          },
+        ]}
+        config={{
+          itemsPerPage: 10,
+          searchPlaceholder: 'Search by name, email, subject...',
+          hideSearch: false,
+          emptyMessage: 'No teachers found',
+          searchValue: searchTerm,
+          onSearchChange: (value) => {
+            setSearchTerm(value);
+            setCurrentPage(1);
+          },
+          statusFilterLabel: 'Filter by Status',
+          statusFilterOptions: [
+            { label: 'All Statuses', value: 'all' },
+            { label: 'Active', value: 'active' },
+            { label: 'Pending', value: 'pending' },
+            { label: 'Banned', value: 'banned' },
+          ],
+          statusFilterValue: filterStatus,
+          onStatusFilterChange: (value) => {
+            setFilterStatus(value);
+            setCurrentPage(1);
+          },
+        }}
+        loading={loading}
+      />
 
       {/* Teacher Details Modal */}
       {showModal && selectedTeacher && modalType === 'view' && (
