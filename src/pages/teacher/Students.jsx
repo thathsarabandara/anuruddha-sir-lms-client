@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { FaCheckCircle, FaExclamationTriangle, FaGraduationCap, FaTimes, FaUserGraduate, FaTimesCircle, FaClock, FaSearch, FaEye, FaCheck, FaBan, FaUndo, FaUserPlus, FaEdit, FaKey } from 'react-icons/fa';
 import { BiLoader } from 'react-icons/bi';
 import PulseLoader from '../../components/common/PulseLoader';
+import StatCard from '../../components/common/StatCard';
 import { studentAPI } from '../../api/student';
 
 const TeacherStudents = () => {
@@ -374,6 +375,41 @@ const TeacherStudents = () => {
     },
   ];
 
+  const teacherStudentsMetricsConfig = [
+    {
+      label: 'Total Students',
+      statsKey: 'total',
+      icon: FaUserGraduate,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'All students enrolled',
+    },
+    {
+      label: 'Active Students',
+      statsKey: 'active',
+      icon: FaCheckCircle,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Currently active',
+    },
+    {
+      label: 'Pending Approval',
+      statsKey: 'pending',
+      icon: BiLoader,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'Awaiting action',
+    },
+    {
+      label: 'Banned',
+      statsKey: 'banned',
+      icon: FaExclamationTriangle,
+      bgColor: 'bg-red-100',
+      textColor: 'text-red-600',
+      description: 'Suspended accounts',
+    },
+  ];
+
   // Loading state
   if (loading) {
     return <PulseLoader />;
@@ -417,21 +453,15 @@ const TeacherStudents = () => {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {statsData.map((stat, index) => (
-          <div key={index} className={`card border-l-4 ${stat.borderColor}`}>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
-              </div>
-              <div className={`text-3xl ${stat.color} p-3 rounded-lg`}>
-                <stat.icon />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <StatCard 
+        stats={{
+          total: (stats?.total_students || 0).toString(),
+          active: (stats?.active_students || 0).toString(),
+          pending: (stats?.pending_students || 0).toString(),
+          banned: (stats?.banned_students || 0).toString(),
+        }}
+        metricsConfig={teacherStudentsMetricsConfig}
+      />
 
       {/* Filters */}
       <div className="card mb-6">
