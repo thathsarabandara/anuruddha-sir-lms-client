@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FaCheckCircle, FaExclamationTriangle, FaGraduationCap, FaTimes, FaUserGraduate, FaTimesCircle, FaClock, FaEye, FaCheck, FaBan, FaUndo, FaUserPlus, FaEdit, FaKey } from 'react-icons/fa';
 import { BiLoader } from 'react-icons/bi';
-import PulseLoader from '../../components/common/PulseLoader';
+
 import { studentAPI } from '../../api/student';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
@@ -372,11 +372,6 @@ const AdminStudents = () => {
       description: 'Suspended accounts',
     },
   ];
-
-  // Loading state
-  if (loading) {
-    return <PulseLoader />;
-  }
 
   return (
     <div className="p-8">
