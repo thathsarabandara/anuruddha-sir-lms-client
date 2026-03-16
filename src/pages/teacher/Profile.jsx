@@ -1,18 +1,24 @@
 import { useState } from 'react';
-import { FaAward, FaBook, FaGraduationCap, FaUserGraduate } from 'react-icons/fa';
+import { useSelector } from 'react-redux';
+import { FaAward, FaBook, FaGraduationCap, FaUserGraduate , FaStar, FaBell} from 'react-icons/fa';
+import { IoLockClosed } from "react-icons/io5";
+import { CgProfile } from "react-icons/cg";
 
 const TeacherProfile = () => {
+  const { user } = useSelector((state) => state.auth);
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
-    name: 'Anuruddha Sir',
-    email: 'anuruddha@email.com',
-    phone: '+94 77 123 4567',
-    subjects: ['Mathematics', 'Sinhala', 'Environment', 'English'],
-    experience: '15 years',
-    qualification: 'B.Ed. (Hons) Mathematics',
-    bio: 'Experienced Grade 5 Scholarship teacher with a proven track record of helping students achieve excellence.',
-    address: 'Colombo, Sri Lanka',
+    firstName: user?.first_name || '',
+    lastName: user?.last_name || '',
+    email: user?.email || '',
+    phone: user?.phone || '',
+    experience: user?.years_of_experience || '',
+    qualification: user?.qualifications || '',
+    address: user?.address || '',
+    subjects: user?.subjects || [],
+    bio: user?.professional_bio || '',
+    subjectsTeaching: user?.subjects_taught || [],
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -25,7 +31,13 @@ const TeacherProfile = () => {
     { label: 'Total Students', value: '245', icon: FaUserGraduate },
     { label: 'Courses', value: '8', icon: FaBook },
     { label: 'Success Rate', value: '95%', icon: FaAward },
-    { label: 'Years Experience', value: '15', icon: '⭐' },
+    { label: 'Experience', value: '15', icon: FaStar },
+  ];
+
+   const notifications = [
+    { id: 1, title: 'Email Notifications', description: 'Receive email updates', enabled: true },
+    { id: 2, title: 'Whatsapp Notifications', description: 'Receive Whatsapp Updates', enabled: true },
+    { id: 3, title: 'In app Notifications', description: 'Receive In app Updates', enabled: true },
   ];
 
   const handleInputChange = (e) => {
@@ -56,16 +68,16 @@ const TeacherProfile = () => {
               <div className="w-24 h-24 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-3xl font-bold">
                 A
               </div>
-              <h3 className="font-bold text-gray-900">Anuruddha Sir</h3>
-              <p className="text-sm text-gray-600">Mathematics Educator</p>
-              <p className="text-xs text-gray-500 mt-1">Member since Oct 2024</p>
+              <h3 className="font-bold text-lg text-gray-900">{user?.first_name} {user?.last_name}</h3>
+              <p className="text-sm text-gray-600">{user?.email}</p>
+              <p className="text-xs text-gray-500 mt-1">{user?.username}</p>
             </div>
 
             {/* Quick Stats */}
             <div className="grid grid-cols-2 gap-3 mb-6">
               {stats.map((stat, index) => (
                 <div key={index} className="text-center p-3 bg-gray-50 rounded-lg">
-                  <div className="text-2xl mb-1">{stat.icon}</div>
+                  <stat.icon size={24} className="mx-auto mb-2 text-primary-500" />
                   <div className="text-lg font-bold text-gray-900">{stat.value}</div>
                   <div className="text-xs text-gray-600">{stat.label}</div>
                 </div>
@@ -75,33 +87,33 @@ const TeacherProfile = () => {
             <div className="space-y-2">
               <button
                 onClick={() => setActiveTab('profile')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                className={`w-full flex items-center gap-3 text-left px-4 py-2 rounded-lg transition-colors ${
                   activeTab === 'profile'
                     ? 'bg-primary-100 text-primary-700 font-medium'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                👤 Profile Information
+                <CgProfile /> Profile Information
               </button>
               <button
                 onClick={() => setActiveTab('security')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
+                className={`w-full flex items-center gap-3 text-left px-4 py-2 rounded-lg transition-colors ${
                   activeTab === 'security'
                     ? 'bg-primary-100 text-primary-700 font-medium'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                🔒 Security
+                <IoLockClosed /> Security
               </button>
               <button
-                onClick={() => setActiveTab('preferences')}
-                className={`w-full text-left px-4 py-2 rounded-lg transition-colors ${
-                  activeTab === 'preferences'
+                onClick={() => setActiveTab('notification')}
+                className={`w-full flex items-center gap-3 text-left px-4 py-2 rounded-lg transition-colors ${
+                  activeTab === 'notification'
                     ? 'bg-primary-100 text-primary-700 font-medium'
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
               >
-                ⚙️ Preferences
+                <FaBell/> Notification
               </button>
             </div>
           </div>
@@ -135,11 +147,22 @@ const TeacherProfile = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
                   <input
                     type="text"
-                    name="name"
-                    value={formData.name}
+                    name="firstname"
+                    value={formData.firstName}
+                    onChange={handleInputChange}
+                    disabled={!isEditing}
+                    className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+                  <input
+                    type="text"
+                    name="lastname"
+                    value={formData.lastName}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
@@ -153,7 +176,7 @@ const TeacherProfile = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleInputChange}
-                    disabled={!isEditing}
+                    disabled={true}
                     className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
                   />
                 </div>
@@ -280,66 +303,31 @@ const TeacherProfile = () => {
                     <button className="btn-primary px-6 py-2">Update Password</button>
                   </div>
                 </div>
-
-                <div className="pt-6 border-t">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Two-Factor Authentication</h3>
-                  <p className="text-gray-600 mb-4">Add an extra layer of security to your account</p>
-                  <button className="btn-outline px-6 py-2">Enable 2FA</button>
-                </div>
               </div>
             </div>
           )}
 
           {/* Preferences */}
-          {activeTab === 'preferences' && (
+          {activeTab === 'notification' && (
             <div className="card">
-              <h2 className="text-2xl font-bold text-gray-900 mb-6">Preferences</h2>
-
-              <div className="space-y-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Language</label>
-                  <select className="input-field">
-                    <option>English</option>
-                    <option>Sinhala</option>
-                    <option>Tamil</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Time Zone</label>
-                  <select className="input-field">
-                    <option>Asia/Colombo (GMT+5:30)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Theme</label>
-                  <select className="input-field">
-                    <option>Light</option>
-                    <option>Dark</option>
-                    <option>Auto</option>
-                  </select>
-                </div>
-
-                <div className="pt-4 border-t">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4">Notifications</h3>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between py-2">
-                      <span className="text-gray-700">Email notifications for new enrollments</span>
-                      <input type="checkbox" defaultChecked className="rounded" />
+              <p className="text-2xl font-bold text-black mb-6">Notification Preferences</p>
+                <div className="space-y-4">
+                {notifications.map((notification) => (
+                  <div key={notification.id} className="flex items-center justify-between py-3 border-b">
+                    <div>
+                      <h4 className="text-large text-gray-900">{notification.title}</h4>
+                      <p className="text-sm text-gray-600">{notification.description}</p>
                     </div>
-                    <div className="flex items-center justify-between py-2">
-                      <span className="text-gray-700">Email notifications for quiz submissions</span>
-                      <input type="checkbox" defaultChecked className="rounded" />
-                    </div>
-                    <div className="flex items-center justify-between py-2">
-                      <span className="text-gray-700">Email notifications for payments</span>
-                      <input type="checkbox" defaultChecked className="rounded" />
-                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        defaultChecked={notification.enabled}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
+                    </label>
                   </div>
-                </div>
-
-                <button className="btn-primary px-6 py-2">Save Preferences</button>
+                ))}
               </div>
             </div>
           )}
