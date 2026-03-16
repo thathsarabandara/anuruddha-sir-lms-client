@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { FaBook, FaCalendar, FaCheck, FaClock, FaFileVideo, FaUsers, FaVideo, FaSearch, FaFilter, FaTimes, FaGraduationCap } from 'react-icons/fa';
+import { FaBook, FaCalendar, FaCheck, FaClock, FaFileVideo, FaUsers, FaVideo, FaSearch, FaFilter, FaTimes, FaGraduationCap, FaCheckCircle, FaEye } from 'react-icons/fa';
 import { GoDotFill } from 'react-icons/go';
+import StatCard from '../../components/common/StatCard';
 
 // Dummy Live Classes Data
 const getDummyZoomClasses = () => {
@@ -133,6 +134,40 @@ const getDummyZoomClasses = () => {
 };
 
 const StudentLiveClasses = () => {
+  const liveClassesMetricsConfig = [
+    {
+      label: 'Total Classes',
+      statsKey: 'totalClasses',
+      icon: FaBook,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'Enrolled classes',
+    },
+    {
+      label: 'Attended',
+      statsKey: 'attended',
+      icon: FaCheckCircle,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Classes completed',
+    },
+    {
+      label: 'Attendance Rate',
+      statsKey: 'attendanceRate',
+      icon: FaEye,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'Overall percentage',
+    },
+    {
+      label: 'Upcoming',
+      statsKey: 'upcomingCount',
+      icon: FaClock,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'Scheduled classes',
+    },
+  ];
   const [filter, setFilter] = useState('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
@@ -252,30 +287,15 @@ const StudentLiveClasses = () => {
         {!loading && (
           <div className="max-w-7xl mx-auto">
             {/* Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-sm text-slate-600 font-semibold mb-1">Total Classes</div>
-          <div className="text-3xl font-bold text-slate-900">{upcomingClasses.length + completedClasses.length}</div>
-          <p className="text-xs text-slate-500 mt-1">Enrolled</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-sm text-slate-600 font-semibold mb-1">Attended</div>
-          <div className="text-3xl font-bold text-green-600">{completedClasses.filter(c => c.attended).length}</div>
-          <p className="text-xs text-slate-500 mt-1">Classes</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-sm text-slate-600 font-semibold mb-1">Attendance Rate</div>
-          <div className="text-3xl font-bold text-blue-600">
-            {completedClasses.length > 0 ? Math.round((completedClasses.filter(c => c.attended).length / completedClasses.length) * 100) : 0}%
-          </div>
-          <p className="text-xs text-slate-500 mt-1">Overall</p>
-        </div>
-        <div className="bg-white rounded-xl border border-slate-200 p-4">
-          <div className="text-sm text-slate-600 font-semibold mb-1">Upcoming</div>
-          <div className="text-3xl font-bold text-purple-600">{upcomingClasses.length}</div>
-          <p className="text-xs text-slate-500 mt-1">Classes</p>
-        </div>
-      </div>
+            <StatCard 
+              stats={{
+                totalClasses: (upcomingClasses.length + completedClasses.length).toString(),
+                attended: completedClasses.filter(c => c.attended).length.toString(),
+                attendanceRate: completedClasses.length > 0 ? `${Math.round((completedClasses.filter(c => c.attended).length / completedClasses.length) * 100)}%` : '0%',
+                upcomingCount: upcomingClasses.length.toString(),
+              }}
+              metricsConfig={liveClassesMetricsConfig}
+            />
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-slate-200 mb-6">
