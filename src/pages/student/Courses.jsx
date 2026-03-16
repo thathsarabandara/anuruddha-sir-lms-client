@@ -1,17 +1,8 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { FaSearch, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaBook, FaBookOpen, FaSpinner } from 'react-icons/fa';
-import NewCourseCard from '../../components/student/NewCourseCard';
-import EnrolledCourseCard from '../../components/student/EnrolledCourseCard';
+import CourseCard from '../../components/common/CourseCard';
 import { MdOutlineWorkspacePremium } from 'react-icons/md';
 import { GrCompliance } from 'react-icons/gr';
-import CompletedCourseCard from '../../components/student/CompletedCourseCard';
-import { 
-  transformEnrolledCourse, 
-  transformCompletedCourse, 
-  transformNewCourse, 
-  transformCourses,
-  resetColorIndex 
-} from '../../utils/courseDataTransform';
 
 const StudentCourses = () => {
   // Dummy data
@@ -442,7 +433,12 @@ const StudentCourses = () => {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                   {currentDisplayCourses.map((course) => (
-                    <NewCourseCard key={course.id} course={course} />
+                    <CourseCard
+                      key={course.id}
+                      course={course}
+                      userType="student"
+                      courseStatus="new"
+                    />
                   ))}
                 </div>
 
@@ -497,9 +493,14 @@ const StudentCourses = () => {
             </h2>
             {currentFilteredCount > 0 ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                   {currentDisplayCourses.map((course) => (
-                    <EnrolledCourseCard key={course.id} course={course} />
+                    <CourseCard
+                      key={course.id}
+                      course={course}
+                      userType="student"
+                      courseStatus="enrolled"
+                    />
                   ))}
                 </div>
 
@@ -554,9 +555,14 @@ const StudentCourses = () => {
             </h2>
             {filteredCompletedCourses.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                   {currentDisplayCourses.map((course) => (
-                    <CompletedCourseCard key={course.id} course={course} />
+                    <CourseCard
+                      key={course.id}
+                      course={course}
+                      userType="student"
+                      courseStatus="completed"
+                    />
                   ))}
                 </div>
 
