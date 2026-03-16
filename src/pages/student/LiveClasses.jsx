@@ -2,6 +2,7 @@ import { useState, useMemo, useCallback, useEffect } from 'react';
 import { FaBook, FaCalendar, FaCheck, FaClock, FaFileVideo, FaUsers, FaVideo, FaSearch, FaFilter, FaTimes, FaGraduationCap, FaCheckCircle, FaEye } from 'react-icons/fa';
 import { GoDotFill } from 'react-icons/go';
 import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 
 // Dummy Live Classes Data
 const getDummyZoomClasses = () => {
