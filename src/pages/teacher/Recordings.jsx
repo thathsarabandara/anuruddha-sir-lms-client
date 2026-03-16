@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { FaCalendar, FaClock, FaFileVideo, FaTimes, FaDatabase, FaEye } from 'react-icons/fa';
 import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 
 const TeacherRecordings = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
@@ -55,6 +56,106 @@ const TeacherRecordings = () => {
     storage_used: 12.8,
   };
 
+  // DataTable columns configuration
+  const columns = [
+    {
+      key: 'title',
+      label: 'Title',
+      searchable: true,
+      width: 'w-1/4',
+    },
+    {
+      key: 'course',
+      label: 'Course',
+      searchable: true,
+      filterable: true,
+      filterOptions: [
+        { label: 'Mathematics Excellence', value: 'Mathematics Excellence' },
+        { label: 'Sinhala Language', value: 'Sinhala Language' },
+        { label: 'Complete Scholarship Package', value: 'Complete Scholarship Package' },
+      ],
+      width: 'w-1/5',
+    },
+    {
+      key: 'date',
+      label: 'Date',
+      searchable: true,
+      width: 'w-24',
+    },
+    {
+      key: 'duration',
+      label: 'Duration',
+      width: 'w-24',
+    },
+    {
+      key: 'views',
+      label: 'Views',
+      render: (value, row) => (
+        <span className={row.status === 'published' ? 'text-gray-700' : 'text-gray-400'}>
+          {row.status === 'published' ? value : '-'}
+        </span>
+      ),
+      width: 'w-20',
+    },
+    {
+      key: 'size',
+      label: 'Size',
+      width: 'w-20',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      filterable: true,
+      filterOptions: [
+        { label: 'Published', value: 'published' },
+        { label: 'Processing', value: 'processing' },
+      ],
+      render: (value) => (
+        <span
+          className={`px-3 py-1 text-xs font-semibold rounded-full ${
+            value === 'published'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-yellow-100 text-yellow-700'
+          }`}
+        >
+          {value.toUpperCase()}
+        </span>
+      ),
+      width: 'w-28',
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      searchable: false,
+      render: (value, row) => (
+        <div className="flex gap-2 flex-wrap">
+          {row.status === 'published' ? (
+            <>
+              <button className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white text-xs rounded font-medium">
+                Preview
+              </button>
+              <button className="px-3 py-1 border border-gray-300 hover:bg-gray-50 text-xs rounded font-medium">
+                Edit
+              </button>
+              <button className="px-3 py-1 border border-red-300 text-red-600 hover:bg-red-50 text-xs rounded font-medium">
+                Delete
+              </button>
+            </>
+          ) : (
+            <div className="text-xs text-gray-600 font-medium">Processing...</div>
+          )}
+        </div>
+      ),
+      width: 'w-48',
+    },
+  ];
+
+  const tableConfig = {
+    itemsPerPage: 10,
+    searchPlaceholder: 'Search recordings...',
+    emptyMessage: 'No recordings found',
+  };
+
   const metricsConfig = [
     {
       label: 'Total Recordings',
@@ -106,78 +207,13 @@ const TeacherRecordings = () => {
 
       <StatCard stats={stats} metricsConfig={metricsConfig} />
 
-      {/* Recordings List */}
-      <div className="space-y-4">
-        {recordings.map((recording) => (
-          <div key={recording.id} className="card">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-4 flex-1">
-                <div
-                  className={`${
-                    recording.status === 'published' ? 'bg-blue-600' : 'bg-gray-400'
-                  } text-white p-4 rounded-lg`}
-                >
-                  <div className="text-3xl">{recording.status === 'published' ? '▶️' : '⏳'}</div>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <h3 className="text-lg font-bold text-gray-900">{recording.title}</h3>
-                    <span
-                      className={`px-2 py-1 text-xs font-semibold rounded ${
-                        recording.status === 'published'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-yellow-100 text-yellow-700'
-                      }`}
-                    >
-                      {recording.status.toUpperCase()}
-                    </span>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-3">{recording.course}</p>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                    <div className="flex items-center text-gray-600">
-                      <FaCalendar className="mr-2" />
-                      {recording.date}
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <FaClock className="mr-2" />
-                      {recording.duration}
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <span className="mr-2">👁️</span>
-                      {recording.views} views
-                    </div>
-                    <div className="flex items-center text-gray-600">
-                      <span className="mr-2">💾</span>
-                      {recording.size}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col space-y-2 ml-4">
-                {recording.status === 'published' ? (
-                  <>
-                    <button className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium">
-                      Preview
-                    </button>
-                    <button className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-                      Edit Details
-                    </button>
-                    <button className="px-4 py-2 border-2 border-red-300 text-red-600 hover:bg-red-50 rounded-lg text-sm">
-                      Delete
-                    </button>
-                  </>
-                ) : (
-                  <div className="text-sm text-gray-600 text-center px-4">
-                    <div className="mb-2">Processing...</div>
-                    <div className="w-32 bg-gray-200 rounded-full h-2">
-                      <div className="bg-primary-600 h-2 rounded-full animate-pulse" style={{ width: '60%' }} />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
+      {/* Recordings DataTable */}
+      <div className="mt-8">
+        <DataTable
+          data={recordings}
+          columns={columns}
+          config={tableConfig}
+        />
       </div>
 
       {/* Upload Modal */}
