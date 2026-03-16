@@ -171,9 +171,7 @@ const StudentLiveClasses = () => {
   ];
   const [filter, setFilter] = useState('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
   const [selectedSubjects, setSelectedSubjects] = useState([]);
-  const [selectedStatus, setSelectedStatus] = useState([]);
   
   // Data loading states
   const [loading, setLoading] = useState(true);
@@ -204,7 +202,6 @@ const StudentLiveClasses = () => {
         
         setUpcomingClasses(upcoming);
         setCompletedClasses(completed);
-        setSelectedStatus([]);
       } catch (err) {
         console.error('Error loading live classes:', err);
         setError('Failed to load live classes');
@@ -236,23 +233,80 @@ const StudentLiveClasses = () => {
   const filteredCompletedClasses = useMemo(() => applyFilters(completedClasses), [applyFilters, completedClasses]);
 
   const displayClasses = filter === 'upcoming' ? filteredUpcomingClasses : filteredCompletedClasses;
-  
-  // Get unique subjects from classes
-  const subjects = useMemo(() => {
-    const allSubjects = new Set([...upcomingClasses, ...completedClasses].map(cls => cls.subject));
-    return Array.from(allSubjects).sort();
-  }, [upcomingClasses, completedClasses]);
 
-  const handleSubjectToggle = (subject) => {
-    setSelectedSubjects(prev => 
-      prev.includes(subject) ? prev.filter(s => s !== subject) : [...prev, subject]
-    );
-  };
 
-  const handleResetFilters = () => {
-    setSearchQuery('');
-    setSelectedSubjects([]);
-  };
+  // Define table columns based on current filter
+  const tableColumns = useMemo(() => [
+    { 
+      key: 'title', 
+      label: 'Class',
+      render: (_, row) => (
+        <div>
+          <p className="font-semibold text-gray-900">{row.title}</p>
+          <p className="text-xs text-gray-500">{row.subject}</p>
+        </div>
+      )
+    },
+    { 
+      key: 'instructor', 
+      label: 'Instructor',
+      width: 'w-32'
+    },
+    { 
+      key: 'date', 
+      label: 'Date',
+      render: (_, row) => new Date(row.date).toLocaleDateString()
+    },
+    { 
+      key: 'time', 
+      label: 'Time',
+      render: (_, row) => `${row.time} (${row.duration} min)`
+    },
+    { 
+      key: 'status', 
+      label: 'Status',
+      render: (_, row) => filter === 'upcoming' ? (
+        <span className="px-3 py-1 bg-blue-100 text-blue-600 text-xs font-bold rounded-full">
+          SCHEDULED
+        </span>
+      ) : (
+        <span className={`px-3 py-1 text-xs font-bold rounded-full ${row.attended ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-600'}`}>
+          {row.attended ? '✓ ATTENDED' : '✗ MISSED'}
+        </span>
+      )
+    },
+    { 
+      key: 'actions', 
+      label: 'Actions',
+      render: (_, row) => (
+        <div className="flex gap-2">
+          {filter === 'upcoming' && row.zoom_link && (
+            <a 
+              href={row.zoom_link} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-bold transition-all"
+            >
+              Join
+            </a>
+          )}
+          {filter === 'completed' && row.recording_link && (
+            <a 
+              href={row.recording_link} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold transition-all"
+            >
+              Recording
+            </a>
+          )}
+          <button className="px-3 py-1 border border-slate-300 hover:bg-slate-50 rounded text-xs font-semibold transition-all">
+            Details
+          </button>
+        </div>
+      )
+    }
+  ], [filter]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 lg:p-8">
@@ -322,247 +376,24 @@ const StudentLiveClasses = () => {
         </button>
       </div>
 
-      {/* Search and Filter Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 p-4 mb-6">
-        <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-          {/* Search */}
-          <div className="flex-1 relative">
-            <FaSearch className="absolute left-3 top-3.5 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search classes by title or subject..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* Filter Toggle Button */}
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-lg hover:bg-slate-50 transition-all font-semibold text-slate-700"
-          >
-            <FaFilter /> Filters
-          </button>
-
-          {/* Clear Button */}
-          {(searchQuery || selectedSubjects.length > 0 || selectedStatus.length > 0) && (
-            <button
-              onClick={handleResetFilters}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 rounded-lg transition-all font-semibold text-slate-700"
-            >
-              <FaTimes /> Clear
-            </button>
-          )}
-        </div>
-
-        {/* Filters Panel */}
-        {showFilters && (
-          <div className="mt-4 pt-4 border-t border-slate-200">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Subject Filter */}
-              <div>
-                <h6 className="font-bold text-slate-900 mb-3">Subject</h6>
-                <div className="space-y-2">
-                  {subjects.map(subject => (
-                    <label key={subject} className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={selectedSubjects.includes(subject)}
-                        onChange={() => handleSubjectToggle(subject)}
-                        className="w-4 h-4 rounded border-slate-300 focus:ring-blue-500"
-                      />
-                      <span className="text-slate-700">{subject}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* Data Table with Search, Filter and Pagination */}
+      <div className="bg-white rounded-xl border border-slate-200 shadow mb-6">
+        <DataTable
+          columns={tableColumns}
+          data={displayClasses}
+          config={{
+            itemsPerPage: 10,
+            searchPlaceholder: 'Search by title, subject, or instructor...',
+            hideSearch: false,
+            emptyMessage: 'No classes found',
+            searchValue: searchQuery,
+            onSearchChange: (value) => setSearchQuery(value),
+          }}
+          loading={loading}
+        />
       </div>
 
-      {/* Classes List */}
-
-      {/* Upcoming Classes */}
-      {filter === 'upcoming' && (
-        <div>
-          {displayClasses.length > 0 ? (
-            <div className="space-y-4">
-              {displayClasses.map((class_) => (
-            <div key={class_.id} className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all overflow-hidden">
-              <div className="flex flex-col lg:flex-row items-start gap-4 p-6">
-                {/* Icon */}
-                <div className={`${class_.color} text-white p-4 rounded-lg flex-shrink-0`}>
-                  <FaVideo className="text-2xl" />
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-2 mb-3">
-                    <h3 className="text-lg font-bold text-slate-900">{class_.title}</h3>
-                    <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-bold rounded-full flex items-center gap-1">
-                      <FaCalendar className='text-blue-500 h-3 w-3' /> SCHEDULED
-                    </span>
-                  </div>
-
-                  {/* Class Details Grid */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <FaBook className="flex-shrink-0" />
-                      <span className="font-semibold">{class_.subject}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <FaUsers className="flex-shrink-0" />
-                      <span>{class_.instructor}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <FaCalendar className="flex-shrink-0" />
-                      <span>{new Date(class_.date).toLocaleDateString()}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <FaClock className="flex-shrink-0" />
-                      <span>{class_.time}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <FaClock className="flex-shrink-0" />
-                      <span>{class_.duration}</span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-slate-600">
-                      <FaBook className="flex-shrink-0" />
-                      <span>{class_.course_title}</span>
-                    </div>
-                  </div>
-                  {class_.description && (
-                    <p className="text-sm text-slate-600 mb-3">{class_.description}</p>
-                  )}
-                  {class_.zoom_link && (
-                    <div className="text-xs text-blue-600 break-all mb-3">
-                      <span className="font-semibold">Zoom Link:</span> {class_.zoom_link}
-                    </div>
-                  )}
-                </div>
-
-                {/* Actions */}
-                <div className="flex flex-col gap-2 w-full lg:w-auto">
-                  {class_.zoom_link && (
-                    <a
-                      href={class_.zoom_link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-6 py-2.5 rounded-lg font-bold transition-all whitespace-nowrap bg-green-600 hover:bg-green-700 text-white text-center"
-                    >
-                      ✓ Join Now
-                    </a>
-                  )}
-                  <button className="px-6 py-2.5 border-2 border-slate-300 hover:bg-slate-50 rounded-lg font-semibold text-slate-700 transition-all">
-                    Details
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
-              <FaSearch className="text-5xl text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-600 font-semibold text-lg">No classes found</p>
-              <p className="text-slate-500">Try adjusting your search or filters</p>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Completed Classes */}
-      {filter === 'completed' && (
-        <div>
-          {displayClasses.length > 0 ? (
-            <div className="space-y-4">
-              {displayClasses.map((class_) => (
-                <div key={class_.id} className="bg-white rounded-xl border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all overflow-hidden">
-                  <div className="flex flex-col lg:flex-row items-start gap-4 p-6">
-                    {/* Icon */}
-                    <div className={`${class_.color} text-white p-4 rounded-lg flex-shrink-0 opacity-75`}>
-                      <FaCheck className="text-2xl" />
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <h3 className="text-lg font-bold text-slate-900">{class_.title}</h3>
-                        {class_.attended ? (
-                          <span className="px-2 py-1 bg-green-100 text-green-600 text-xs font-bold rounded-full">
-                            ✓ ATTENDED
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">
-                            ✗ MISSED
-                          </span>
-                        )}
-                        {class_.recording_url && (
-                          <span className="px-2 py-1 bg-blue-100 text-blue-600 text-xs font-bold rounded-full flex items-center gap-1">
-                            <FaVideo className='text-blue-500 h-3 w-3' /> RECORDING
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Class Details Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <FaBook className="flex-shrink-0" />
-                          <span className="font-semibold">{class_.subject}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <FaUsers className="flex-shrink-0" />
-                          <span>{class_.instructor}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <FaCalendar className="flex-shrink-0" />
-                          <span>{new Date(class_.date).toLocaleDateString()}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <FaClock className="flex-shrink-0" />
-                          <span>{class_.time}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm text-slate-600">
-                          <FaBook className="flex-shrink-0" />
-                          <span>{class_.course_title}</span>
-                        </div>
-                      </div>
-                      {class_.description && (
-                        <p className="text-sm text-slate-600 mb-3">{class_.description}</p>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex flex-col gap-2 w-full lg:w-auto">
-                      {class_.recording_url && (
-                        <a
-                          href={class_.recording_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-all whitespace-nowrap text-center"
-                        >
-                          <FaVideo className='inline-block mr-2 h-4 w-4' /> Watch Recording
-                        </a>
-                      )}
-                      <button className="px-6 py-2.5 border-2 border-slate-300 hover:bg-slate-50 rounded-lg font-semibold text-slate-700 transition-all">
-                        Details
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-12 bg-white rounded-xl border border-slate-200">
-              <FaSearch className="text-5xl text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-600 font-semibold text-lg">No classes found</p>
-              <p className="text-slate-500">Try adjusting your search or filters</p>
-            </div>
-          )}
-        </div>
-        )}
+      
           </div>
         )}
     </div>
