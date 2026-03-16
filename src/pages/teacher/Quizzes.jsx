@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaAward, FaPencilAlt, FaPlus, FaEye, FaTrash, FaEdit, FaClock, FaUsers, FaClipboardCheck, FaBook, FaCheckCircle, FaCopy } from 'react-icons/fa';
+import { FaAward, FaPencilAlt, FaPlus, FaEye, FaTrash, FaEdit, FaClock, FaUsers, FaClipboardCheck, FaBook, FaCheckCircle, FaCopy, FaCalendar } from 'react-icons/fa';
 import { MdQuiz } from 'react-icons/md';
 import { toast } from 'react-toastify';
 import QuizFormModal from '../../components/teacher/QuizFormModal';
+import TeacherDashboardStats from '../../components/common/StatCard';
 import { BiLoader } from 'react-icons/bi';
 import { quizAPI } from '../../api/quiz';
 
@@ -14,18 +15,49 @@ const TeacherQuizzes = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedTab, setSelectedTab] = useState('published');
   const [selectedQuiz, setSelectedQuiz] = useState(null);
-  
+  const [successMessage, setSuccessMessage] = useState('');
   const [quizzes, setQuizzes] = useState([]);
-  const [stats, setStats] = useState({
-    total: 0,
-    published: 0,
-    draft: 0,
-    pending: 0,
-    attempts: 0,
-  });
+  const [dashboardStats, setDashboardStats] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const [error, setError] = useState('');
+
+  // Dashboard stats metrics configuration
+  const metricsConfig = [
+    {
+      label: 'Total Quizzes',
+      statsKey: 'total_quizzes',
+      icon: MdQuiz,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'all quizzes',
+    },
+    {
+      label: 'Published',
+      statsKey: 'published_quizzes',
+      icon: FaCheckCircle,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'approved quizzes',
+    },
+    {
+      label: 'Drafts',
+      statsKey: 'draft_quizzes',
+      icon: FaEdit,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'unpublished quizzes',
+    },
+    {
+      label: 'This Month',
+      statsKey: 'quizzes_this_month',
+      icon: FaCalendar,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'quizzes created',
+    },
+  ];
 
   // Fetch quizzes from API
   const fetchQuizzes = async () => {
@@ -34,32 +66,32 @@ const TeacherQuizzes = () => {
     try {
       const response = await quizAPI.getAllQuizzes();
       const allQuizzes = response.data?.data || [];
-      
       setQuizzes(allQuizzes);
-
-      // Calculate stats from fetched quizzes
-      const total = allQuizzes.length;
-      const published = allQuizzes.filter(q => q.is_published).length;
-      const draft = allQuizzes.filter(q => !q.is_published).length;
-      const attempts = allQuizzes.reduce((sum, q) => sum + (q.total_attempts || 0), 0);
-
-      setStats({
-        total,
-        published,
-        draft,
-        pending: 0,
-        attempts,
-      });
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch quizzes');
-      toast.error('Failed to load quizzes');
+      toast.error('Failed to fetch quizzes');
     } finally {
       setLoading(false);
     }
   };
 
+  // Fetch dashboard statistics from API
+  const fetchDashboardStats = async () => {
+    setStatsLoading(true);
+    try {
+      const response = await quizAPI.getTeacherDashboardStats();
+      setDashboardStats(response.data?.data || null);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load dashboard statistics');
+      toast.error('Failed to load dashboard statistics');
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchQuizzes();
+    fetchDashboardStats();
   }, []);
 
   const handleCreateQuiz = () => {
@@ -81,8 +113,10 @@ const TeacherQuizzes = () => {
       setQuizzes(quizzes.filter(q => q.quiz_id !== quizId));
       toast.success('Quiz deleted successfully');
       fetchQuizzes();
+      setSuccessMessage('Quiz deleted successfully');
     } catch (err) {
       toast.error(err.response?.data?.message || 'Failed to delete quiz');
+      setSuccessMessage('');
     }
   };
 
@@ -197,60 +231,13 @@ const TeacherQuizzes = () => {
           </button>
         </div>
       </div>
+      <span className="text-red-600 mb-4 block">{error}</span>
+      <span className="text-green-600 mb-4 block">{successMessage}</span>
 
-      {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-2">Total Quizzes</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.total}</p>
-                <p className="text-xs text-gray-500 mt-2">all quizzes</p>
-              </div>
-              <div className="bg-blue-100 text-blue-600 p-3 rounded-lg text-2xl">
-                <MdQuiz />
-              </div>
-            </div>
-          </div>
-          <div className="card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-2">Published</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.published}</p>
-                <p className="text-xs text-gray-500 mt-2">approved quizzes</p>
-              </div>
-              <div className="bg-green-100 text-green-600 p-3 rounded-lg text-2xl">
-                <FaCheckCircle />
-              </div>
-            </div>
-          </div>
-          <div className="card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-2">Pending Reviews</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.pending}</p>
-                <p className="text-xs text-gray-500 mt-2">manual grading</p>
-              </div>
-              <div className="bg-yellow-100 text-yellow-600 p-3 rounded-lg text-2xl">
-                <FaPencilAlt />
-              </div>
-            </div>
-          </div>
-          <div className="card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-2">Drafts</p>
-                <p className="text-3xl font-bold text-gray-900">{stats.draft}</p>
-                <p className="text-xs text-gray-500 mt-2">unpublished quizzes</p>
-              </div>
-              <div className="bg-purple-100 text-purple-600 p-3 rounded-lg text-2xl">
-                <FaEdit />
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Dashboard Stats */}
+      <TeacherDashboardStats stats={dashboardStats} metricsConfig={metricsConfig} loading={statsLoading} />
 
-        <div>
+      <div>
           <div className="flex space-x-4 mb-6 border-b">
             <button
               onClick={() => setSelectedTab('published')}
