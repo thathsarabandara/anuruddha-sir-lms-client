@@ -11,7 +11,7 @@ import {
   FaCalendarAlt,
 } from 'react-icons/fa';
 import { toast } from 'react-toastify';
-import PulseLoader from '../../components/common/PulseLoader';
+
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import { adminAPI } from '../../api/admin';
@@ -731,13 +731,6 @@ const AdminPayments = () => {
     return `${badge.bg} ${badge.text}`;
   };
 
-  if (loading && !stats) {
-    return (
-      <div className="flex items-center justify-center h-screen">
-        <PulseLoader />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -881,12 +874,7 @@ const AdminPayments = () => {
               </div>
             </div>
 
-            {/* Payments Table */}
-            {loading ? (
-              <div className="flex items-center justify-center p-8">
-                <PulseLoader />
-              </div>
-            ) : (
+            
               <>
                 <div className="bg-white rounded-lg shadow overflow-hidden">
                   <div className="overflow-x-auto">
