@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { FaCheckCircle, FaTimes, FaFilter, FaRefresh } from 'react-icons/fa';
 import ReviewsList from '../../components/common/ReviewsList';
-import PulseLoader from '../../components/common/PulseLoader';
+
 
 const AdminReviewModeration = () => {
   const [filterApproved, setFilterApproved] = useState(null);
