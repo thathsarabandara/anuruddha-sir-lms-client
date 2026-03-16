@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { FaFilePdf, FaGraduationCap, FaTimes, FaTrophy, FaChartLine } from 'react-icons/fa';
+import { FaFilePdf, FaGraduationCap, FaTimes, FaTrophy, FaChartLine, FaChartArea, FaStar } from 'react-icons/fa';
 import PulseLoader from '../../components/common/PulseLoader';
 import StatCard from '../../components/common/StatCard';
 
@@ -77,7 +77,7 @@ const AdminCertificates = () => {
     {
       label: 'Pending',
       statsKey: 'pending',
-      icon: '⏳',
+      icon: FaTimes,
       bgColor: 'bg-orange-100',
       textColor: 'text-orange-600',
       description: 'awaiting approval',
@@ -107,9 +107,9 @@ const AdminCertificates = () => {
 
   const achievements = [
     { name: 'Top Performer', count: 45, icon: FaTrophy, color: 'bg-yellow-100 text-yellow-700' },
-    { name: 'Perfect Attendance', count: 78, icon: '⭐', color: 'bg-blue-100 text-blue-700' },
+    { name: 'Perfect Attendance', count: 78, icon: FaStar, color: 'bg-blue-100 text-blue-700' },
     { name: 'Quiz Master', count: 34, icon: FaFilePdf, color: 'bg-green-100 text-green-700' },
-    { name: 'Fast Learner', count: 56, icon: '⚡', color: 'bg-purple-100 text-purple-700' },
+    { name: 'Fast Learner', count: 56, icon: FaChartArea, color: 'bg-purple-100 text-purple-700' },
   ];
 
   return (
