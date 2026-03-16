@@ -13,17 +13,19 @@ import React from 'react';
  *   - bgColor: Background color class (e.g., 'bg-blue-100')
  *   - textColor: Text color class (e.g., 'text-blue-600')
  *   - description: Short description text
+ *   - formatter: (Optional) Function to format the value before display
  * @param {boolean} loading - Optional loading state
  * 
  * @example
  * const metricsConfig = [
  *   {
- *     label: 'Total Quizzes',
- *     statsKey: 'total_quizzes',
- *     icon: MdQuiz,
- *     bgColor: 'bg-blue-100',
- *     textColor: 'text-blue-600',
- *     description: 'all quizzes',
+ *     label: 'Monthly Revenue',
+ *     statsKey: 'monthly_revenue',
+ *     icon: FaDollarSign,
+ *     bgColor: 'bg-yellow-100',
+ *     textColor: 'text-yellow-600',
+ *     description: 'total revenue',
+ *     formatter: (value) => `$${value.toLocaleString()}`,
  *   },
  * ];
  * <StatCard stats={stats} metricsConfig={metricsConfig} />
@@ -61,12 +63,13 @@ const StatCard = ({ stats, metricsConfig = [], loading = false }) => {
       {metricsConfig.map((metric, idx) => {
         const IconComponent = metric.icon;
         const value = stats[metric.statsKey] || 0;
+        const displayValue = metric.formatter ? metric.formatter(value) : value;
         return (
           <div key={idx} className="card hover:shadow-lg transition-shadow">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600 mb-2">{metric.label}</p>
-                <p className="text-3xl font-bold text-gray-900">{value}</p>
+                <p className="text-3xl font-bold text-gray-900">{displayValue}</p>
                 <p className="text-xs text-gray-500 mt-2">{metric.description}</p>
               </div>
               <div className={`${metric.bgColor} ${metric.textColor} p-3 rounded-lg text-2xl flex-shrink-0`}>
