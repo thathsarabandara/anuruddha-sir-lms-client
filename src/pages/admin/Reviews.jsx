@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { FaCheckCircle, FaTimes, FaFilter, FaRefresh } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 import ReviewsList from '../../components/common/ReviewsList';
 
 
 const AdminReviewModeration = () => {
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   const [filterApproved, setFilterApproved] = useState(null);
   const [courseFilter, setCourseFilter] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -14,6 +21,14 @@ const AdminReviewModeration = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
