@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
 import { MdClose, MdAdd, MdDelete } from 'react-icons/md';
-import { toast } from 'react-toastify';
 import Notification from '../common/Notification';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
 
-const QuestionModal = ({ isOpen, onClose, onSave, question, quizId }) => {
+const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotification }) => {
   const getInitialFormData = () => ({
     question_type: question?.question_type || 'MCQ_SINGLE',
     question_text: question?.question_text || '',
@@ -43,7 +42,10 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId }) => {
     
     // Simulate API delay with dummy data
     setTimeout(() => {
-      toast.success(question?.id ? 'Question updated successfully' : 'Question created successfully');
+      const message = question?.id ? 'Question updated successfully' : 'Question created successfully';
+      if (onNotification) {
+        onNotification(message, 'success');
+      }
       setIsLoading(false);
       onSave();
       onClose();
