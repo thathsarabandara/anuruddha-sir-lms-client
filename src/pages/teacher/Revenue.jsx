@@ -1,7 +1,14 @@
+import { useState } from 'react';
 import { FaBook, FaLightbulb, FaDollarSign, FaChartLine, FaClipboardCheck, FaCoins } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 import StatCard from '../../components/common/StatCard';
 
 const TeacherRevenue = () => {
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
   const revenueStats = {
     thisMonth: 1250000,
     lastMonth: 1180000,
@@ -83,6 +90,16 @@ const TeacherRevenue = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Revenue & Earnings</h1>
         <p className="text-gray-600">Track your income and financial performance</p>
