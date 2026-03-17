@@ -1,14 +1,29 @@
 import React, { useState } from 'react';
+import Notification from '../../components/common/Notification';
 import PermissionGroupManager from '../../components/admin/PermissionGroupManager';
 import UserPermissionManager from '../../components/admin/UserPermissionManager';
 
 
 const PermissionManagementPage = () => {
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   const [activeTab, setActiveTab] = useState('groups'); // 'groups', 'users', 'overview'
   const [selectedUserId, setSelectedUserId] = useState(null);
 
   return (
     <div className="min-h-screen bg-gray-100 py-8 px-4">
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
