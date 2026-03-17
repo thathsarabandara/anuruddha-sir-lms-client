@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft, FaCreditCard, FaFileInvoice, FaSpinner, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { useCart, useCheckout } from '../../hooks/useCart';
 import { CiBank } from 'react-icons/ci';
+import Notification from '../../components/common/Notification';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -25,6 +26,11 @@ const CheckoutPage = () => {
   });
   const [checkoutResult, setCheckoutResult] = useState(null);
   const [countdownTimer, setCountdownTimer] = useState(7);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   // Handle countdown and auto-navigate after success/failure
   useEffect(() => {
@@ -90,7 +96,7 @@ const CheckoutPage = () => {
 
     // Simulate API delay with dummy data
     setTimeout(() => {
-      toast.success('Enrolled successfully!');
+      showNotification('Enrolled successfully!', 'success');
       setCheckoutResult({
         type: 'success',
         title: 'Enrollment Successful! 🎉',
@@ -118,7 +124,7 @@ const CheckoutPage = () => {
         discount: 10,
         message: 'Coupon applied successfully!'
       });
-      toast.success('Coupon applied successfully!');
+      showNotification('Coupon applied successfully!', 'success');
       setCheckoutError(null);
       setValidatingCoupon(false);
     }, 500);
@@ -190,7 +196,7 @@ const CheckoutPage = () => {
         });
 
         if (uploadResponse.data.success) {
-          toast.success('Bank slip uploaded successfully!');
+          showNotification('Bank slip uploaded successfully!', 'success');
           setCheckoutResult({
             type: 'success',
             title: 'Bank Slip Uploaded Successfully! ✓',
@@ -323,6 +329,16 @@ const CheckoutPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 lg:p-8">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Result Modal */}
       <ResultModal />
 
