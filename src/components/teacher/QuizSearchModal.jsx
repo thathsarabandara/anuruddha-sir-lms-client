@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { toast } from 'react-toastify';
 import { BiSearch, BiLoader } from 'react-icons/bi';
 import { AiOutlineClose } from 'react-icons/ai';
 import { FaCopy } from 'react-icons/fa';
@@ -31,7 +30,7 @@ const dummyQuizzes = [
   },
 ];
 
-const QuizSearchModal = ({ isOpen, onClose, onSelect }) => {
+const QuizSearchModal = ({ isOpen, onClose, onSelect, onNotification }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -70,7 +69,9 @@ const QuizSearchModal = ({ isOpen, onClose, onSelect }) => {
   const handleCopyQuizId = (quizId) => {
     navigator.clipboard.writeText(quizId);
     setCopiedId(quizId);
-    toast.success('Quiz ID copied!');
+    if (onNotification) {
+      onNotification('Quiz ID copied!', 'success');
+    }
     setTimeout(() => setCopiedId(null), 2000);
   };
 
