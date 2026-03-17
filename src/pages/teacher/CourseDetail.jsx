@@ -1,12 +1,14 @@
  
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { BiLoader } from 'react-icons/bi';
-import { FaEdit, FaStar, FaCheck, FaTimes, FaUser, FaEye } from 'react-icons/fa';
+import { FaEdit, FaStar, FaCheck, FaTimes, FaUser, FaEye, FaBook, FaGamepad, FaStar as FaRating, FaUsers } from 'react-icons/fa';
 import QuizSearchModal from '../../components/teacher/QuizSearchModal';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
 import PDFViewer from '../../components/PDFViewer';
+import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
+import Notification from '../../components/common/Notification';
 
 const CourseDetail = () => {
   const { courseId } = useParams();
@@ -16,7 +18,12 @@ const CourseDetail = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [course, setCourse] = useState(null);
+  const [notification, setNotification] = useState(null);
   const [sections, setSections] = useState([]);
+  
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
   const [categories, setCategories] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [gradeLevels, setGradeLevels] = useState([]);
@@ -81,6 +88,183 @@ const CourseDetail = () => {
   const [selectedPDF, setSelectedPDF] = useState(null);
   const [showPDFViewerModal, setShowPDFViewerModal] = useState(false);
 
+  // Dummy data for enrolled students
+  const dummyEnrolledStudents = [
+    {
+      id: 1,
+      name: 'Alice Johnson',
+      email: 'alice@example.com',
+      payment_method: 'CARD',
+      payment_status: 'PAID',
+      enrolled_date: '2024-03-01',
+      progress: 75,
+    },
+    {
+      id: 2,
+      name: 'Bob Smith',
+      email: 'bob@example.com',
+      payment_method: 'BANK_TRANSFER',
+      payment_status: 'PAID',
+      enrolled_date: '2024-03-05',
+      progress: 60,
+    },
+    {
+      id: 3,
+      name: 'Carol Davis',
+      email: 'carol@example.com',
+      payment_method: 'FREE',
+      payment_status: 'PENDING',
+      enrolled_date: '2024-03-10',
+      progress: 45,
+    },
+    {
+      id: 4,
+      name: 'David Wilson',
+      email: 'david@example.com',
+      payment_method: 'CARD',
+      payment_status: 'PAID',
+      enrolled_date: '2024-03-12',
+      progress: 90,
+    },
+    {
+      id: 5,
+      name: 'Emma Brown',
+      email: 'emma@example.com',
+      payment_method: 'CASH',
+      payment_status: 'COMPLETED',
+      enrolled_date: '2024-03-15',
+      progress: 100,
+    },
+  ];
+
+  // Course stats for StatCard
+  const courseStats = {
+    total_sections: 8,
+    total_lessons: 24,
+    students_enrolled: 145,
+    average_rating: 4.8,
+  };
+
+  const courseStatsConfig = [
+    {
+      label: 'Total Sections',
+      statsKey: 'total_sections',
+      icon: FaBook,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'course sections',
+    },
+    {
+      label: 'Total Lessons',
+      statsKey: 'total_lessons',
+      icon: FaGamepad,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'total lessons',
+    },
+    {
+      label: 'Students Enrolled',
+      statsKey: 'students_enrolled',
+      icon: FaUsers,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'enrolled students',
+    },
+    {
+      label: 'Average Rating',
+      statsKey: 'average_rating',
+      icon: FaRating,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'course rating',
+      formatter: (value) => `${value} ★`,
+    },
+  ];
+
+  // DataTable columns for enrolled students
+  const studentColumns = [
+    {
+      key: 'name',
+      label: 'Student Name',
+      searchable: true,
+      render: (_, row) => (
+        <div className="flex items-center">
+          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+            <FaUser className="text-blue-600" />
+          </div>
+          <div className="ml-3">
+            <div className="font-medium text-gray-900">{row.name}</div>
+            <div className="text-sm text-gray-500">{row.email}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'payment_method',
+      label: 'Payment Method',
+      render: (_, row) => (
+        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+          row.payment_method === 'CARD' ? 'bg-blue-100 text-blue-700' :
+          row.payment_method === 'BANK_TRANSFER' ? 'bg-green-100 text-green-700' :
+          row.payment_method === 'CASH' ? 'bg-yellow-100 text-yellow-700' :
+          'bg-gray-100 text-gray-700'
+        }`}>
+          {row.payment_method || 'N/A'}
+        </span>
+      ),
+    },
+    {
+      key: 'payment_status',
+      label: 'Payment Status',
+      render: (_, row) => (
+        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${
+          row.payment_status === 'PAID' || row.payment_status === 'COMPLETED' ? 'bg-green-100 text-green-700' :
+          row.payment_status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
+          'bg-red-100 text-red-700'
+        }`}>
+          {row.payment_status === 'PAID' || row.payment_status === 'COMPLETED' ? <FaCheck className="text-xs" /> : null}
+          {row.payment_status}
+        </span>
+      ),
+    },
+    {
+      key: 'enrolled_date',
+      label: 'Enrolled Date',
+      render: (_, row) => <span className="text-sm text-gray-500">{new Date(row.enrolled_date).toLocaleDateString()}</span>,
+    },
+    {
+      key: 'progress',
+      label: 'Progress',
+      render: (_, row) => (
+        <div className="flex items-center gap-2">
+          <div className="w-32 bg-gray-200 rounded-full h-2">
+            <div className={`h-2 rounded-full ${
+              row.progress >= 75 ? 'bg-green-600' :
+              row.progress >= 50 ? 'bg-yellow-600' :
+              'bg-red-600'
+            }`} style={{ width: `${row.progress}%` }}></div>
+          </div>
+          <span className="text-sm font-medium text-gray-900">{row.progress}%</span>
+        </div>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (_, row) => (
+        <button
+          onClick={() => {
+            setSelectedStudent(row);
+            setShowStudentProfileModal(true);
+          }}
+          className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+        >
+          <FaEye /> View
+        </button>
+      ),
+    },
+  ];
+
   useEffect(() => {
     // Load dummy data asynchronously to avoid cascading renders
     const timer = setTimeout(() => {
@@ -142,31 +326,31 @@ const CourseDetail = () => {
 
   const handleUpdateCourse = async (e) => {
     e.preventDefault();
-    toast.success('Course updated successfully');
+    showNotification('Course updated successfully', 'success');
     setShowEditModal(false);
   };
 
   const handleUploadThumbnail = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    toast.success('Thumbnail uploaded successfully');
+    showNotification('Thumbnail uploaded successfully', 'success');
   };
 
   const handleDeleteThumbnail = async () => {
     if (!window.confirm('Are you sure you want to delete the current thumbnail?')) return;
-    toast.success('Thumbnail deleted successfully');
+    showNotification('Thumbnail deleted successfully', 'success');
   };
 
   const handleCreateSection = async (e) => {
     e.preventDefault();
-    toast.success('Section created successfully');
+    showNotification('Section created successfully', 'success');
     setShowSectionModal(false);
     setSectionForm({ title: '', description: '', order: 1 });
   };
 
   const handleUpdateSection = async (e) => {
     e.preventDefault();
-    toast.success('Section updated successfully');
+    showNotification('Section updated successfully', 'success');
     setShowSectionModal(false);
     setEditingSection(null);
     setSectionForm({ title: '', description: '', order: 1 });
@@ -207,12 +391,12 @@ const CourseDetail = () => {
         quizData: { id: quizId, title: 'Quiz ' + quizId, questions: 10 },
         error: null
       });
-      toast.success('Quiz verified successfully!');
+      showNotification('Quiz verified successfully!', 'success');
     }, 500);
   };
 
   const confirmDelete = async () => {
-    toast.success(`${deleteConfirmData.type} deleted successfully`);
+    showNotification(`${deleteConfirmData.type} deleted successfully`, 'success');
     setShowDeleteConfirmModal(false);
     setDeleteConfirmData({ type: null, id: null, name: '' });
   };
@@ -225,7 +409,7 @@ const CourseDetail = () => {
 
   const handleCreateLesson = async (e) => {
     e.preventDefault();
-    toast.success('Lesson created successfully');
+    showNotification('Lesson created successfully', 'success');
     setShowLessonModal(false);
     setLessonForm({
       title: '',
@@ -247,7 +431,7 @@ const CourseDetail = () => {
   };
 
   const handleUploadLessonFile = async (lessonId, file, fileType) => {
-    toast.success(`${fileType} uploaded successfully`);
+    showNotification(`${fileType} uploaded successfully`, 'success');
   };
 
   const handleDeleteLesson = (lessonId, lessonTitle) => {
@@ -385,6 +569,16 @@ const CourseDetail = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
@@ -497,111 +691,23 @@ const CourseDetail = () => {
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-500">Total Sections</div>
-              <div className="text-2xl font-bold text-gray-900">{sections.length}</div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-500">Total Lessons</div>
-              <div className="text-2xl font-bold text-gray-900">
-                {sections.reduce((sum, section) => sum + (section.lessons?.length || 0), 0)}
-              </div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-500">Students Enrolled</div>
-              <div className="text-2xl font-bold text-gray-900">{enrolledStudents.length || 0}</div>
-            </div>
-            <div className="bg-white rounded-lg shadow p-4">
-              <div className="text-sm text-gray-500">Average Rating</div>
-              <div className="text-2xl font-bold text-gray-900">{course?.average_rating || 0}<FaStar className="inline text-yellow-400 ml-1" /></div>
-            </div>
+          <div className="mb-8">
+            <StatCard stats={courseStats} metricsConfig={courseStatsConfig} />
           </div>
 
           {/* Enrolled Students Section */}
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="card">
             <h2 className="text-xl font-semibold mb-4">Enrolled Students</h2>
-            {loadingStudents ? (
-              <div className="flex items-center justify-center py-8">
-                <BiLoader className="animate-spin text-2xl text-blue-600 mr-2" />
-                <span className="text-gray-600">Loading students...</span>
-              </div>
-            ) : enrolledStudents.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-gray-200">
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Student Name</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Email</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Payment Method</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Payment Status</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Enrolled Date</th>
-                      <th className="text-left py-3 px-4 font-semibold text-gray-700">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {enrolledStudents.map((student) => (
-                      <tr key={student.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                        <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                              {student.image &&
-                                <img src={getAbsoluteImageUrl(student.image)} alt='student_image' className='rounded-full w-8 h-8'/>
-                              }
-                              {!student.image &&
-                                <FaUser className="text-blue-600 text-sm" />
-                              }
-                            </div>
-                            <span className="font-medium text-gray-900">{student.user?.name || student.name || 'N/A'}</span>
-                          </div>
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">{student.user?.email || student.email || 'N/A'}</td>
-                        <td className="py-3 px-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            student.payment_method === 'CARD' ? 'bg-blue-100 text-blue-700' :
-                            student.payment_method === 'BANK_TRANSFER' ? 'bg-green-100 text-green-700' :
-                            student.payment_method === 'CASH' ? 'bg-yellow-100 text-yellow-700' :
-                            student.payment_method === 'FREE' ? 'bg-gray-100 text-gray-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {student.payment_method || 'N/A'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-1 w-fit ${
-                            student.payment_status === 'COMPLETED' || student.payment_status === 'PAID' ? 'bg-green-100 text-green-700' :
-                            student.payment_status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                            student.payment_status === 'FAILED' ? 'bg-red-100 text-red-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {student.payment_status === 'COMPLETED' || student.payment_status === 'PAID' ? <FaCheck className="text-xs" /> : null}
-                            {student.payment_status || 'FREE'}
-                          </span>
-                        </td>
-                        <td className="py-3 px-4 text-sm text-gray-600">
-                          {student.enrolled_at ? new Date(student.enrolled_at).toLocaleDateString() : 'N/A'}
-                        </td>
-                        <td className="py-3 px-4">
-                          <button
-                            onClick={() => {
-                              setSelectedStudent(student);
-                              setShowStudentProfileModal(true);
-                            }}
-                            className="px-3 py-1 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1 transition-colors"
-                          >
-                            <FaEye className="text-xs" /> View Profile
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500">No students enrolled yet</p>
-              </div>
-            )}
+            <DataTable
+              data={dummyEnrolledStudents}
+              columns={studentColumns}
+              config={{
+                itemsPerPage: 10,
+                searchPlaceholder: 'Search by student name...',
+                hideSearch: false,
+              }}
+              loading={loadingStudents}
+            />
           </div>
         </div>
       )}
@@ -1525,6 +1631,7 @@ const CourseDetail = () => {
             verifyQuizId(quiz.id);
           }, 100);
         }}
+        onNotification={showNotification}
       />
 
       {/* Student Profile Modal */}
