@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { FaCheckCircle, FaExclamationTriangle, FaGraduationCap, FaTimes, FaUserGraduate, FaTimesCircle, FaClock, FaSearch, FaEye, FaCheck, FaBan, FaUndo, FaUserPlus, FaEdit, FaKey } from 'react-icons/fa';
 import { BiLoader } from 'react-icons/bi';
-
+import Notification from '../../components/common/Notification';
 import StatCard from '../../components/common/StatCard';
 import { studentAPI } from '../../api/student';
 
@@ -50,6 +50,11 @@ const TeacherStudents = () => {
   const [editFormData, setEditFormData] = useState({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   const fetchStats = async () => {
     try {
@@ -412,6 +417,16 @@ const TeacherStudents = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
