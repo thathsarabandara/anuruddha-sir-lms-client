@@ -5,8 +5,6 @@ import { IoIosTrendingUp } from 'react-icons/io';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, AreaChart, Area } from 'recharts';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
-import ErrorComponent from '../../components/common/ErrorComponent';
-import SuccessComponent from '../../components/common/SuccessComponent';
 
 const TeacherDashboard = () => {
 
