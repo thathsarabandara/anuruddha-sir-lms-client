@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { FaBook, FaCalendar,  FaChartBar, FaCheck, FaCheckCircle, FaFilePdf, FaTimes, FaHourglassHalf, FaEye } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 
 const AdminQuizzes = () => {
+  const [notification, setNotification] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
@@ -121,6 +123,14 @@ const AdminQuizzes = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Quiz Management</h1>
         <p className="text-gray-600">Review and moderate quiz content</p>
