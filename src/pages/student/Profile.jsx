@@ -5,6 +5,7 @@ import { isValidEmail, isValidPhone } from '../../utils/helpers';
 import { CgProfile } from "react-icons/cg";
 import { IoLockClosed } from "react-icons/io5";
 import { FaBell } from "react-icons/fa";
+import Notification from '../../components/common/Notification';
 
 const StudentProfile = () => {
   const { user } = useSelector((state) => state.auth);
@@ -108,8 +109,24 @@ const StudentProfile = () => {
     { id: 3, title: 'In app Notifications', description: 'Receive In app Updates', enabled: true },
   ];
 
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   return (
     <div className="p-8">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">My Profile</h1>
         <p className="text-gray-600">Manage your account settings and preferences</p>
