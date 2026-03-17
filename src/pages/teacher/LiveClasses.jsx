@@ -1,10 +1,16 @@
 import { useState } from 'react';
+import Notification from '../../components/common/Notification';
 import { FaCalendar, FaCheck, FaClock, FaLink, FaTimes, FaUsers, FaVideo, FaBook, FaCheckCircle } from 'react-icons/fa';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 
 const TeacherLiveClasses = () => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   const liveClassesMetricsConfig = [
     {
@@ -272,6 +278,16 @@ const TeacherLiveClasses = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Live Classes</h1>
