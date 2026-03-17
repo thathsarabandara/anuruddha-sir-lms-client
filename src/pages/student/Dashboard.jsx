@@ -1,12 +1,13 @@
-import { FaBook, FaChartLine, FaFire, FaTrophy, FaClock, FaCheckCircle, FaGraduationCap, FaAward, FaFileAlt, FaTimesCircle, FaCheckCircle as FaCheck, FaRulerCombined, FaLeaf, FaStar, FaShare, FaDownload, FaArrowRight, FaBolt, FaEye } from 'react-icons/fa';
+import { FaBook, FaChartLine, FaFire, FaTrophy, FaClock, FaCheckCircle, FaGraduationCap, FaAward, FaFileAlt, FaCheckCircle as FaCheck, FaRulerCombined, FaLeaf, FaStar, FaShare, FaDownload, FaArrowRight, FaBolt } from 'react-icons/fa';
 import { Pie, Bar, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler } from 'chart.js';
 import { RiEnglishInput } from 'react-icons/ri';
 import { MdOutlineLanguage } from 'react-icons/md';
+import { useState } from 'react';
 import StatCard from '../../components/common/StatCard';
-import DashStat from '../../components/student/DashStat';
 import ProgressStat from '../../components/student/PorgressStat';
 import QuizCard from '../../components/student/QuizCard';
+import Notification from '../../components/common/Notification';
 
 // Register ChartJS components
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler);
@@ -554,9 +555,25 @@ const StudentDashboard = () => {
       }
     }
   };
+
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header Section */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-6 py-8">
