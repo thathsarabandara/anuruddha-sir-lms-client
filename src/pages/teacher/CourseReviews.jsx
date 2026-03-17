@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaCheckCircle, FaClock, FaChartBar, FaRefresh } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 import ReviewsList from '../../components/common/ReviewsList';
 import { useParams } from 'react-router-dom';
 
@@ -7,6 +8,11 @@ const TeacherCourseReviews = () => {
   const { courseId } = useParams();
   const [filterApproved, setFilterApproved] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   const handleRefresh = () => {
     setRefreshKey(prev => prev + 1);
@@ -14,6 +20,16 @@ const TeacherCourseReviews = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8">
