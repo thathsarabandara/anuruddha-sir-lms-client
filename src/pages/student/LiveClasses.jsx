@@ -3,6 +3,7 @@ import { FaBook, FaCalendar, FaCheck, FaClock, FaFileVideo, FaUsers, FaVideo, Fa
 import { GoDotFill } from 'react-icons/go';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
+import Notification from '../../components/common/Notification';
 
 // Dummy Live Classes Data
 const getDummyZoomClasses = () => {
@@ -308,8 +309,24 @@ const StudentLiveClasses = () => {
     }
   ], [filter]);
 
+  const [notificationState, setNotificationState] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotificationState({ message, type, duration });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 lg:p-8">
+        {notificationState && (
+          <div className="fixed top-4 right-4 z-50 max-w-md">
+            <Notification
+              message={notificationState.message}
+              type={notificationState.type}
+              duration={notificationState.duration}
+              onClose={() => setNotificationState(null)}
+            />
+          </div>
+        )}
         {/* Header */}
         <div className="bg-white border-b border-slate-200 sticky top-0 z-10 mb-5">
           <div className="max-w-7xl mx-auto px-6 py-8">
