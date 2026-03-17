@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
+import Notification from '../../components/common/Notification';
 
 // Dummy Courses Data
 const getDummyCourses = (filters = {}) => {
@@ -300,6 +300,11 @@ const StudentCoursesDiscover = () => {
     price_type: '',
     sort_by: 'latest'
   });
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   useEffect(() => {
     const fetchUtilityData = async () => {
@@ -325,7 +330,7 @@ const StudentCoursesDiscover = () => {
         setCourses(courses);
         setLoading(false);
       } catch (err) {
-        toast.error('Failed to fetch courses');
+        showNotification('Failed to fetch courses', 'error');
         setLoading(false);
         console.error(err);
       }
@@ -342,7 +347,7 @@ const StudentCoursesDiscover = () => {
       setCourses(courses);
       setLoading(false);
     } catch (err) {
-      toast.error('Failed to fetch courses');
+      showNotification('Failed to fetch courses', 'error');
       setLoading(false);
       console.error(err);
     }
@@ -351,13 +356,13 @@ const StudentCoursesDiscover = () => {
   const handleEnroll = async (courseId) => {
     try {
       // Simulate enrollment with dummy data
-      toast.success('Successfully enrolled in course!');
+      showNotification('Successfully enrolled in course!', 'success');
       // Update the course as enrolled in local state
       setCourses(courses.map(course => 
         course.id === courseId ? { ...course, is_enrolled: true } : course
       ));
     } catch (error) {
-      toast.error('Failed to enroll in course');
+      showNotification('Failed to enroll in course', 'error');
     }
   };
 
@@ -367,6 +372,16 @@ const StudentCoursesDiscover = () => {
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Discover Courses</h1>
