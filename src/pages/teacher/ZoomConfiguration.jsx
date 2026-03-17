@@ -274,5 +274,5 @@ const ZoomConfiguration = () => {
     </div>
   );
 };
-
+};
 export default ZoomConfiguration;
