@@ -7,6 +7,7 @@ import {
   FaSearch, FaBell, FaShieldAlt,
   FaClipboardCheck,
 } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 import { Line, Bar, Doughnut, Pie } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler } from 'chart.js';
 
@@ -18,6 +19,11 @@ import { CiCircleAlert } from 'react-icons/ci';
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler);
 
 const AdminDashboard = () => {
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
  
   const adminMetricsConfig = [
     {
@@ -281,6 +287,14 @@ const AdminDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-slate-50 to-slate-100 pb-12">
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
       {/* Header */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-40">
         <div className="px-4 sm:px-6 lg:px-8 py-6">
