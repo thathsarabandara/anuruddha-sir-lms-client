@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaCheckCircle, FaClock, FaArrowLeft, FaDownload } from 'react-icons/fa';
 import { CiBank } from 'react-icons/ci';
+import Notification from '../../components/common/Notification';
 
 const BankTransferPending = () => {
   const navigate = useNavigate();
@@ -28,8 +29,24 @@ const BankTransferPending = () => {
     return null;
   }
 
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 lg:p-8">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <button
