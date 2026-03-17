@@ -5,6 +5,7 @@ import { BiLoader } from 'react-icons/bi';
 
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
+import Notification from '../../components/common/Notification';
 import { teacherAPI } from '../../api/teacher';
 
 const AdminTeachers = () => {
@@ -28,6 +29,12 @@ const AdminTeachers = () => {
   const [resetPasswordData, setResetPasswordData] = useState(null);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createFormData, setCreateFormData] = useState({
     profile_picture: '',
@@ -50,7 +57,8 @@ const AdminTeachers = () => {
       const response = await teacherAPI.getTeachers(searchTerm, filterStatus, currentPage, 10);
       setTeachers(response.data.data.teachers || []);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch teachers');
+    setError(err.response?.data?.message || 'Failed to fetch teachers');
+    showNotification(err.response?.data?.message || 'Failed to fetch teachers', 'error');
       console.error('Error fetching teachers:', err);
     } finally {
       setLoading(false);
@@ -113,9 +121,11 @@ const AdminTeachers = () => {
       ));
       
       setSuccess('Teacher approved and activated successfully!');
+      showNotification('Teacher approved and activated successfully!', 'success');
       closeModal();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to approve teacher');
+      showNotification(err.response?.data?.message || 'Failed to approve teacher', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -124,6 +134,7 @@ const AdminTeachers = () => {
   const handleReject = async () => {
     if (!actionReason.trim()) {
       setError('Please provide a rejection reason');
+      showNotification('Please provide a rejection reason', 'error');
       return;
     }
     
@@ -143,11 +154,13 @@ const AdminTeachers = () => {
       ));
       
       setSuccess('Teacher rejected successfully!');
+      showNotification('Teacher rejected successfully!', 'success');
       setShowRejectModal(false);
       setActionReason('');
       closeModal();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reject teacher');
+      showNotification(err.response?.data?.message || 'Failed to reject teacher', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -156,6 +169,7 @@ const AdminTeachers = () => {
   const handleSuspend = async () => {
     if (!actionReason.trim()) {
       setError('Please provide a suspension reason');
+      showNotification('Please provide a suspension reason', 'error');
       return;
     }
     
@@ -175,11 +189,13 @@ const AdminTeachers = () => {
       ));
       
       setSuccess('Teacher suspended successfully!');
+      showNotification('Teacher suspended successfully!', 'success');
       setShowSuspendModal(false);
       setActionReason('');
       closeModal();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to suspend teacher');
+      showNotification(err.response?.data?.message || 'Failed to suspend teacher', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -199,6 +215,7 @@ const AdminTeachers = () => {
       ));
       
       setSuccess('Teacher reactivated successfully!');
+      showNotification('Teacher reactivated successfully!', 'success');
       closeModal();
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reactivate teacher');
@@ -406,6 +423,16 @@ const AdminTeachers = () => {
 
   return (
     <div className="p-8">
+      {/* Notification Component */}
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
