@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaPlus, FaEdit, FaTrash, FaEye, FaBook, FaUsers, FaDollarSign, FaVideo, FaCheckCircle, FaClock, FaChartLine } from 'react-icons/fa';
-import { toast, ToastContainer } from 'react-toastify';
 import { BiLoader } from 'react-icons/bi';
 import StatCard from '../../components/common/StatCard';
 import CourseCard from '../../components/common/CourseCard';
 import CreateCourseForm from '../../components/teacher/CreateCourseForm';
+import Notification from '../../components/common/Notification';
 
 const TeacherCourses = () => {
   const navigate = useNavigate();
@@ -41,6 +41,11 @@ const TeacherCourses = () => {
   const [gradeLevels, _setGradeLevels] = useState(dummyGradeLevels);
   const [categories, _setCategories] = useState(dummyCategories);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [notification, setNotification] = useState(null);
+  
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
   
   const [formData, setFormData] = useState({
     title: '',
@@ -70,7 +75,7 @@ const TeacherCourses = () => {
     e.preventDefault();
     
     if (!formData.title || !formData.description) {
-      toast.error('Title and description are required');
+      showNotification('Title and description are required', 'error');
       return;
     }
 
@@ -79,7 +84,7 @@ const TeacherCourses = () => {
     setTimeout(() => {
       const newCourse = { ...formData, id: Math.random() };
       setCourses([...courses, newCourse]);
-      toast.success('Course created successfully');
+      showNotification('Course created successfully', 'success');
       setShowCreateModal(false);
       resetForm();
       setIsSubmitting(false);
@@ -97,7 +102,7 @@ const TeacherCourses = () => {
     setIsSubmitting(true);
     // Simulate deletion
     setTimeout(() => {
-      toast.success('Course deleted successfully');
+      showNotification('Course deleted successfully', 'success');
       setCourses(courses.filter(c => c.id !== courseToDelete));
       setIsSubmitting(false);
       setShowDeleteModal(false);
@@ -171,6 +176,16 @@ const TeacherCourses = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
