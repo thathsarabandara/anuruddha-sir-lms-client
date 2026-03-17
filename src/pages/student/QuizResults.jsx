@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaTimes, FaTrophy, FaClock, FaClipboardCheck, FaExclamationCircle } from 'react-icons/fa';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
+import Notification from '../../components/common/Notification';
 
 const dummyResults = {
   attempt: { id: 'attempt-001', score: 75, started_at: '2024-03-10T10:00:00', submitted_at: '2024-03-10T10:30:00' },
@@ -89,8 +90,24 @@ const QuizResults = () => {
   const scorePercentage = (attempt.score / quiz.total_marks) * 100;
   const passed = scorePercentage >= quiz.passing_score;
 
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-8">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <button 
