@@ -13,6 +13,7 @@ import {
   FaStar,
   FaCalendarAlt,
 } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 
 const dummyCompletedQuizzes = [
   {
@@ -49,6 +50,12 @@ const CompletedQuizzes = () => {
     passed: 0,
     failed: 0,
   });
+
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   useEffect(() => {
     fetchCompletedQuizzes();
@@ -191,6 +198,16 @@ const CompletedQuizzes = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
