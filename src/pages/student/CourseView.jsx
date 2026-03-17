@@ -11,6 +11,7 @@ import {
   FaVideo,
   FaLock
 } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 
 const CourseView = () => {
   const { courseId } = useParams();
@@ -92,8 +93,24 @@ const CourseView = () => {
     );
   };
 
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header */}
       <div className={`bg-gradient-to-r ${course.color} text-white p-8 lg:p-12`}>
         <div className="max-w-6xl mx-auto">
