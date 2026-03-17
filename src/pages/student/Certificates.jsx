@@ -1,6 +1,47 @@
-import { FaAward, FaCheck, FaFilePdf, FaGraduationCap, FaLink, FaTrophy } from 'react-icons/fa';
+import { FaAward, FaCheck, FaFilePdf, FaGraduationCap, FaLink, FaTrophy, FaBook, FaEye } from 'react-icons/fa';
+import { useState, useMemo } from 'react';
+import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
+import Notification from '../../components/common/Notification';
 
 const StudentCertificates = () => {
+  const [filter, setFilter] = useState('issued');
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const certificatesMetricsConfig = [
+    {
+      label: 'Total Certificates',
+      statsKey: 'totalCertificates',
+      icon: FaGraduationCap,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'All earned certificates',
+    },
+    {
+      label: 'Course Completions',
+      statsKey: 'completions',
+      icon: FaCheck,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Courses finished',
+    },
+    {
+      label: 'Achievements',
+      statsKey: 'achievements',
+      icon: FaTrophy,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'Special awards',
+    },
+    {
+      label: 'Average Score',
+      statsKey: 'avgScore',
+      icon: FaAward,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'Overall performance',
+    },
+  ];
   const certificates = [
     {
       id: 1,
@@ -33,10 +74,10 @@ const StudentCertificates = () => {
       certificateNumber: 'CERT-2025-ATT-003',
       status: 'issued',
       color: 'bg-yellow-600',
-    },
+    }
   ];
 
-  const upcomingCertificates = [
+  const inProgressCertificates = [
     {
       id: 4,
       title: 'Sinhala Language Certificate',
@@ -57,15 +98,147 @@ const StudentCertificates = () => {
     },
   ];
 
+  // Define table columns for issued certificates
+  const issuedColumns = useMemo(() => [
+    {
+      key: 'title',
+      label: 'Certificate',
+      render: (_, row) => (
+        <div>
+          <p className="font-semibold text-gray-900">{row.title}</p>
+          <p className="text-xs text-gray-500">{row.course}</p>
+        </div>
+      )
+    },
+    {
+      key: 'issueDate',
+      label: 'Issue Date',
+      render: (_, row) => row.issueDate
+    },
+    {
+      key: 'score',
+      label: 'Score',
+      render: (_, row) => row.score ? `${row.score}% (${row.grade})` : 'N/A'
+    },
+    {
+      key: 'certificateNumber',
+      label: 'Certificate No.',
+      render: (_, row) => <span className="text-xs font-mono">{row.certificateNumber}</span>
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: () => (
+        <span className="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full flex items-center gap-1 w-fit">
+          <FaCheck className="text-xs" /> Verified
+        </span>
+      )
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: () => (
+        <div className="flex gap-2">
+          <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold transition-all">
+            Download
+          </button>
+          <button className="px-2 py-1 border border-gray-300 hover:bg-gray-50 rounded text-xs">
+            <FaEye />
+          </button>
+          <button className="px-2 py-1 border border-gray-300 hover:bg-gray-50 rounded text-xs">
+            <FaLink />
+          </button>
+        </div>
+      )
+    }
+  ], []);
+
+  // Define table columns for in progress certificates
+  const inProgressColumns = useMemo(() => [
+    {
+      key: 'title',
+      label: 'Certificate',
+      render: (_, row) => (
+        <div>
+          <p className="font-semibold text-gray-900">{row.title}</p>
+          <p className="text-xs text-gray-500">{row.course}</p>
+        </div>
+      )
+    },
+    {
+      key: 'progress',
+      label: 'Progress',
+      render: (_, row) => (
+        <div className="w-full">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-xs font-semibold text-gray-700">{row.progress}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div
+              className={`${row.color} h-2 rounded-full transition-all`}
+              style={{ width: `${row.progress}%` }}
+            />
+          </div>
+        </div>
+      )
+    },
+    {
+      key: 'requirement',
+      label: 'Requirement',
+      render: (_, row) => <span className="text-xs text-gray-600">{row.requirement}</span>
+    },
+    {
+      key: 'estimatedDate',
+      label: 'Est. Date',
+      render: (_, row) => row.estimatedDate
+    }
+  ], []);
+
+  // Define table columns for achievements
+  const achievementsColumns = useMemo(() => [
+    {
+      key: 'title',
+      label: 'Achievement',
+      render: (_, row) => (
+        <div className="flex items-center gap-3">
+          <div className="text-2xl">{row.icon}</div>
+          <p className="font-semibold text-gray-900">{row.title}</p>
+        </div>
+      )
+    },
+    {
+      key: 'earned',
+      label: 'Date Earned',
+      render: (_, row) => row.earned
+    }
+  ], []);
+    
+
   const achievements = [
-    { id: 1, title: 'Top Performer', icon: FaTrophy, earned: 'Dec 15, 2025' },
-    { id: 2, title: 'Quiz Champion', icon: FaFilePdf, earned: 'Dec 10, 2025' },
+    { id: 1, title: 'Top Performer', icon: '🏆', earned: 'Dec 15, 2025' },
+    { id: 2, title: 'Quiz Champion', icon: '📚', earned: 'Dec 10, 2025' },
     { id: 3, title: 'Consistent Learner', icon: '⭐', earned: 'Dec 5, 2025' },
     { id: 4, title: 'Quick Learner', icon: '⚡', earned: 'Nov 28, 2025' },
   ];
 
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   return (
     <div className="p-8">
+        {notification && (
+          <div className="fixed top-4 right-4 z-50 max-w-md">
+            <Notification
+              message={notification.message}
+              type={notification.type}
+              duration={notification.duration}
+              onClose={() => setNotification(null)}
+            />
+          </div>
+        )}
         <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="flex items-center justify-between">
@@ -81,158 +254,120 @@ const StudentCertificates = () => {
         </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Certificates</div>
-          <div className="text-2xl font-bold text-gray-900">{certificates.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Course Completions</div>
-          <div className="text-2xl font-bold text-green-600">2</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Achievements</div>
-          <div className="text-2xl font-bold text-yellow-600">{achievements.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Average Score</div>
-          <div className="text-2xl font-bold text-primary-600">91.5%</div>
-        </div>
+      <StatCard 
+        stats={{
+          totalCertificates: (certificates.length + inProgressCertificates.length).toString(),
+          completions: certificates.length.toString(),
+          achievements: achievements.length.toString(),
+          avgScore: '91.5%',
+        }}
+        metricsConfig={certificatesMetricsConfig}
+      />
+
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-4">
+        <button
+          onClick={() => setFilter('issued')}
+          className={`pb-3 px-4 font-semibold transition-all ${
+            filter === 'issued'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          Issued ({certificates.length})
+        </button>
+        <button
+          onClick={() => setFilter('inProgress')}
+          className={`pb-3 px-4 font-semibold transition-all ${
+            filter === 'inProgress'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          In Progress ({inProgressCertificates.length})
+        </button>
+        <button
+          onClick={() => setFilter('achievements')}
+          className={`pb-3 px-4 font-semibold transition-all ${
+            filter === 'achievements'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-slate-600 hover:text-slate-900'
+          }`}
+        >
+          Achievements ({achievements.length})
+        </button>
       </div>
 
-      {/* Issued Certificates */}
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">My Certificates</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {certificates.map((cert) => (
-            <div key={cert.id} className="card hover:shadow-lg transition-shadow">
-              {/* Certificate Preview */}
-              <div className={`${cert.color} text-white p-6 -m-6 mb-4 rounded-t-xl`}>
-                <div className="text-center">
-                  <FaGraduationCap className="text-4xl mb-3" />
-                  <h3 className="text-lg font-bold mb-2">{cert.title}</h3>
-                  <div className="text-white/90 text-sm">{cert.course}</div>
-                </div>
-              </div>
-
-              {/* Certificate Details */}
-              <div className="space-y-3">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div>
-                    <div className="text-gray-600">Issue Date</div>
-                    <div className="font-medium text-gray-900">{cert.issueDate}</div>
-                  </div>
-                  {cert.score && (
-                    <div>
-                      <div className="text-gray-600">Score</div>
-                      <div className="font-medium text-gray-900">
-                        {cert.score}% ({cert.grade})
-                      </div>
-                    </div>
-                  )}
-                  {cert.attendance && (
-                    <div>
-                      <div className="text-gray-600">Attendance</div>
-                      <div className="font-medium text-gray-900">{cert.attendance}</div>
-                    </div>
-                  )}
-                  <div className="col-span-2">
-                    <div className="text-gray-600">Certificate No.</div>
-                    <div className="font-medium text-gray-900 text-xs">{cert.certificateNumber}</div>
-                  </div>
-                </div>
-
-                <div className="flex space-x-2 pt-2">
-                  <button className="flex-1 btn-primary text-sm py-2">
-                    Download PDF
-                  </button>
-                  <button className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50">
-                    👁️
-                  </button>
-                  <button className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50">
-                    🔗
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-center text-xs text-green-600 pt-2">
-                  <FaCheck className="mr-1" />
-                  Verified Certificate
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* Issued Certificates Table */}
+      {filter === 'issued' && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow mb-8">
+          <DataTable
+            columns={issuedColumns}
+            data={certificates}
+            config={{
+              itemsPerPage: 10,
+              searchPlaceholder: 'Search certificates by title or course...',
+              hideSearch: false,
+              emptyMessage: 'No certificates found',
+              searchValue: searchTerm,
+              onSearchChange: (value) => setSearchTerm(value),
+            }}
+            loading={false}
+          />
         </div>
-      </div>
+      )}
 
-      {/* Upcoming Certificates */}
-      <div className="mb-12">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">In Progress</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {upcomingCertificates.map((cert) => (
-            <div key={cert.id} className="card">
-              <div className="flex items-start space-x-4">
-                <div className={`${cert.color} text-white p-4 rounded-lg`}>
-                  <FaAward className="text-3xl" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-bold text-gray-900 mb-1">{cert.title}</h3>
-                  <p className="text-sm text-gray-600 mb-3">{cert.course}</p>
-
-                  <div className="mb-3">
-                    <div className="flex justify-between text-sm mb-2">
-                      <span className="text-gray-600">Progress</span>
-                      <span className="font-semibold text-gray-900">{cert.progress}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className={`${cert.color} h-2 rounded-full transition-all`}
-                        style={{ width: `${cert.progress}%` }}
-                      />
-                    </div>
-                  </div>
-
-                  <div className="text-sm space-y-1">
-                    <div className="text-gray-600">
-                      <span className="font-medium">Requirement:</span> {cert.requirement}
-                    </div>
-                    <div className="text-gray-600">
-                      <span className="font-medium">Est. Date:</span> {cert.estimatedDate}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* In Progress Certificates Table */}
+      {filter === 'inProgress' && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow mb-8">
+          <DataTable
+            columns={inProgressColumns}
+            data={inProgressCertificates}
+            config={{
+              itemsPerPage: 10,
+              searchPlaceholder: 'Search certificates by title or course...',
+              hideSearch: false,
+              emptyMessage: 'No certificates in progress',
+              searchValue: searchTerm,
+              onSearchChange: (value) => setSearchTerm(value),
+            }}
+            loading={false}
+          />
         </div>
-      </div>
+      )}
 
-      {/* Achievements */}
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Achievement Badges</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {achievements.map((achievement) => (
-            <div key={achievement.id} className="card text-center hover:shadow-lg transition-shadow">
-              <div className="text-5xl mb-3">{achievement.icon}</div>
-              <h4 className="font-bold text-gray-900 mb-1">{achievement.title}</h4>
-              <p className="text-xs text-gray-600">Earned {achievement.earned}</p>
-            </div>
-          ))}
+      {/* Achievements Table */}
+      {filter === 'achievements' && (
+        <div className="bg-white rounded-xl border border-slate-200 shadow mb-8">
+          <DataTable
+            columns={achievementsColumns}
+            data={achievements}
+            config={{
+              itemsPerPage: 10,
+              searchPlaceholder: 'Search achievements...',
+              hideSearch: false,
+              emptyMessage: 'No achievements yet',
+              searchValue: searchTerm,
+              onSearchChange: (value) => setSearchTerm(value),
+            }}
+            loading={false}
+          />
         </div>
-      </div>
+      )}
 
       {/* Share Section */}
-      <div className="card bg-gradient-to-r from-primary-50 to-blue-50 border-2 border-primary-200 mt-8">
+      <div className="card bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 mt-8">
         <div className="text-center">
           <div className="text-4xl mb-3">🎉</div>
           <h3 className="text-xl font-bold text-gray-900 mb-2">Share Your Achievements!</h3>
           <p className="text-gray-600 mb-4">
             Let your friends and family know about your success
           </p>
-          <div className="flex justify-center space-x-3">
-            <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+          <div className="flex justify-center gap-3 flex-wrap">
+            <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all">
               Share on Facebook
             </button>
-            <button className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium">
+            <button className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-all">
               Share on WhatsApp
             </button>
           </div>

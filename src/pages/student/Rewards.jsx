@@ -1,14 +1,21 @@
-import { useState } from 'react';
-import { FaBook, FaCheck, FaFilePdf, FaGem, FaGraduationCap, FaTrophy, FaVideo } from 'react-icons/fa';
+/* eslint-disable react-hooks/preserve-manual-memoization */
+import { useState, useMemo } from 'react';
+import { FaBook, FaCheck, FaFilePdf, FaGem, FaGraduationCap, FaTrophy, FaVideo, FaCoins, FaStar, FaHandshake, FaAward, FaWallet } from 'react-icons/fa';
+import DataTable from '../../components/common/DataTable';
+import StatCard from '../../components/common/StatCard';
+import Notification from '../../components/common/Notification';
 
 const StudentRewards = () => {
-  const [selectedTab, setSelectedTab] = useState('balance');
+  const [selectedTab, setSelectedTab] = useState('earnings');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [redeemSearchTerm, setRedeemSearchTerm] = useState('');
+  const [redeemTypeFilter, setRedeemTypeFilter] = useState('all');
 
-  const rewardBalance = {
+  const rewardBalance = useMemo(() => ({
     coins: 1250,
-    gems: 35,
-    totalValue: 6250, // in Rs.
-  };
+    gems: 30,
+    totalValue: 1250 * 5 + 30 * 100, // Assuming 1 coin = Rs.5 and 1 gem = Rs.100
+  }), []);
 
   const recentEarnings = [
     {
@@ -26,7 +33,7 @@ const StudentRewards = () => {
       amount: 5,
       type: 'gems',
       date: 'Yesterday',
-      icon: '⭐',
+      icon: FaStar,
       color: 'text-blue-600',
     },
     {
@@ -44,7 +51,7 @@ const StudentRewards = () => {
       amount: 25,
       type: 'coins',
       date: '3 days ago',
-      icon: '🤝',
+      icon: FaHandshake,
       color: 'text-yellow-600',
     },
     {
@@ -58,7 +65,7 @@ const StudentRewards = () => {
     },
   ];
 
-  const redeemableItems = [
+  const redeemableItems = useMemo(() => [
     {
       id: 1,
       title: 'Free Study Material Pack',
@@ -83,7 +90,7 @@ const StudentRewards = () => {
       description: 'Beautiful frame for your certificates',
       cost: 800,
       type: 'coins',
-      icon: '🖼️',
+      icon: FaAward,
       available: true,
     },
     {
@@ -101,7 +108,7 @@ const StudentRewards = () => {
       description: 'Official scholarship program hoodie',
       cost: 2000,
       type: 'coins',
-      icon: '👕',
+      icon: FaTrophy,
       available: false,
     },
     {
@@ -110,10 +117,10 @@ const StudentRewards = () => {
       description: 'Access to special exam preparation webinar',
       cost: 20,
       type: 'gems',
-      icon: '🌟',
+      icon: FaStar,
       available: true,
     },
-  ];
+  ], []);
 
   const rewardHistory = [
     {
@@ -142,17 +149,252 @@ const StudentRewards = () => {
     },
   ];
 
+  // Calculate metrics for stat cards
+  const stats = {
+    coins: rewardBalance.coins,
+    gems: rewardBalance.gems,
+    totalValue: rewardBalance.totalValue,
+    activitiesCompleted: recentEarnings.length,
+    itemsRedeemed: rewardHistory.filter(item => item.amount < 0).length,
+  };
+
+  const rewardsMetricsConfig = useMemo(() => [
+    {
+      label: 'Reward Coins',
+      statsKey: 'coins',
+      icon: FaCoins,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: `≈ Rs. ${(stats.coins * 5).toLocaleString()}`,
+      formatter: (value) => `${value} pts`,
+    },
+    {
+      label: 'Premium Gems',
+      statsKey: 'gems',
+      icon: FaGem,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: `≈ Rs. ${(stats.gems * 100).toLocaleString()}`,
+      formatter: (value) => `${value} pts`,
+    },
+    {
+      label: 'Total Value',
+      statsKey: 'totalValue',
+      icon: FaWallet,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'from all rewards',
+      formatter: (value) => `Rs. ${(value / 1000).toFixed(1)}k`,
+    },
+    {
+      label: 'Activities',
+      statsKey: 'activitiesCompleted',
+      icon: FaTrophy,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: `${stats.itemsRedeemed} items redeemed`,
+      formatter: (value) => `${value} done`,
+    },
+  ], [stats.coins, stats.gems, stats.totalValue, stats.itemsRedeemed]);
+
   const earnMethods = [
     { title: 'Complete a Quiz', reward: '25-100 coins', icon: FaFilePdf },
-    { title: 'Perfect Attendance (Weekly)', reward: '5 gems', icon: '⭐' },
+    { title: 'Perfect Attendance (Weekly)', reward: '5 gems', icon: FaStar },
     { title: 'Top 3 in Leaderboard', reward: '100 coins', icon: FaTrophy },
-    { title: 'Help a Classmate', reward: '25 coins', icon: '🤝' },
+    { title: 'Help a Classmate', reward: '25 coins', icon: FaHandshake },
     { title: 'Complete All Homework', reward: '3 gems', icon: FaCheck },
     { title: 'Watch All Class Recordings', reward: '50 coins', icon: FaVideo },
   ];
 
+  // Earnings Columns for DataTable
+  const earningsColumns = useMemo(() => [
+    {
+      key: 'title',
+      label: 'Activity',
+      width: '35%',
+      render: (_, row) => {
+        const Icon = row.icon;
+        return (
+          <div className="flex items-center space-x-3">
+            <div className="text-2xl text-gray-700">
+              <Icon />
+            </div>
+            <div>
+              <div className="font-medium text-gray-900">{row.title}</div>
+              <div className="text-sm text-gray-600">{row.date}</div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'type',
+      label: 'Type',
+      width: '20%',
+      render: (_, row) => (
+        <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-2 w-fit ${
+          row.type === 'coins' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'
+        }`}>
+          {row.type === 'coins' ? <FaCoins /> : <FaGem />}
+          <span>{row.type === 'coins' ? 'Coins' : 'Gems'}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'amount',
+      label: 'Amount',
+      width: '25%',
+      render: (_, row) => (
+        <div className={`text-lg font-bold ${row.type === 'coins' ? 'text-yellow-600' : 'text-blue-600'}`}>
+          +{row.amount}
+        </div>
+      ),
+    },
+  ], []);
+
+  // History Columns for DataTable
+  const historyColumns = useMemo(() => [
+    {
+      key: 'title',
+      label: 'Description',
+      width: '40%',
+      render: (_, row) => (
+        <div>
+          <div className="font-medium text-gray-900">{row.title}</div>
+          <div className="text-sm text-gray-600">{row.date}</div>
+        </div>
+      ),
+    },
+    {
+      key: 'amount',
+      label: 'Amount',
+      width: '25%',
+      render: (_, row) => (
+        <div className={`font-bold flex items-center space-x-2 ${row.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
+          <span>{row.amount > 0 ? '+' : ''}{row.amount}</span>
+          {row.type === 'coins' ? <FaCoins /> : <FaGem />}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      width: '25%',
+      render: (_, row) => (
+        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+          row.status === 'delivered' || row.status === 'completed'
+            ? 'bg-green-100 text-green-700'
+            : 'bg-blue-100 text-blue-700'
+        }`}>
+          {row.status.toUpperCase()}
+        </span>
+      ),
+    },
+  ], []);
+
+  // Redeem Columns for DataTable
+  const redeemColumns = useMemo(() => [
+    {
+      key: 'title',
+      label: 'Reward Item',
+      width: '30%',
+      render: (_, row) => {
+        const Icon = row.icon;
+        return (
+          <div className="flex items-center space-x-3">
+            <div className="text-3xl text-gray-700">
+              <Icon />
+            </div>
+            <div>
+              <div className="font-medium text-gray-900">{row.title}</div>
+              <div className="text-xs text-gray-600">{row.description}</div>
+            </div>
+          </div>
+        );
+      },
+    },
+    {
+      key: 'cost',
+      label: 'Cost',
+      width: '20%',
+      render: (_, row) => (
+        <div className="flex items-center space-x-2">
+          {row.type === 'coins' ? <FaCoins className="text-yellow-600" /> : <FaGem className="text-blue-600" />}
+          <span className="font-bold text-gray-900">{row.cost}</span>
+        </div>
+      ),
+    },
+    {
+      key: 'availability',
+      label: 'Availability',
+      width: '20%',
+      render: (_, row) => (
+        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 w-fit ${
+          row.available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+        }`}>
+          {row.available ? <FaCheck /> : null}
+          <span>{row.available ? 'Available' : 'Coming Soon'}</span>
+        </span>
+      ),
+    },
+    {
+      key: 'action',
+      label: 'Action',
+      width: '30%',
+      render: (_, row) => (
+        <button
+          className={`py-2 px-4 rounded-lg font-medium transition-colors ${
+            row.available && (
+              (row.type === 'coins' && rewardBalance.coins >= row.cost) ||
+              (row.type === 'gems' && rewardBalance.gems >= row.cost)
+            )
+              ? 'bg-primary-600 hover:bg-primary-700 text-white'
+              : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+          }`}
+          disabled={
+            !row.available || (
+              (row.type === 'coins' && rewardBalance.coins < row.cost) ||
+              (row.type === 'gems' && rewardBalance.gems < row.cost)
+            )
+          }
+        >
+          {!row.available ? 'Coming Soon' : 
+           (row.type === 'coins' && rewardBalance.coins >= row.cost) ||
+           (row.type === 'gems' && rewardBalance.gems >= row.cost)
+            ? 'Redeem Now' : 'Insufficient'}
+        </button>
+      ),
+    },
+  ], [rewardBalance.coins, rewardBalance.gems]);
+
+  // Filter redeem items by search and type
+  const filteredRedeemItems = useMemo(() => {
+    return redeemableItems.filter(item => {
+      const matchesSearch = item.title.toLowerCase().includes(redeemSearchTerm.toLowerCase()) ||
+                           item.description.toLowerCase().includes(redeemSearchTerm.toLowerCase());
+      const matchesType = redeemTypeFilter === 'all' || item.type === redeemTypeFilter;
+      return matchesSearch && matchesType;
+    });
+  }, [redeemSearchTerm, redeemTypeFilter, redeemableItems]);
+
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   return (
     <div className="p-8">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="flex items-center justify-between">
@@ -167,67 +409,53 @@ const StudentRewards = () => {
           </div>
       </div>
 
-      {/* Balance Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="card bg-gradient-to-br from-yellow-400 to-yellow-600 text-white">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm opacity-90">Reward Coins</span>
-            <span className="text-3xl">🪙</span>
-          </div>
-          <div className="text-4xl font-bold mb-1">{rewardBalance.coins}</div>
-          <div className="text-sm opacity-90">≈ Rs. {(rewardBalance.coins * 5).toLocaleString()}</div>
-        </div>
-
-        <div className="card bg-gradient-to-br from-blue-400 to-blue-600 text-white">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm opacity-90">Premium Gems</span>
-            <FaGem className="text-3xl" />
-          </div>
-          <div className="text-4xl font-bold mb-1">{rewardBalance.gems}</div>
-          <div className="text-sm opacity-90">≈ Rs. {(rewardBalance.gems * 100).toLocaleString()}</div>
-        </div>
-
-        <div className="card bg-gradient-to-br from-green-400 to-green-600 text-white">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm opacity-90">Total Value</span>
-            <span className="text-3xl">💰</span>
-          </div>
-          <div className="text-4xl font-bold mb-1">Rs. {rewardBalance.totalValue.toLocaleString()}</div>
-          <div className="text-sm opacity-90">in rewards earned</div>
-        </div>
-      </div>
+      {/* Balance StatCards - 4 Metrics */}
+      <StatCard
+        stats={stats}
+        metricsConfig={rewardsMetricsConfig}
+      />
 
       {/* Tabs */}
-      <div className="flex space-x-4 mb-8 border-b">
+      <div className="flex space-x-4 mb-6 border-b">
         <button
-          onClick={() => setSelectedTab('balance')}
+          onClick={() => {
+            setSelectedTab('earnings');
+            setSearchTerm('');
+          }}
           className={`pb-3 px-4 font-medium transition-colors ${
-            selectedTab === 'balance'
+            selectedTab === 'earnings'
               ? 'text-primary-600 border-b-2 border-primary-600'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          Recent Earnings
+          Recent Earnings ({recentEarnings.length})
         </button>
         <button
-          onClick={() => setSelectedTab('redeem')}
-          className={`pb-3 px-4 font-medium transition-colors ${
-            selectedTab === 'redeem'
-              ? 'text-primary-600 border-b-2 border-primary-600'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Redeem Rewards
-        </button>
-        <button
-          onClick={() => setSelectedTab('history')}
+          onClick={() => {
+            setSelectedTab('history');
+            setSearchTerm('');
+          }}
           className={`pb-3 px-4 font-medium transition-colors ${
             selectedTab === 'history'
               ? 'text-primary-600 border-b-2 border-primary-600'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          History
+          History ({rewardHistory.length})
+        </button>
+        <button
+          onClick={() => {
+            setSelectedTab('redeem');
+            setRedeemSearchTerm('');
+            setRedeemTypeFilter('all');
+          }}
+          className={`pb-3 px-4 font-medium transition-colors ${
+            selectedTab === 'redeem'
+              ? 'text-primary-600 border-b-2 border-primary-600'
+              : 'text-gray-600 hover:text-gray-900'
+          }`}
+        >
+          Redeem Rewards ({redeemableItems.length})
         </button>
         <button
           onClick={() => setSelectedTab('earn')}
@@ -241,123 +469,77 @@ const StudentRewards = () => {
         </button>
       </div>
 
-      {/* Recent Earnings */}
-      {selectedTab === 'balance' && (
-        <div className="space-y-3">
-          {recentEarnings.map((earning) => (
-            <div key={earning.id} className="card">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="text-3xl">{earning.icon}</div>
-                  <div>
-                    <div className="font-medium text-gray-900">{earning.title}</div>
-                    <div className="text-sm text-gray-600">{earning.date}</div>
-                  </div>
-                </div>
-                <div className={`text-right ${earning.color}`}>
-                  <div className="text-2xl font-bold">
-                    +{earning.amount} {earning.type === 'coins' ? '🪙' : '💎'}
-                  </div>
-                  <div className="text-xs">{earning.type}</div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+      {/* Recent Earnings DataTable */}
+      {selectedTab === 'earnings' && (
+        <DataTable
+          columns={earningsColumns}
+          data={recentEarnings}
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          pagination={{ itemsPerPage: 10 }}
+          searchPlaceholder="Search earnings..."
+        />
       )}
 
-      {/* Redeem Rewards */}
-      {selectedTab === 'redeem' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {redeemableItems.map((item) => (
-            <div
-              key={item.id}
-              className={`card ${!item.available ? 'opacity-60' : ''}`}
-            >
-              <div className="text-center">
-                <div className="text-5xl mb-3">{item.icon}</div>
-                <h3 className="text-lg font-bold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-sm text-gray-600 mb-4">{item.description}</p>
-
-                <div className="flex items-center justify-center space-x-2 mb-4">
-                  <span className="text-3xl">{item.type === 'coins' ? '🪙' : '💎'}</span>
-                  <span className="text-2xl font-bold text-gray-900">{item.cost}</span>
-                </div>
-
-                {item.available ? (
-                  <button
-                    className={`w-full py-2 rounded-lg font-medium ${
-                      (item.type === 'coins' && rewardBalance.coins >= item.cost) ||
-                      (item.type === 'gems' && rewardBalance.gems >= item.cost)
-                        ? 'bg-primary-600 hover:bg-primary-700 text-white'
-                        : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-                    }`}
-                    disabled={
-                      (item.type === 'coins' && rewardBalance.coins < item.cost) ||
-                      (item.type === 'gems' && rewardBalance.gems < item.cost)
-                    }
-                  >
-                    {(item.type === 'coins' && rewardBalance.coins >= item.cost) ||
-                    (item.type === 'gems' && rewardBalance.gems >= item.cost)
-                      ? 'Redeem Now'
-                      : 'Insufficient Balance'}
-                  </button>
-                ) : (
-                  <div className="py-2 bg-gray-200 text-gray-600 rounded-lg text-sm font-medium">
-                    Coming Soon
-                  </div>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* History */}
+      {/* History DataTable */}
       {selectedTab === 'history' && (
-        <div className="space-y-3">
-          {rewardHistory.map((item) => (
-            <div key={item.id} className="card">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <div className="font-medium text-gray-900">{item.title}</div>
-                  <div className="text-sm text-gray-600">{item.date}</div>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <div
-                    className={`text-xl font-bold ${
-                      item.amount > 0 ? 'text-green-600' : 'text-red-600'
-                    }`}
-                  >
-                    {item.amount > 0 ? '+' : ''}
-                    {item.amount} {item.type === 'coins' ? '🪙' : '💎'}
-                  </div>
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      item.status === 'delivered' || item.status === 'completed'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-blue-100 text-blue-700'
-                    }`}
-                  >
-                    {item.status.toUpperCase()}
-                  </span>
-                </div>
-              </div>
+        <DataTable
+          columns={historyColumns}
+          data={rewardHistory}
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          pagination={{ itemsPerPage: 10 }}
+          searchPlaceholder="Search history..."
+        />
+      )}
+
+      {/* Redeem Rewards DataTable with Filters */}
+      {selectedTab === 'redeem' && (
+        <div className="space-y-6">
+          <div className="flex items-center space-x-4 mb-4">
+            <div className="flex-1">
+              <input
+                type="text"
+                placeholder="Search rewards..."
+                value={redeemSearchTerm}
+                onChange={(e) => setRedeemSearchTerm(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              />
             </div>
-          ))}
+            <select
+              value={redeemTypeFilter}
+              onChange={(e) => setRedeemTypeFilter(e.target.value)}
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            >
+              <option value="all">All Types</option>
+              <option value="coins">Coins Only</option>
+              <option value="gems">Gems Only</option>
+            </select>
+          </div>
+          <DataTable
+            columns={redeemColumns}
+            data={filteredRedeemItems}
+            pagination={{ itemsPerPage: 10 }}
+            showSearch={false}
+          />
         </div>
       )}
 
-      {/* How to Earn */}
+      {/* How to Earn Grid */}
       {selectedTab === 'earn' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {earnMethods.map((method, index) => (
-            <div key={index} className="card text-center">
-              <div className="text-5xl mb-3">{method.icon}</div>
-              <h3 className="font-bold text-gray-900 mb-2">{method.title}</h3>
-              <div className="text-primary-600 font-bold">{method.reward}</div>
-            </div>
-          ))}
+          {earnMethods.map((method, index) => {
+            const Icon = method.icon;
+            return (
+              <div key={index} className="bg-white rounded-lg shadow p-6 text-center hover:shadow-lg transition-shadow">
+                <div className="text-5xl mb-3 text-gray-700 flex justify-center">
+                  <Icon />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">{method.title}</h3>
+                <div className="text-primary-600 font-bold">{method.reward}</div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

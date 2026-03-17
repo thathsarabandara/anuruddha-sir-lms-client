@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { ROUTES } from '../utils/constants';
+import { ROUTES, ROLES } from '../utils/constants';
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
@@ -11,11 +11,11 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(user?.role)) {
     const dashboardRoutes = {
-      STUDENT: ROUTES.STUDENT_DASHBOARD,
-      TEACHER: ROUTES.TEACHER_DASHBOARD,
-      ADMIN: ROUTES.ADMIN_DASHBOARD,
-      SUPER_ADMIN: ROUTES.ADMIN_DASHBOARD,
-      DEVELOPER: ROUTES.DEVELOPER_DASHBOARD,
+      [ROLES.STUDENT]: ROUTES.STUDENT_DASHBOARD,
+      [ROLES.TEACHER]: ROUTES.TEACHER_DASHBOARD,
+      [ROLES.ADMIN]: ROUTES.ADMIN_DASHBOARD,
+      [ROLES.SUPERADMIN]: ROUTES.ADMIN_DASHBOARD,
+      [ROLES.DEVELOPER]: ROUTES.DEVELOPER_DASHBOARD,
     };
     return <Navigate to={dashboardRoutes[user?.role] || ROUTES.HOME} replace />;
   }

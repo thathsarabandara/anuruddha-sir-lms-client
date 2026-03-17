@@ -1,8 +1,58 @@
 import { useState } from 'react';
-import { FaCalendar, FaCheck, FaClock, FaLink, FaTimes, FaUsers, FaVideo } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
+import { FaCalendar, FaCheck, FaClock, FaLink, FaTimes, FaUsers, FaVideo, FaBook, FaCheckCircle } from 'react-icons/fa';
+import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 
 const TeacherLiveClasses = () => {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
+  const liveClassesMetricsConfig = [
+    {
+      label: 'This Week',
+      statsKey: 'thisWeek',
+      icon: FaBook,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'Total classes',
+    },
+    {
+      label: 'Upcoming',
+      statsKey: 'upcoming',
+      icon: FaUsers,
+      bgColor: 'bg-cyan-100',
+      textColor: 'text-cyan-600',
+      description: 'Scheduled sessions',
+    },
+    {
+      label: 'Avg Attendance',
+      statsKey: 'avgAttendance',
+      icon: FaCheckCircle,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Average percentage',
+    },
+    {
+      label: 'Total Hours',
+      statsKey: 'totalHours',
+      icon: FaClock,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'Teaching hours',
+    },
+  ];
+
+  const liveClassesStats = {
+    thisWeek: '12',
+    upcoming: '5',
+    avgAttendance: '92%',
+    totalHours: '48.5h',
+  };
 
   const upcomingClasses = [
     {
@@ -37,6 +87,95 @@ const TeacherLiveClasses = () => {
     },
   ];
 
+  // Upcoming Classes DataTable columns
+  const upcomingColumns = [
+    {
+      key: 'title',
+      label: 'Title',
+      searchable: true,
+      width: 'w-1/4',
+    },
+    {
+      key: 'course',
+      label: 'Course',
+      searchable: true,
+      filterable: true,
+      filterOptions: [
+        { label: 'Mathematics Excellence', value: 'Mathematics Excellence' },
+        { label: 'Sinhala Language', value: 'Sinhala Language' },
+        { label: 'Complete Scholarship Package', value: 'Complete Scholarship Package' },
+      ],
+      width: 'w-1/5',
+    },
+    {
+      key: 'date',
+      label: 'Date',
+      searchable: true,
+      width: 'w-20',
+    },
+    {
+      key: 'time',
+      label: 'Time',
+      searchable: true,
+      width: 'w-28',
+    },
+    {
+      key: 'students',
+      label: 'Students',
+      render: (value) => <span>{value} students</span>,
+      width: 'w-24',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      filterable: true,
+      filterOptions: [
+        { label: 'Starting Soon', value: 'starting-soon' },
+        { label: 'Scheduled', value: 'scheduled' },
+      ],
+      render: (value) => (
+        <span
+          className={`px-3 py-1 text-xs font-semibold rounded-full ${
+            value === 'starting-soon'
+              ? 'bg-red-100 text-red-700'
+              : 'bg-blue-100 text-blue-700'
+          }`}
+        >
+          {value === 'starting-soon' ? 'STARTING SOON' : 'SCHEDULED'}
+        </span>
+      ),
+      width: 'w-32',
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      searchable: false,
+      render: (value, row) => (
+        <div className="flex gap-2 flex-wrap">
+          <button
+            className={`px-3 py-1 text-xs rounded font-medium text-white ${
+              row.status === 'starting-soon'
+                ? 'bg-green-600 hover:bg-green-700'
+                : 'bg-primary-600 hover:bg-primary-700'
+            }`}
+          >
+            {row.status === 'starting-soon' ? 'Start Now' : 'Manage'}
+          </button>
+          <button className="px-3 py-1 border border-gray-300 hover:bg-gray-50 text-xs rounded font-medium">
+            Edit
+          </button>
+        </div>
+      ),
+      width: 'w-40',
+    },
+  ];
+
+  const upcomingConfig = {
+    itemsPerPage: 10,
+    searchPlaceholder: 'Search classes...',
+    emptyMessage: 'No upcoming classes',
+  };
+
   const completedClasses = [
     {
       id: 4,
@@ -48,6 +187,7 @@ const TeacherLiveClasses = () => {
       totalStudents: 45,
       recording: true,
       duration: '1:28:45',
+      attendance_percentage: 93,
     },
     {
       id: 5,
@@ -59,11 +199,95 @@ const TeacherLiveClasses = () => {
       totalStudents: 38,
       recording: true,
       duration: '1:25:30',
+      attendance_percentage: 92,
     },
   ];
 
+  // Completed Classes DataTable columns
+  const completedColumns = [
+    {
+      key: 'title',
+      label: 'Title',
+      searchable: true,
+      width: 'w-1/4',
+    },
+    {
+      key: 'course',
+      label: 'Course',
+      searchable: true,
+      filterable: true,
+      filterOptions: [
+        { label: 'Mathematics Excellence', value: 'Mathematics Excellence' },
+        { label: 'Sinhala Language', value: 'Sinhala Language' },
+        { label: 'Complete Scholarship Package', value: 'Complete Scholarship Package' },
+      ],
+      width: 'w-1/5',
+    },
+    {
+      key: 'date',
+      label: 'Date',
+      searchable: true,
+      width: 'w-24',
+    },
+    {
+      key: 'duration',
+      label: 'Duration',
+      width: 'w-24',
+    },
+    {
+      key: 'attendees',
+      label: 'Attendance',
+      render: (value, row) => (
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-medium">{value}/{row.totalStudents}</span>
+          <div className="w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              className="bg-green-600 h-full"
+              style={{ width: `${(value / row.totalStudents) * 100}%` }}
+            />
+          </div>
+        </div>
+      ),
+      width: 'w-40',
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      searchable: false,
+      render: (value, row) => (
+        <div className="flex gap-2 flex-wrap">
+          {row.recording && (
+            <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs rounded font-medium">
+              Recording
+            </button>
+          )}
+          <button className="px-3 py-1 border border-gray-300 hover:bg-gray-50 text-xs rounded font-medium">
+            Attendance
+          </button>
+        </div>
+      ),
+      width: 'w-40',
+    },
+  ];
+
+  const completedConfig = {
+    itemsPerPage: 10,
+    searchPlaceholder: 'Search classes...',
+    emptyMessage: 'No completed classes',
+  };
+
   return (
     <div className="p-8">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Live Classes</h1>
@@ -75,147 +299,26 @@ const TeacherLiveClasses = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">This Week</div>
-          <div className="text-2xl font-bold text-gray-900">12 Classes</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Upcoming</div>
-          <div className="text-2xl font-bold text-blue-600">{upcomingClasses.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Avg Attendance</div>
-          <div className="text-2xl font-bold text-green-600">92%</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Hours</div>
-          <div className="text-2xl font-bold text-purple-600">48.5h</div>
-        </div>
-      </div>
+      <StatCard stats={liveClassesStats} metricsConfig={liveClassesMetricsConfig} />
 
-      {/* Upcoming Classes */}
+      {/* Upcoming Classes DataTable */}
       <div className="mb-8">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Upcoming Classes</h2>
-        <div className="space-y-4">
-          {upcomingClasses.map((class_) => (
-            <div key={class_.id} className="card">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-4 flex-1">
-                  <div className="bg-blue-600 text-white p-4 rounded-lg">
-                    <FaVideo className="text-3xl" />
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <h3 className="text-xl font-bold text-gray-900">{class_.title}</h3>
-                      {class_.status === 'starting-soon' && (
-                        <span className="px-2 py-1 bg-red-100 text-red-600 text-xs font-semibold rounded">
-                          STARTING SOON
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3">{class_.course}</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div className="flex items-center text-gray-600">
-                        <FaCalendar className="mr-2" />
-                        {class_.date}
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <FaClock className="mr-2" />
-                        {class_.time}
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <FaUsers className="mr-2" />
-                        {class_.students} students
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <FaLink className="mr-2" />
-                        Zoom Ready
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col space-y-2">
-                  <button
-                    className={`px-6 py-2 rounded-lg font-medium ${
-                      class_.status === 'starting-soon'
-                        ? 'bg-green-600 hover:bg-green-700 text-white'
-                        : 'bg-primary-600 hover:bg-primary-700 text-white'
-                    }`}
-                  >
-                    {class_.status === 'starting-soon' ? 'Start Now' : 'Manage'}
-                  </button>
-                  <button className="px-6 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-                    Edit
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <DataTable
+          data={upcomingClasses}
+          columns={upcomingColumns}
+          config={upcomingConfig}
+        />
       </div>
 
-      {/* Completed Classes */}
+      {/* Completed Classes DataTable */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Recent Completed Classes</h2>
-        <div className="space-y-4">
-          {completedClasses.map((class_) => (
-            <div key={class_.id} className="card">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start space-x-4 flex-1">
-                  <div className="bg-green-100 text-green-600 p-4 rounded-lg">
-                    <FaCheck className="text-3xl" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-gray-900 mb-1">{class_.title}</h3>
-                    <p className="text-sm text-gray-600 mb-3">{class_.course}</p>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      <div className="flex items-center text-gray-600">
-                        <FaCalendar className="mr-2"   />
-                        {class_.date}
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <FaClock className="mr-2" />
-                        {class_.time}
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <FaUsers className="mr-2" />
-                        {class_.attendees}/{class_.totalStudents} attended
-                      </div>
-                      <div className="flex items-center text-gray-600">
-                        <FaClock className="mr-2" />
-                        {class_.duration}
-                      </div>
-                    </div>
-                    <div className="mt-3">
-                      <div className="flex items-center space-x-2">
-                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-green-600 h-2 rounded-full"
-                            style={{ width: `${(class_.attendees / class_.totalStudents) * 100}%` }}
-                          />
-                        </div>
-                        <span className="text-sm font-medium text-gray-900">
-                          {Math.round((class_.attendees / class_.totalStudents) * 100)}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex flex-col space-y-2">
-                  {class_.recording && (
-                    <button className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium text-sm">
-                      View Recording
-                    </button>
-                  )}
-                  <button className="px-6 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-                    Attendance
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+        <DataTable
+          data={completedClasses}
+          columns={completedColumns}
+          config={completedConfig}
+        />
       </div>
 
       {/* Schedule Modal */}

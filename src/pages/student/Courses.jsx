@@ -1,19 +1,43 @@
-import { useState, useMemo, useCallback } from 'react';
-import { FaSearch, FaCheckCircle, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaBook, FaBookOpen } from 'react-icons/fa';
-import NewCourseCard from '../../components/student/NewCourseCard';
-import EnrolledCourseCard from '../../components/student/EnrolledCourseCard';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { FaSearch, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaBook, FaBookOpen, FaSpinner } from 'react-icons/fa';
+import CourseCard from '../../components/common/CourseCard';
 import { MdOutlineWorkspacePremium } from 'react-icons/md';
 import { GrCompliance } from 'react-icons/gr';
-import CompletedCourseCard from '../../components/student/CompletedCourseCard';
+import Notification from '../../components/common/Notification';
 
 const StudentCourses = () => {
-  const [activeTab, setActiveTab] = useState('new');
+  // Dummy data
+  const dummyNewCourses = [
+    { id: 1, title: 'Advanced Python', teacher_name: 'Dr. John', price: 49.99, rating: 4.8, students: 245 },
+    { id: 2, title: 'Web Development 101', teacher_name: 'Mr. Davis', price: 39.99, rating: 4.6, students: 180 },
+  ];
+  
+  const dummyEnrolledCourses = [
+    { id: 1, title: 'JavaScript Basics', progress: 45, teacher_name: 'Jane Smith' },
+    { id: 2, title: 'React Fundamentals', progress: 65, teacher_name: 'John Doe' },
+  ];
+
+  const dummyCompletedCourses = [
+    { id: 1, title: 'HTML & CSS Basics', certificate: true, teacher_name: 'Tom Wilson' },
+  ];
+
+  const dummyGradeLevels = [{ id: 1, name: '10-12' }, { id: 2, name: '8-9' }];
+  const dummySubjects = [{ id: 1, name: 'Programming' }, { id: 2, name: 'Web Dev' }];
+  const dummyCategories = [{ id: 1, name: 'Technology' }, { id: 2, name: 'Business' }];
+
+  const [activeTab, setActiveTab] = useState('enrolled');
   const [searchQuery, setSearchQuery] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(true);
   const itemsPerPage = 9;
-
-  // Filter States
+  const [newCourses, setNewCourses] = useState(dummyNewCourses);
+  const [enrolledCourses, setEnrolledCourses] = useState(dummyEnrolledCourses);
+  const [completedCourses, setCompletedCourses] = useState(dummyCompletedCourses);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [gradeLevels, setGradeLevels] = useState(dummyGradeLevels);
+  const [subjects, setSubjects] = useState(dummySubjects);
+  const [categories, setCategories] = useState(dummyCategories);
   const [filters, setFilters] = useState({
     grades: [],
     subjects: [],
@@ -22,343 +46,27 @@ const StudentCourses = () => {
     rating: 0
   });
 
-  // Newly Created Courses
-  const newCourses = useMemo(() => [
-    {
-      id: 1,
-      title: 'Advanced Algebra Mastery',
-      subject: 'Mathematics',
-      grade: 5,
-      type: 'Theory Class',
-      instructor: 'Anuruddha Sir',
-      rating: 4.8,
-      students: 234,
-      price: 8500,
-      priceText: 'Rs. 8,500',
-      duration: '4 Weeks',
-      lessons: 32,
-      color: 'from-blue-500 to-blue-600',
-      badge: 'New',
-      description: 'Master advanced algebra concepts for competitive exams'
-    },
-    {
-      id: 2,
-      title: 'Literature & Comprehension',
-      subject: 'Sinhala',
-      grade: 5,
-      type: 'Paper Classes',
-      instructor: 'Anuruddha Sir',
-      rating: 4.7,
-      students: 156,
-      price: 7500,
-      priceText: 'Rs. 7,500',
-      duration: '3 Weeks',
-      lessons: 28,
-      color: 'from-purple-500 to-purple-600',
-      badge: 'New',
-      description: 'Comprehensive guide to Sinhala literature and text analysis'
-    },
-    {
-      id: 3,
-      title: 'English Grammar Pro',
-      subject: 'English',
-      grade: 5,
-      type: 'Quiz Classes',
-      instructor: 'Anuruddha Sir',
-      rating: 4.9,
-      students: 312,
-      price: 8000,
-      priceText: 'Rs. 8,000',
-      duration: '4 Weeks',
-      lessons: 35,
-      color: 'from-red-500 to-red-600',
-      badge: 'New',
-      description: 'Perfect your English grammar skills with practical exercises'
-    },
-    {
-      id: 4,
-      title: 'Environmental Science Essentials',
-      subject: 'Parisaraya',
-      grade: 5,
-      type: 'Theory Class',
-      instructor: 'Anuruddha Sir',
-      rating: 4.6,
-      students: 198,
-      price: 7800,
-      priceText: 'Rs. 7,800',
-      duration: '3.5 Weeks',
-      lessons: 30,
-      color: 'from-green-500 to-green-600',
-      badge: 'New',
-      description: 'Essential environmental science concepts explained simply'
-    },
-    {
-      id: 5,
-      title: 'Tamil Language Foundation',
-      subject: 'Tamil',
-      grade: 5,
-      type: 'Seminars',
-      instructor: 'Anuruddha Sir',
-      rating: 4.5,
-      students: 89,
-      price: 7200,
-      priceText: 'Rs. 7,200',
-      duration: '3 Weeks',
-      lessons: 26,
-      color: 'from-orange-500 to-orange-600',
-      badge: 'New',
-      description: 'Build strong foundation in Tamil language and grammar'
-    },
-    {
-      id: 6,
-      title: 'Mathematics Grade 4 Basics',
-      subject: 'Mathematics',
-      grade: 4,
-      type: 'Theory Class',
-      instructor: 'Anuruddha Sir',
-      rating: 4.7,
-      students: 145,
-      price: 6500,
-      priceText: 'Rs. 6,500',
-      duration: '3 Weeks',
-      lessons: 24,
-      color: 'from-blue-500 to-blue-600',
-      badge: 'New',
-      description: 'Foundation concepts for Grade 4 mathematics'
-    },
-    {
-      id: 7,
-      title: 'Science Paper Practice',
-      subject: 'Parisaraya',
-      grade: 4,
-      type: 'Paper Classes',
-      instructor: 'Anuruddha Sir',
-      rating: 4.4,
-      students: 98,
-      price: 6800,
-      priceText: 'Rs. 6,800',
-      duration: '2.5 Weeks',
-      lessons: 20,
-      color: 'from-green-500 to-green-600',
-      badge: 'New',
-      description: 'Intensive paper solving for Grade 4 science'
-    },
-    {
-      id: 8,
-      title: 'Grade 3 English Introduction',
-      subject: 'English',
-      grade: 3,
-      type: 'Theory Class',
-      instructor: 'Anuruddha Sir',
-      rating: 4.6,
-      students: 220,
-      price: 5500,
-      priceText: 'Rs. 5,500',
-      duration: '2 Weeks',
-      lessons: 16,
-      color: 'from-red-500 to-red-600',
-      badge: 'New',
-      description: 'Basic English concepts for Grade 3 students'
-    },
-    {
-      id: 9,
-      title: 'Quiz Master Series',
-      subject: 'Mathematics',
-      grade: 5,
-      type: 'Quiz Classes',
-      instructor: 'Anuruddha Sir',
-      rating: 4.8,
-      students: 267,
-      price: 8200,
-      priceText: 'Rs. 8,200',
-      duration: '4 Weeks',
-      lessons: 40,
-      color: 'from-blue-500 to-blue-600',
-      badge: 'New',
-      description: 'Daily quiz practice for mathematics mastery'
-    },
-    {
-      id: 10,
-      title: 'Science Seminar Series',
-      subject: 'Parisaraya',
-      grade: 4,
-      type: 'Seminars',
-      instructor: 'Anuruddha Sir',
-      rating: 4.5,
-      students: 134,
-      price: 7000,
-      priceText: 'Rs. 7,000',
-      duration: '3 Weeks',
-      lessons: 12,
-      color: 'from-green-500 to-green-600',
-      badge: 'New',
-      description: 'Interactive seminar series on science topics'
-    },
-    {
-      id: 11,
-      title: 'Advanced Tamil Literature',
-      subject: 'Tamil',
-      grade: 5,
-      type: 'Paper Classes',
-      instructor: 'Anuruddha Sir',
-      rating: 4.7,
-      students: 76,
-      price: 7800,
-      priceText: 'Rs. 7,800',
-      duration: '3.5 Weeks',
-      lessons: 28,
-      color: 'from-orange-500 to-orange-600',
-      badge: 'New',
-      description: 'Deep dive into Tamil literature and composition'
-    },
-    {
-      id: 12,
-      title: 'Sinhala Vocabulary Boost',
-      subject: 'Sinhala',
-      grade: 4,
-      type: 'Theory Class',
-      instructor: 'Anuruddha Sir',
-      rating: 4.6,
-      students: 112,
-      price: 6200,
-      priceText: 'Rs. 6,200',
-      duration: '2.5 Weeks',
-      lessons: 22,
-      color: 'from-purple-500 to-purple-600',
-      badge: 'New',
-      description: 'Enhance Sinhala vocabulary and grammar skills'
-    }
-  ], []);
+  const [notification, setNotification] = useState(null);
 
-  // Enrolled Courses
-  const enrolledCourses = useMemo(() => [
-    {
-      id: 20,
-      title: 'Complete Scholarship Package',
-      subject: 'All Subjects',
-      grade: 5,
-      type: 'Theory Class',
-      progress: 65,
-      nextClass: 'Today, 4:00 PM',
-      instructor: 'Anuruddha Sir',
-      lessonsCompleted: 26,
-      totalLessons: 40,
-      color: 'from-blue-500 to-blue-600',
-      enrolledDate: 'Oct 15, 2025',
-      rating: 4.8
-    },
-    {
-      id: 21,
-      title: 'Mathematics Excellence',
-      subject: 'Mathematics',
-      grade: 5,
-      type: 'Paper Classes',
-      progress: 80,
-      nextClass: 'Tomorrow, 3:00 PM',
-      instructor: 'Anuruddha Sir',
-      lessonsCompleted: 16,
-      totalLessons: 20,
-      color: 'from-green-500 to-green-600',
-      enrolledDate: 'Sep 20, 2025',
-      rating: 4.9
-    },
-    {
-      id: 22,
-      title: 'Sinhala Language',
-      subject: 'Sinhala',
-      grade: 5,
-      type: 'Quiz Classes',
-      progress: 45,
-      nextClass: 'Friday, 2:00 PM',
-      instructor: 'Anuruddha Sir',
-      lessonsCompleted: 9,
-      totalLessons: 20,
-      color: 'from-purple-500 to-purple-600',
-      enrolledDate: 'Oct 01, 2025',
-      rating: 4.7
-    },
-    {
-      id: 23,
-      title: 'English Language Basics',
-      subject: 'English',
-      grade: 4,
-      type: 'Theory Class',
-      progress: 55,
-      nextClass: 'Wednesday, 5:00 PM',
-      instructor: 'Anuruddha Sir',
-      lessonsCompleted: 11,
-      totalLessons: 20,
-      color: 'from-red-500 to-red-600',
-      enrolledDate: 'Oct 10, 2025',
-      rating: 4.6
-    }
-  ], []);
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
-  // Completed Courses
-  const completedCourses = useMemo(() => [
-    {
-      id: 30,
-      title: 'Grade 4 Mathematics Foundation',
-      subject: 'Mathematics',
-      grade: 4,
-      type: 'Theory Class',
-      completionDate: 'Aug 30, 2025',
-      instructor: 'Anuruddha Sir',
-      totalLessons: 20,
-      finalScore: 92,
-      certificate: true,
-      color: 'from-green-500 to-green-600',
-      feedback: 'Excellent performance',
-      rating: 4.8,
-      price: 6500,
-      description: 'Foundation concepts for Grade 4 mathematics'
-    },
-    {
-      id: 31,
-      title: 'Basic Sinhala Grammar',
-      subject: 'Sinhala',
-      grade: 3,
-      type: 'Paper Classes',
-      completionDate: 'Jul 15, 2025',
-      instructor: 'Anuruddha Sir',
-      totalLessons: 18,
-      finalScore: 88,
-      certificate: true,
-      color: 'from-purple-500 to-purple-600',
-      feedback: 'Very good progress',
-      rating: 4.7,
-      price: 5500,
-      description: 'Basic Sinhala grammar for Grade 3 students'
-    },
-    {
-      id: 32,
-      title: 'English Reading Skills',
-      subject: 'English',
-      grade: 4,
-      type: 'Quiz Classes',
-      completionDate: 'Sep 05, 2025',
-      instructor: 'Anuruddha Sir',
-      totalLessons: 22,
-      finalScore: 85,
-      certificate: true,
-      color: 'from-red-500 to-red-600',
-      feedback: 'Good effort',
-      rating: 4.6,
-      price: 6200,
-      description: 'English reading comprehension skills'
-    }
-  ], []);
+  useEffect(() => {
+    // Dummy data already loaded
+  }, []);
 
   // Filter Application Function
   const applyFilters = useCallback((coursesToFilter) => {
     return coursesToFilter.filter(course => {
       const matchesSearch = 
         course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        course.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (course.description?.toLowerCase().includes(searchQuery.toLowerCase()) || true);
+        course.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        false;
 
-      const matchesGrade = filters.grades.length === 0 || filters.grades.includes(course.grade);
-      const matchesSubject = filters.subjects.length === 0 || filters.subjects.includes(course.subject);
+      const matchesGrade = filters.grades.length === 0 || (course.grade && filters.grades.includes(course.grade));
+      const matchesSubject = filters.subjects.length === 0 || (course.subject && filters.subjects.includes(course.subject));
       const matchesType = filters.types.length === 0 || !course.type || filters.types.includes(course.type);
       const matchesPrice = !course.price || (course.price >= filters.priceRange[0] && course.price <= filters.priceRange[1]);
       const matchesRating = !course.rating || course.rating >= filters.rating;
@@ -423,8 +131,71 @@ const StudentCourses = () => {
     setCurrentPage(1);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 lg:p-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Header Skeleton */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="h-10 w-48 bg-gray-200 rounded-lg animate-pulse mb-3"></div>
+                <div className="h-4 w-64 bg-gray-200 rounded animate-pulse"></div>
+              </div>
+              <div className="w-20 h-20 bg-gray-200 rounded-lg animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Stats Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg p-6 border">
+                <div className="h-4 w-24 bg-gray-200 rounded animate-pulse mb-3"></div>
+                <div className="h-8 w-16 bg-gray-200 rounded-lg animate-pulse"></div>
+              </div>
+            ))}
+          </div>
+
+          {/* Filters Skeleton */}
+          <div className="bg-white rounded-lg p-4 mb-8 border flex gap-3">
+            <div className="flex-1 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+            <div className="w-32 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
+          </div>
+
+          {/* Courses Grid Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="bg-white rounded-lg border overflow-hidden">
+                <div className="h-40 w-full bg-gray-200 animate-pulse mb-4"></div>
+                <div className="px-4 pb-4 space-y-3">
+                  <div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse"></div>
+                  <div className="h-4 w-full bg-gray-100 rounded animate-pulse"></div>
+                  <div className="h-4 w-5/6 bg-gray-100 rounded animate-pulse"></div>
+                  <div className="flex gap-2 pt-2">
+                    <div className="flex-1 h-8 bg-gray-200 rounded animate-pulse"></div>
+                    <div className="flex-1 h-8 bg-gray-200 rounded animate-pulse"></div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 lg:p-8">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header Section */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex items-center justify-between">
@@ -439,6 +210,13 @@ const StudentCourses = () => {
       </div>
 
       <div className="max-w-7xl mx-auto">
+        {/* Error Alert */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700">
+            {error}
+          </div>
+        )}
+
         {/* Search Bar */}
         <div className="mb-8">
           <div className="relative">
@@ -527,18 +305,22 @@ const StudentCourses = () => {
               <h6 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
                  Grade Level
               </h6>
-              <div className="space-y-2">
-                {[3, 4, 5].map(grade => (
-                  <label key={grade} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded">
-                    <input
-                      type="checkbox"
-                      checked={filters.grades.includes(grade)}
-                      onChange={() => handleFilterChange('grades', grade)}
-                      className="w-4 h-4 text-blue-600 rounded"
-                    />
-                    <span className="text-slate-700">Grade {grade}</span>
-                  </label>
-                ))}
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {gradeLevels.length > 0 ? (
+                  gradeLevels.map(grade => (
+                    <label key={grade.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
+                      <input
+                        type="checkbox"
+                        checked={filters.grades.includes(grade.name)}
+                        onChange={() => handleFilterChange('grades', grade.name)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <span className="text-slate-700">{grade.name}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-slate-500 text-sm">Loading grades...</p>
+                )}
               </div>
             </div>
 
@@ -547,38 +329,46 @@ const StudentCourses = () => {
               <h6 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
                  Subject
               </h6>
-              <div className="space-y-2">
-                {['Mathematics', 'Sinhala', 'English', 'Parisaraya', 'Tamil'].map(subject => (
-                  <label key={subject} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
-                    <input
-                      type="checkbox"
-                      checked={filters.subjects.includes(subject)}
-                      onChange={() => handleFilterChange('subjects', subject)}
-                      className="w-4 h-4 text-blue-600 rounded"
-                    />
-                    <span className="text-slate-700">{subject}</span>
-                  </label>
-                ))}
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {subjects.length > 0 ? (
+                  subjects.map(subject => (
+                    <label key={subject.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
+                      <input
+                        type="checkbox"
+                        checked={filters.subjects.includes(subject.name)}
+                        onChange={() => handleFilterChange('subjects', subject.name)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <span className="text-slate-700">{subject.name}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-slate-500 text-sm">Loading subjects...</p>
+                )}
               </div>
             </div>
 
-            {/* Type Filter */}
+            {/* Category Filter */}
             <div>
               <h6 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
-                Type
+                Category
               </h6>
-              <div className="space-y-2">
-                {['Theory Class', 'Paper Classes', 'Quiz Classes', 'Seminars'].map(type => (
-                  <label key={type} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
-                    <input
-                      type="checkbox"
-                      checked={filters.types.includes(type)}
-                      onChange={() => handleFilterChange('types', type)}
-                      className="w-4 h-4 text-blue-600 rounded"
-                    />
-                    <span className="text-slate-700">{type}</span>
-                  </label>
-                ))}
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {categories.length > 0 ? (
+                  categories.map(category => (
+                    <label key={category.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
+                      <input
+                        type="checkbox"
+                        checked={filters.types.includes(category.name)}
+                        onChange={() => handleFilterChange('types', category.name)}
+                        className="w-4 h-4 text-blue-600 rounded"
+                      />
+                      <span className="text-slate-700">{category.name}</span>
+                    </label>
+                  ))
+                ) : (
+                  <p className="text-slate-500 text-sm">Loading categories...</p>
+                )}
               </div>
             </div>
 
@@ -660,7 +450,12 @@ const StudentCourses = () => {
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                   {currentDisplayCourses.map((course) => (
-                    <NewCourseCard key={course.id} course={course} />
+                    <CourseCard
+                      key={course.id}
+                      course={course}
+                      userType="student"
+                      courseStatus="new"
+                    />
                   ))}
                 </div>
 
@@ -715,9 +510,14 @@ const StudentCourses = () => {
             </h2>
             {currentFilteredCount > 0 ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                   {currentDisplayCourses.map((course) => (
-                    <EnrolledCourseCard key={course.id} course={course} />
+                    <CourseCard
+                      key={course.id}
+                      course={course}
+                      userType="student"
+                      courseStatus="enrolled"
+                    />
                   ))}
                 </div>
 
@@ -758,7 +558,7 @@ const StudentCourses = () => {
               </>
             ) : (
               <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                <p className="text-slate-600 text-lg">No enrolled courses match your filters</p>
+                <p className="text-slate-600 text-lg">No enrolled courses. Start learning today!</p>
               </div>
             )}
           </div>
@@ -772,9 +572,14 @@ const StudentCourses = () => {
             </h2>
             {filteredCompletedCourses.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
                   {currentDisplayCourses.map((course) => (
-                    <CompletedCourseCard key={course.id} course={course} />
+                    <CourseCard
+                      key={course.id}
+                      course={course}
+                      userType="student"
+                      courseStatus="completed"
+                    />
                   ))}
                 </div>
 
@@ -815,7 +620,7 @@ const StudentCourses = () => {
               </>
             ) : (
               <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                <p className="text-slate-600 text-lg">No completed courses yet</p>
+                <p className="text-slate-600 text-lg">No completed courses yet. Keep learning!</p>
               </div>
             )}
           </div>

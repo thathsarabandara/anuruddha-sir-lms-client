@@ -97,7 +97,7 @@ const VerifyOTP = () => {
     setResendSuccess(false);
 
     try {
-      await authAPI.resendOTP({ email });
+      await authAPI.resendOTP();
       setResendSuccess(true);
       setTimeout(() => setResendSuccess(false), 3000);
     } catch (err) {

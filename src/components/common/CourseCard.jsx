@@ -1,103 +1,528 @@
-import { Link } from 'react-router-dom';
-import { ROUTES } from '../../utils/constants';
-import { FaCheck, FaClock, FaVideo, FaStar } from 'react-icons/fa';
+import { useNavigate } from 'react-router-dom';
+import {
+  FaEye, FaEdit, FaTrash, FaShoppingCart, FaChartBar, FaCertificate,
+  FaStar, FaClock, FaBook, FaUsers, FaDollarSign, FaCheckCircle,
+  FaVideo, FaGraduationCap
+} from 'react-icons/fa';
 
-const renderStars = (rating) => {
-    return (
-      <div className="flex gap-1">
-        {[...Array(5)].map((_, i) => (
-          <FaStar
-            key={i}
-            className={i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'}
-            size={14}
-          />
-        ))}
-      </div>
-    );
+/**
+ * Reusable CourseCard Component
+ * Unified professional design across all user types
+ * Uses consistent admin-style format with content adapted for each user type
+ */
+const CourseCard = ({
+  course,
+  userType = 'student',
+  courseStatus = 'new',
+  onViewDetails,
+  onEdit,
+  onDelete,
+  onFeature,
+  onToggleEnrollments,
+  onContinueLearning,
+  onAddToCart,
+  onDownloadCertificate,
+  onViewStats,
+  onViewReport,
+  loading = false,
+  className = '',
+  onNotification
+}) => {
+  const navigate = useNavigate();
+
+  const formatPrice = (price, priceType = 'PAID') => {
+    if (priceType === 'FREE' || !price) return 'Free';
+    return `Rs. ${parseFloat(price).toLocaleString()}`;
   };
 
-const CourseCard = ({ course }) => {
+  // ==================== UNIFIED CARD STRUCTURE ====================
   return (
-    <div 
-        data-course-card
-        key={course.id} 
-        className="bg-white rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-3 overflow-hidden group relative"
-    >
-        {/* Badge */}
-        {course.badge && (
-            <div className="absolute top-4 right-4 z-10">
-                <div className="bg-yellow-400 text-yellow-900 font-bold px-3 py-1 rounded-full text-xs">
-                    {course.badge}
-                </div>
+    <div className={`group bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden border border-gray-200 hover:border-indigo-300 ${className}`}>
+      
+      {/* IMAGE SECTION - Consistent across all types */}
+      <div className="relative h-44 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
+        {course.thumbnail ? (
+          <img 
+            src={course.thumbnail} 
+            alt={course.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
+            <div className="text-center">
+              <FaBook className="text-4xl text-indigo-200 mx-auto mb-2" />
+              <p className="text-sm text-indigo-300 font-medium">No Image</p>
             </div>
+          </div>
+        )}
+        
+        {/* Status Badges */}
+        <div className="absolute top-3 right-3 flex flex-col gap-2">
+          {/* Admin: Status Badge */}
+          {userType === 'admin' && course.status && (
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              course.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' :
+              course.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-700' :
+              'bg-gray-100 text-gray-700'
+            }`}>
+              {course.status.toUpperCase()}
+            </span>
+          )}
+
+          {/* Student-Enrolled: Progress Badge */}
+          {userType === 'student' && courseStatus === 'enrolled' && course.progress && (
+            <span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full text-xs font-semibold">
+              {course.progress}% Complete
+            </span>
+          )}
+
+          {/* Student-Completed: Completion Badge */}
+          {userType === 'student' && courseStatus === 'completed' && (
+            <span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
+              <FaCheckCircle className="text-xs" /> Complete
+            </span>
+          )}
+
+          {/* Teacher: Status Badge */}
+          {userType === 'teacher' && course.status && (
+            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              course.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' :
+              course.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-700' :
+              'bg-gray-100 text-gray-700'
+            }`}>
+              {course.status}
+            </span>
+          )}
+        </div>
+
+        {/* Left Badge (Teacher Approval / Student Badge) */}
+        {userType === 'teacher' && course.is_approved && (
+          <div className="absolute top-3 left-3 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 flex items-center gap-1">
+            <FaCheckCircle className="text-xs" /> Approved
+          </div>
+        )}
+      </div>
+
+      {/* CONTENT SECTION */}
+      <div className="p-5">
+        
+        {/* Subject & Grade Badges */}
+        <div className="mb-3 flex gap-2 flex-wrap">
+          {course.subject && (
+            <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
+              {course.subject}
+            </span>
+          )}
+          {course.grade_level && (
+            <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
+              {course.grade_level}
+            </span>
+          )}
+          {/* Student-New: Show badge if present */}
+          {userType === 'student' && courseStatus === 'new' && course.badge && (
+            <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-orange-50 text-orange-700 border border-orange-100">
+              {course.badge}
+            </span>
+          )}
+        </div>
+
+        {/* TITLE */}
+        <h3 className="text-base font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
+          {course.title}
+        </h3>
+
+        {/* DESCRIPTION - Show for student new courses */}
+        {userType === 'student' && courseStatus === 'new' && course.description && (
+          <p className="text-xs text-gray-600 mb-3 line-clamp-1">{course.description}</p>
         )}
 
-        {/* Header */}
-        <div className={`bg-gradient-to-br ${course.color} text-white p-6 relative overflow-hidden h-56`}>
-            {course.img && (<img src={course.img} alt={course.title} className="absolute inset-0 w-full h-full object-cover opacity-50" />)}
-            <div className="absolute inset-0 opacity-10">
-                <div className="absolute inset-0 bg-pattern"></div>
-            </div>
-            <div className="relative z-10">
-                <h3 className="text-2xl font-bold mb-2">{course.title}</h3>
-                <p className="text-white/90 text-sm">{course.description}</p>
-            </div>
-        </div>
-                
-        {/* Body */}
-        <div className="p-6">
-            {/* Rating */}
-            <div className="flex items-center gap-2 mb-4">
-                {renderStars(course.rating)}
-                <span className="text-sm text-gray-600">({course.reviews})</span>
-            </div>
+        {/* TEACHER NAME */}
+        {course.teacher_name && (
+          <div className="flex items-center text-sm text-gray-600 mb-4">
+            <FaBook className="mr-2 text-gray-400 flex-shrink-0" />
+            <span className="truncate">{course.teacher_name}</span>
+          </div>
+        )}
 
-            {/* Duration & Classes */}
-                  <div className="flex items-center justify-between mb-4 text-sm text-gray-600 pb-4 border-b">
-                    <span className="flex items-center gap-1">
-                      <FaClock className="text-primary-600" />
-                      {course.duration}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <FaVideo className="text-primary-600" />
-                      {course.classes}
-                    </span>
+        <div className="h-px bg-gray-100 mb-4"></div>
+
+        {/* ============ ADMIN CONTENT ============ */}
+        {userType === 'admin' && (
+          <>
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-500">Price</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {formatPrice(course.price, course.price_type)}
+                </span>
+              </div>
+
+              {course.grade_level && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Level</span>
+                  <span className="text-sm font-medium text-gray-700">{course.grade_level}</span>
+                </div>
+              )}
+
+              {course.status === 'PUBLISHED' && (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-500">Students</span>
+                    <span className="text-sm font-semibold text-gray-900">{course.total_enrollments || 0}</span>
                   </div>
 
-                  {/* Pricing */}
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-2 mb-1">
-                      <div className="text-3xl font-bold text-gray-900">
-                        {course.price}
-                      </div>
-                      <div className="text-sm text-gray-500 line-through">
-                        {course.originalPrice}
-                      </div>
+                  {course.average_rating && course.average_rating > 0 && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-500">Rating</span>
+                      <span className="flex items-center gap-1">
+                        <FaStar className="text-yellow-400 text-xs" />
+                        <span className="text-sm font-semibold text-gray-900">{course.average_rating.toFixed(1)}</span>
+                      </span>
                     </div>
-                    <div className="text-xs text-green-600 font-semibold">
-                      Save Rs. {parseInt(course.originalPrice.replace(/\D/g, '')) - parseInt(course.price.replace(/\D/g, ''))}
+                  )}
+
+                  {course.total_revenue && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-500">Revenue</span>
+                      <span className="text-sm font-semibold text-green-600">Rs. {course.total_revenue.toLocaleString()}</span>
                     </div>
-                  </div>
+                  )}
+                </>
+              )}
+            </div>
 
-                  {/* Features */}
-                  <div className="space-y-2.5 mb-6 min-h-40">
-                    {course.features.map((feature, index) => (
-                      <div key={index} className="flex items-center text-sm text-gray-700 gap-2">
-                        <FaCheck className="text-green-500 flex-shrink-0" />
-                        <span>{feature}</span>
-                      </div>
-                    ))}
-                  </div>
+            <div className="h-px bg-gray-100 mb-4"></div>
 
-                  {/* Button */}
-                  <Link
-                    to={ROUTES.REGISTER}
-                    className="block w-full text-center bg-gradient-to-r from-primary-600 to-primary-700 text-white font-bold py-3 px-4 rounded-lg hover:shadow-lg transition-all duration-300 transform hover:scale-105 group-hover:from-primary-700 group-hover:to-primary-800"
+            {/* Enrollment Status */}
+            {course.enrollments_enabled !== undefined && (
+              <div className="mb-4 flex items-center justify-between text-xs">
+                <span className="text-gray-600 font-medium">Enrollments</span>
+                <span className={`font-semibold px-2.5 py-0.5 rounded-full ${course.enrollments_enabled ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {course.enrollments_enabled ? 'Enabled' : 'Disabled'}
+                </span>
+              </div>
+            )}
+
+            {/* Admin Buttons */}
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => onViewDetails?.(course)}
+                disabled={loading}
+                className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-medium text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                <FaEye className="text-sm" />
+                View Details
+              </button>
+
+              {course.status === 'PUBLISHED' && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => onFeature?.(course.id, course.is_featured)}
+                    disabled={loading}
+                    className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors duration-200 ${
+                      course.is_featured
+                        ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
                   >
-                    Enroll Now
-                  </Link>
+                    {course.is_featured ? '⭐ Featured' : '☆ Feature'}
+                  </button>
+                  <button
+                    onClick={() => onToggleEnrollments?.(course.id, course.enrollments_enabled)}
+                    disabled={loading}
+                    className={`flex-1 py-2 text-xs font-medium rounded-lg transition-colors duration-200 ${
+                      course.enrollments_enabled
+                        ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                        : 'bg-green-100 text-green-700 hover:bg-green-200'
+                    }`}
+                  >
+                    {course.enrollments_enabled ? 'Disable' : 'Enable'}
+                  </button>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+
+        {/* ============ TEACHER CONTENT ============ */}
+        {userType === 'teacher' && (
+          <>
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-500">Students</span>
+                <span className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <FaUsers className="text-blue-500" /> {course.total_enrollments || 0}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-500">Price</span>
+                <span className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <FaDollarSign className="text-green-500" /> {formatPrice(course.price, course.price_type)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-500">Rating</span>
+                <span className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                  <FaStar className="text-yellow-500" /> {course.average_rating?.toFixed(1) || 'N/A'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-500">Created</span>
+                <span className="text-sm font-semibold text-gray-900">
+                  {course.created_at ? new Date(course.created_at).toLocaleDateString() : 'N/A'}
+                </span>
+              </div>
+            </div>
+
+            <div className="h-px bg-gray-100 mb-4"></div>
+
+            {/* Teacher Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => onViewDetails?.(course) || navigate(`/teacher/courses/${course.id}?mode=view`)}
+                disabled={loading}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200"
+              >
+                <FaEye className="text-xs" /> View
+              </button>
+              <button
+                onClick={() => onEdit?.(course) || navigate(`/teacher/courses/${course.id}?mode=edit`)}
+                disabled={loading}
+                className="flex-1 bg-amber-500 hover:bg-amber-600 disabled:opacity-50 text-white py-2 px-3 rounded-lg text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200"
+              >
+                <FaEdit className="text-xs" /> Edit
+              </button>
+              <button
+                onClick={() => onDelete?.(course.id)}
+                disabled={loading}
+                className="bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200"
+              >
+                <FaTrash className="text-xs" />
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ============ STUDENT - NEW COURSE CONTENT ============ */}
+        {userType === 'student' && courseStatus === 'new' && (
+          <>
+            <div className="space-y-3 mb-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-500">Rating</span>
+                <span className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                  <FaStar className="text-yellow-400" /> {course.rating || 'N/A'}
+                </span>
+              </div>
+
+              {course.students && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Students</span>
+                  <span className="text-sm font-semibold text-gray-900">{course.students}+</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-500">Price</span>
+                <span className="text-base font-bold text-indigo-600">
+                  {course.priceText || formatPrice(course.price, course.price_type)}
+                </span>
+              </div>
+
+              {course.duration && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Duration</span>
+                  <span className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                    <FaClock className="text-blue-500" /> {course.duration}
+                  </span>
+                </div>
+              )}
+
+              {course.classes && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Classes</span>
+                  <span className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                    <FaVideo className="text-green-500" /> {course.classes}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="h-px bg-gray-100 mb-4"></div>
+
+            {/* Student-New Button */}
+            <button
+              onClick={() => {
+                if (onAddToCart) {
+                  onAddToCart(course);
+                } else if (onNotification) {
+                  onNotification('Added to cart!', 'success');
+                }
+              }}
+              disabled={loading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+            >
+              <FaShoppingCart className="text-sm" />
+              Add to Cart
+            </button>
+          </>
+        )}
+
+        {/* ============ STUDENT - ENROLLED COURSE CONTENT ============ */}
+        {userType === 'student' && courseStatus === 'enrolled' && (
+          <>
+            {/* Progress Bar */}
+            {course.progress !== undefined && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-xs font-medium text-gray-600">Progress</span>
+                  <span className="text-sm font-bold text-gray-900">{course.progress}%</span>
+                </div>
+                <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-500"
+                    style={{ width: `${course.progress}%` }}
+                  />
                 </div>
               </div>
+            )}
+
+            <div className="space-y-3 mb-4">
+              {course.lessonsCompleted !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Lessons</span>
+                  <span className="text-sm font-semibold text-gray-900">
+                    {course.lessonsCompleted}/{course.totalLessons}
+                  </span>
+                </div>
+              )}
+
+              {course.nextClass && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Next Class</span>
+                  <span className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                    <FaClock className="text-blue-500" /> {course.nextClass}
+                  </span>
+                </div>
+              )}
+
+              {course.enrolledDate && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Enrolled</span>
+                  <span className="text-sm font-semibold text-gray-900">{course.enrolledDate}</span>
+                </div>
+              )}
+
+              {course.rating && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Rating</span>
+                  <span className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                    <FaStar className="text-yellow-400" /> {course.rating}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="h-px bg-gray-100 mb-4"></div>
+
+            {/* Student-Enrolled Buttons */}
+            <div className="flex gap-2">
+              <button
+                onClick={() => onContinueLearning?.(course) || navigate(`/student/course/${course.id}/learn`)}
+                disabled={loading}
+                className="flex-1 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                <FaVideo className="text-xs" />
+                Continue
+              </button>
+              <button
+                onClick={() => onViewStats?.(course)}
+                disabled={loading}
+                className="flex-1 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                <FaChartBar className="text-xs" />
+                Stats
+              </button>
+            </div>
+          </>
+        )}
+
+        {/* ============ STUDENT - COMPLETED COURSE CONTENT ============ */}
+        {userType === 'student' && courseStatus === 'completed' && (
+          <>
+            {/* Completion Info */}
+            <div className="mb-4 p-3 bg-purple-50 rounded-lg border border-purple-200">
+              <p className="text-xs font-semibold text-purple-900 flex items-center gap-2">
+                <FaGraduationCap /> Course Completed
+              </p>
+              {course.completionDate && (
+                <p className="text-xs text-purple-700 mt-1">{course.completionDate}</p>
+              )}
+            </div>
+
+            <div className="space-y-3 mb-4">
+              {course.finalScore !== undefined && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Final Score</span>
+                  <span className="text-lg font-bold text-green-600">{course.finalScore}%</span>
+                </div>
+              )}
+
+              {course.totalLessons && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Total Lessons</span>
+                  <span className="text-sm font-semibold text-gray-900">{course.totalLessons}</span>
+                </div>
+              )}
+
+              {course.feedback && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Feedback</span>
+                  <span className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                    <FaStar className="text-yellow-400" /> {course.feedback}
+                  </span>
+                </div>
+              )}
+
+              {course.rating && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Rating</span>
+                  <span className="text-sm font-semibold text-gray-900">{course.rating}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="h-px bg-gray-100 mb-4"></div>
+
+            {/* Student-Completed Buttons */}
+            <div className="flex flex-col gap-2">
+              {course.certificate && (
+                <button
+                  onClick={() => onDownloadCertificate?.(course.id)}
+                  disabled={loading}
+                  className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+                >
+                  <FaCertificate className="text-sm" />
+                  Download Certificate
+                </button>
+              )}
+              <button
+                onClick={() => onViewReport?.(course.id)}
+                disabled={loading}
+                className="w-full bg-indigo-100 hover:bg-indigo-200 text-indigo-700 py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                <FaChartBar className="text-xs" />
+                View Report
+              </button>
+            </div>
+          </>
+        )}
+
+      </div>
+    </div>
   );
-}
+};
+
 export default CourseCard;

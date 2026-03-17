@@ -50,7 +50,7 @@ const CompletedCourseCard = ({ course }) => {
         </div>
       </div>
     </div>
-)
+  );
 };
 
 export default CompletedCourseCard;

@@ -1,35 +1,33 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash, FaGraduationCap, FaChalkboardTeacher, FaUserShield, FaCode, FaCrown } from 'react-icons/fa';
-import { authAPI } from '../../api';
-import { loginSuccess, loginStart, loginFailure } from '../../app/slices/authSlice';
-import { ROUTES, ROLES } from '../../utils/constants';
+import { login } from '../../app/slices/authSlice';
+import { ROUTES, getDashboardRoute} from '../../utils/constants';
 
 const Login = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const authState = useSelector(state => state.auth);
   const [searchParams] = useSearchParams();
-  const roleParam = searchParams.get('role') || 'STUDENT';
+  const role = searchParams.get('role')?.toLocaleUpperCase() || 'STUDENT';
   
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    role: roleParam.toUpperCase()
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // Update role from URL parameter
-    const role = roleParam.toUpperCase();
-    if (['STUDENT', 'TEACHER', 'ADMIN', 'DEVELOPER', 'SUPER_ADMIN'].includes(role)) {
-      setFormData(prev => ({ ...prev, role }));
+    console.log('Auth State Updated:', authState);
+    if (authState.isAuthenticated && authState.access_token && authState.user) {
+      console.log('User authenticated, ready to navigate');
+      const dashboardRoute = getDashboardRoute(authState.user.role);
+      navigate(dashboardRoute);
     }
-  }, [roleParam]);
-
-
+  }, [authState.isAuthenticated, authState.access_token, authState.user, navigate]);
 
   const roles = [
     { 
@@ -79,7 +77,7 @@ const Login = () => {
     }
   ];
 
-  const currentRole = roles.find(r => r.value === formData.role) || roles[0];
+  const currentRole = roles.find(r => r.value === role) || roles[0];
 
   const gradientStyles = {
     'from-blue-500 to-blue-600': 'linear-gradient(to right, #3b82f6, #2563eb)',
@@ -96,29 +94,21 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    dispatch(loginStart());
     setError('');
+    setLoading(true);
 
     try {
-      const response = await authAPI.login(formData);
-      const { token, user } = response.data;
-      dispatch(loginSuccess({ token, user }));
+      const result = await dispatch(login(formData));
       
-      // Navigate based on role
-      const dashboardRoutes = {
-        [ROLES.STUDENT]: ROUTES.STUDENT_DASHBOARD,
-        [ROLES.TEACHER]: ROUTES.TEACHER_DASHBOARD,
-        [ROLES.ADMIN]: ROUTES.ADMIN_DASHBOARD,
-        [ROLES.SUPER_ADMIN]: ROUTES.ADMIN_DASHBOARD,
-        [ROLES.DEVELOPER]: ROUTES.DEVELOPER_DASHBOARD,
-      };
-      
-      navigate(dashboardRoutes[user.role] || ROUTES.HOME);
+      if (result.type === login.fulfilled.type) {
+        // Login successful - useEffect will handle navigation when auth state updates
+        console.log('✓ Login successful');
+      } else {
+        setError(result.payload || 'Login failed. Please check your credentials.');
+      }
     } catch (err) {
-      const errorMessage = err.response?.data?.message || 'Login failed. Please check your credentials.';
-      setError(errorMessage);
-      dispatch(loginFailure(errorMessage));
+      console.error('Login Error:', err);
+      setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
       setLoading(false);
     }
@@ -204,7 +194,7 @@ const Login = () => {
                 </label>
                 <Link 
                   to={ROUTES.FORGOT_PASSWORD} 
-                  state={{ role: formData.role }}
+                  state={{ role: role }}
                   className="text-sm font-medium text-gray-900 hover:text-gray-700 transition-colors"
                 >
                   Forgot Password?
@@ -231,12 +221,12 @@ const Login = () => {
               </button>
             </form>
 
-            {(formData.role === 'STUDENT' || formData.role === 'TEACHER') && (
+            {((role === 'STUDENT' || role === 'TEACHER') && role) && (
               <div className="mt-6 text-center">
                 <p className="text-sm text-gray-600">
                   Don't have an account?{' '}
                   <Link 
-                    to={`${ROUTES.REGISTER}?role=${formData.role.toLowerCase()}`}
+                    to={`${ROUTES.REGISTER}?role=${role.toLowerCase()}`}
                     className="font-semibold text-gray-900 hover:text-gray-700 transition-colors"
                   >
                     Create one now

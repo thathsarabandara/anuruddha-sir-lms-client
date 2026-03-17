@@ -11,7 +11,7 @@ const EnrolledCourseCard = ({ course }) => {
             <h3 className="text-xl font-bold mb-1">{course.title}</h3>
             <p className="text-white/90 text-sm">{course.subject}</p>
           </div>
-          <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 p y-1 rounded-full">
+          <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm px-2 py-1 rounded-full">
             <FaStar className="text-yellow-300 text-sm" />
             <span className="text-sm font-bold">{course.rating}</span>
           </div>
@@ -53,7 +53,7 @@ const EnrolledCourseCard = ({ course }) => {
 
         <div className="flex gap-3">
           <button 
-            onClick={() => navigate(`/student/course/${course.id}`)}
+            onClick={() => navigate(`/student/course/${course.id}/learn`)}
             className="flex-1 py-2 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold rounded-lg transition-all">
             Continue Learning
           </button>
@@ -63,7 +63,7 @@ const EnrolledCourseCard = ({ course }) => {
         </div>
       </div>
     </div>
-  )}
-  ;
+  );
+};
 
 export default EnrolledCourseCard;

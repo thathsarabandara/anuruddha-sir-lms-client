@@ -1,99 +1,129 @@
-import { useState } from 'react';
-import { FaBook, FaCalendar,  FaCheck, FaGraduationCap } from 'react-icons/fa';
+import { useState, useEffect } from 'react';
+import { FaBook, FaCalendar, FaCheck, FaGraduationCap, FaTimes, FaVideo, FaEye, FaList } from 'react-icons/fa';
+import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
+import Notification from '../../components/common/Notification';
+
+const dummyRecordings = [
+  { id: 1, title: 'Intro to React', instructor: 'John Doe', date: '2024-03-10', subject: 'JavaScript' },
+  { id: 2, title: 'Advanced CSS', instructor: 'Jane Smith', date: '2024-03-09', subject: 'CSS' },
+];
 
 const StudentRecordings = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterSubject, setFilterSubject] = useState('all');
+  const [recordings, setRecordings] = useState([]);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [subjects, setSubjects] = useState([]);
 
-  const recordings = [
+  const recordingsMetricsConfig = [
     {
-      id: 1,
-      title: 'Mathematics - Chapter 5: Fractions',
-      subject: 'Mathematics',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 15, 2025',
-      duration: '1:28:45',
-      views: 156,
-      watched: true,
-      watchProgress: 100,
-      thumbnail: 'bg-green-600',
-      description: 'Complete lesson on fractions, addition and subtraction',
+      label: 'Total Recordings',
+      statsKey: 'totalRecordings',
+      icon: FaVideo,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'All available recordings',
     },
     {
-      id: 2,
-      title: 'Sinhala - Essay Writing Techniques',
-      subject: 'Sinhala',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 13, 2025',
-      duration: '1:15:30',
-      views: 142,
-      watched: true,
-      watchProgress: 65,
-      thumbnail: 'bg-purple-600',
-      description: 'How to write compelling essays for Grade 5',
+      label: 'Watched',
+      statsKey: 'watched',
+      icon: FaEye,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Viewed recordings',
     },
     {
-      id: 3,
-      title: 'Mathematics - Chapter 4: Multiplication',
-      subject: 'Mathematics',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 11, 2025',
-      duration: '1:35:20',
-      views: 178,
-      watched: false,
-      watchProgress: 0,
-      thumbnail: 'bg-green-600',
-      description: 'Advanced multiplication techniques and shortcuts',
+      label: 'Enrolled Courses',
+      statsKey: 'enrolledCourses',
+      icon: FaBook,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'Courses with recordings',
     },
     {
-      id: 4,
-      title: 'Environment - Ecosystem Balance',
-      subject: 'Environment',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 10, 2025',
-      duration: '1:20:15',
-      views: 134,
-      watched: true,
-      watchProgress: 45,
-      thumbnail: 'bg-yellow-600',
-      description: 'Understanding food chains and natural balance',
-    },
-    {
-      id: 5,
-      title: 'English - Grammar Basics',
-      subject: 'English',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 8, 2025',
-      duration: '1:10:00',
-      views: 98,
-      watched: false,
-      watchProgress: 0,
-      thumbnail: 'bg-red-600',
-      description: 'Essential grammar rules for scholarship exam',
-    },
-    {
-      id: 6,
-      title: 'Sinhala - Poetry Analysis',
-      subject: 'Sinhala',
-      instructor: 'Anuruddha Sir',
-      date: 'Dec 6, 2025',
-      duration: '1:05:45',
-      views: 125,
-      watched: false,
-      watchProgress: 0,
-      thumbnail: 'bg-purple-600',
-      description: 'Analyzing classical Sinhala poetry',
+      label: 'Available to Watch',
+      statsKey: 'available',
+      icon: FaList,
+      bgColor: 'bg-orange-100',
+      textColor: 'text-orange-600',
+      description: 'Unwatched recordings',
     },
   ];
 
-  const filteredRecordings = recordings.filter(
-    (rec) =>
-      (filterSubject === 'all' || rec.subject === filterSubject) &&
-      rec.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const fetchStudentData = () => {
+    setLoading(true);
+    setTimeout(() => {
+      setCourses([{ id: 1, title: 'JavaScript' }, { id: 2, title: 'CSS' }]);
+      setSubjects(['JavaScript', 'CSS']);
+      setRecordings(dummyRecordings);
+      setLoading(false);
+    }, 500);
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fetchStudentData();
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const filteredRecordings = recordings.filter((rec) => {
+    const matchesSearch = rec.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (rec.description && rec.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (rec.course_title && rec.course_title.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesSubject = filterSubject === 'all' || 
+      (rec.course_title && rec.course_title === filterSubject) ||
+      (rec.subject && rec.subject === filterSubject);
+    
+    return matchesSearch && matchesSubject;
+  });
+  
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    try {
+      return new Date(dateString).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      });
+    } catch {
+      return dateString;
+    }
+  };
+
+  const formatDuration = (seconds) => {
+    if (!seconds) return '0:00';
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+    return `${minutes}:${String(secs).padStart(2, '0')}`;
+  };
+
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="flex items-center justify-between">
@@ -109,178 +139,89 @@ const StudentRecordings = () => {
         </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Recordings</div>
-          <div className="text-2xl font-bold text-gray-900">{recordings.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Watched</div>
-          <div className="text-2xl font-bold text-green-600">
-            {recordings.filter((r) => r.watched).length}
-          </div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Watch Time</div>
-          <div className="text-2xl font-bold text-primary-600">24.5 hrs</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">This Month</div>
-          <div className="text-2xl font-bold text-gray-900">12 Videos</div>
-        </div>
-      </div>
+      <StatCard 
+        stats={{
+          totalRecordings: recordings.length.toString(),
+          watched: recordings.filter(r => r.is_watched).length.toString(),
+          enrolledCourses: courses.length.toString(),
+          available: filteredRecordings.length.toString(),
+        }}
+        metricsConfig={recordingsMetricsConfig}
+      />
 
-      {/* Search and Filter */}
-      <div className="card mb-6">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 md:space-x-4">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Search recordings..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input-field w-full"
-            />
-          </div>
-          <div className="flex space-x-2">
-            <button
-              onClick={() => setFilterSubject('all')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterSubject === 'all'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              All
-            </button>
-            <button
-              onClick={() => setFilterSubject('Mathematics')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterSubject === 'Mathematics'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Maths
-            </button>
-            <button
-              onClick={() => setFilterSubject('Sinhala')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterSubject === 'Sinhala'
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Sinhala
-            </button>
-            <button
-              onClick={() => setFilterSubject('Environment')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterSubject === 'Environment'
-                  ? 'bg-yellow-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              Environment
-            </button>
-            <button
-              onClick={() => setFilterSubject('English')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterSubject === 'English'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              English
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Recordings Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {filteredRecordings.map((recording) => (
-          <div key={recording.id} className="card hover:shadow-lg transition-shadow">
-            {/* Thumbnail */}
-            <div className={`${recording.thumbnail} text-white p-8 -m-6 mb-4 rounded-t-xl relative`}>
-              <div className="flex items-center justify-center h-32">
-                <div className="text-6xl">▶️</div>
-              </div>
-              <div className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-sm">
-                {recording.duration}
-              </div>
-              {recording.watched && recording.watchProgress > 0 && (
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/30">
-                  <div
-                    className="h-1 bg-white"
-                    style={{ width: `${recording.watchProgress}%` }}
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Content */}
-            <div className="space-y-3">
+      {/* Recordings DataTable */}
+      <DataTable
+        data={filteredRecordings}
+        columns={[
+          {
+            key: 'title',
+            label: 'Recording Title',
+            searchable: true,
+            render: (value, recording) => (
               <div>
-                <h3 className="text-lg font-bold text-gray-900 mb-1">{recording.title}</h3>
-                <p className="text-sm text-gray-600">{recording.description}</p>
+                <p className="text-sm font-medium text-gray-900">{value}</p>
+                <p className="text-xs text-gray-500">{formatDate(recording.date)}</p>
               </div>
+            ),
+          },
+          {
+            key: 'instructor',
+            label: 'Instructor',
+            searchable: true,
+            render: (value) => <p className="text-sm text-gray-600">{value}</p>,
+          },
+          {
+            key: 'subject',
+            label: 'Subject',
+            searchable: true,
+            filterable: true,
+            filterOptions: subjects.map(subject => ({ label: subject, value: subject })),
+            render: (value) => (
+              <span className="px-2.5 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">
+                {value}
+              </span>
+            ),
+          },
+          {
+            key: 'is_watched',
+            label: 'View Status',
+            render: (value) => (
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${value ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                {value ? 'Watched' : 'Unw atched'}
+              </span>
+            ),
+          },
+          {
+            key: 'duration',
+            label: 'Duration',
+            render: (value) => <p className="text-sm text-gray-600">{formatDuration(value)}</p>,
+          },
+          {
+            key: 'actions',
+            label: 'Actions',
+            render: (_, recording) => (
+              <button onClick={() => console.log('Watch recording:', recording.id)} className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap">
+                <FaEye /> Watch
+              </button>
+            ),
+          },
+        ]}
+        config={{
+          itemsPerPage: 10,
+          searchPlaceholder: 'Search recordings by title, instructor...',
+          hideSearch: false,
+          emptyMessage: 'No recordings found',
+          searchValue: searchTerm,
+          onSearchChange: (value) => {
+            setSearchTerm(value);
+          },
+          statusFilterOptions: subjects.map(subject => ({ label: subject, value: subject })),
+          statusFilterValue: filterSubject,
+          onStatusFilterChange: (value) => setFilterSubject(value),
+        }}
+        loading={loading}
+      />
 
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                <div className="flex items-center space-x-4">
-                  <span>📚 {recording.subject}</span>
-                  <span>👨‍🏫 {recording.instructor}</span>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between text-sm text-gray-600">
-                <span>📅 {recording.date}</span>
-                <span>👁️ {recording.views} views</span>
-              </div>
-
-              {recording.watched && recording.watchProgress > 0 && recording.watchProgress < 100 && (
-                <div className="flex items-center space-x-2 text-sm">
-                  <div className="flex-1 bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-primary-600 h-2 rounded-full"
-                      style={{ width: `${recording.watchProgress}%` }}
-                    />
-                  </div>
-                  <span className="text-gray-600 font-medium">{recording.watchProgress}%</span>
-                </div>
-              )}
-
-              <div className="flex space-x-2 pt-2">
-                <button className="flex-1 btn-primary text-sm py-2">
-                  {recording.watched && recording.watchProgress > 0 && recording.watchProgress < 100
-                    ? 'Continue Watching'
-                    : recording.watched && recording.watchProgress === 100
-                    ? 'Watch Again'
-                    : 'Watch Now'}
-                </button>
-                <button className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50">
-                  📥
-                </button>
-              </div>
-
-              {recording.watched && (
-                <div className="flex items-center text-xs text-green-600">
-                  <FaCheck className="mr-1" />
-                  Watched {recording.watchProgress === 100 ? 'completely' : 'partially'}
-                </div>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {filteredRecordings.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">🔍</div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">No recordings found</h3>
-          <p className="text-gray-600">Try adjusting your search or filter</p>
-        </div>
-      )}
     </div>
   );
 };

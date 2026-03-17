@@ -1,368 +1,456 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaArrowRight, FaCheck, FaFilePdf, FaGraduationCap, FaTrophy, FaSearch } from 'react-icons/fa';
+import {  FaCheck, FaGraduationCap, FaTrophy, FaSearch, FaClock, FaClipboardCheck, FaExclamationCircle, FaCheckCircle, FaHourglassHalf, FaTimes, FaCalendarTimes, FaFire, FaChartBar, FaEye } from 'react-icons/fa';
+import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
+import Notification from '../../components/common/Notification';
 
 const StudentQuizzes = () => {
   const navigate = useNavigate();
+  
+  // Dummy data
+  const dummyQuizzes = [
+    { id: 1, title: 'Python Basics', course_title: 'Python 101', course_id: 1, status: 'available', quiz_type: 'GRADED', total_questions: 15, passing_score: 70, time_limit_minutes: 60, user_attempts: 0, max_attempts: 3, user_best_score: null, end_date: null },
+    { id: 2, title: 'Advanced OOP', course_title: 'OOP Concepts', course_id: 2, status: 'completed', quiz_type: 'GRADED', total_questions: 20, passing_score: 70, time_limit_minutes: 90, user_attempts: 2, max_attempts: 3, user_best_score: 80, end_date: '2024-02-20', last_attempt_id: 1 },
+    { id: 3, title: 'Data Structures', course_title: 'DSA Course', course_id: 1, status: 'available', quiz_type: 'FINAL_EXAM', total_questions: 18, passing_score: 75, time_limit_minutes: 120, user_attempts: 1, max_attempts: 2, user_best_score: 65, end_date: '2024-03-30' },
+  ];
+  
+  const dummyStats = {
+    completed: 5,
+    avgScore: 78,
+    bestScore: 95,
+    totalAttempts: 8
+  };
+  
   const [filter, setFilter] = useState('available');
   const [searchTerm, setSearchTerm] = useState('');
-  const [subjectFilter, setSubjectFilter] = useState('all');
+  const [courseSearchTerm, setCourseSearchTerm] = useState('');
+  const [courseFilter, setCourseFilter] = useState('all');
+  const [showCourseDropdown, setShowCourseDropdown] = useState(false);
+  
+  const [availableQuizzes, _setAvailableQuizzes] = useState(dummyQuizzes.filter(q => q.status === 'available'));
+  const [completedQuizzes, _setCompletedQuizzes] = useState(dummyQuizzes.filter(q => q.status === 'completed'));
+  const [missedQuizzes, _setMissedQuizzes] = useState([]);
+  const [upcomingQuizzes, _setUpcomingQuizzes] = useState([]);
+  const [expiredQuizzes, _setExpiredQuizzes] = useState([]);
+  
+  const [courses, _setCourses] = useState([{ id: 1, title: 'Python 101' }, { id: 2, title: 'OOP Concepts' }]);
+  const [stats, _setStats] = useState(dummyStats);
 
-  const availableQuizzes = [
+  const quizzesMetricsConfig = [
     {
-      id: 1,
-      title: 'Mathematics Chapter 5 Quiz',
-      subject: 'Mathematics',
-      questions: 20,
-      duration: 30,
-      difficulty: 'Medium',
-      dueDate: 'Dec 20, 2025',
-      attempts: 0,
-      maxAttempts: 2,
-      color: 'bg-green-600',
+      label: 'Completed',
+      statsKey: 'completed',
+      icon: FaCheckCircle,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'Total quizzes taken',
     },
     {
-      id: 2,
-      title: 'Sinhala Grammar Test',
-      subject: 'Sinhala',
-      questions: 15,
-      duration: 25,
-      difficulty: 'Easy',
-      dueDate: 'Dec 22, 2025',
-      attempts: 0,
-      maxAttempts: 2,
-      color: 'bg-purple-600',
+      label: 'Average Score',
+      statsKey: 'avgScore',
+      icon: FaChartBar,
+      bgColor: 'bg-cyan-100',
+      textColor: 'text-cyan-600',
+      description: 'Overall average',
+      formatter: (value) => `${value}%`,
     },
     {
-      id: 3,
-      title: 'Environment Unit 3 Assessment',
-      subject: 'Environment',
-      questions: 25,
-      duration: 35,
-      difficulty: 'Hard',
-      dueDate: 'Dec 25, 2025',
-      attempts: 1,
-      maxAttempts: 2,
-      color: 'bg-yellow-600',
+      label: 'Best Score',
+      statsKey: 'bestScore',
+      icon: FaTrophy,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Highest performance',
+      formatter: (value) => `${value}%`,
+    },
+    {
+      label: 'Total Attempts',
+      statsKey: 'totalAttempts',
+      icon: FaFire,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'Number of attempts',
     },
   ];
+  const [loading, _setLoading] = useState(false);
 
-  const completedQuizzes = [
-    {
-      id: 4,
-      title: 'Mathematics Chapter 4 Quiz',
-      subject: 'Mathematics',
-      questions: 20,
-      score: 85,
-      maxScore: 100,
-      completedDate: 'Dec 15, 2025',
-      timeTaken: 28,
-      rank: 5,
-      totalParticipants: 45,
-      color: 'bg-green-600',
+  useEffect(() => {
+    // Initialize with dummy data
+  }, []);
+
+  useEffect(() => {
+    // Dummy search - quizzes already loaded
+  }, [searchTerm, courseFilter, filter]);
+
+  const handleStartQuiz = useCallback((quizId) => {
+    navigate(`/student/quiz/${quizId}/take`);
+  }, [navigate]);
+
+  const handleViewResults = useCallback((quizId, attemptId) => {
+    navigate(`/student/quiz/${quizId}/results/${attemptId}`);
+  }, [navigate]);
+
+  const getQuizStatus = (quiz) => {
+    if (quiz.user_attempts >= quiz.max_attempts) {
+      return { text: 'Completed', color: 'green', icon: FaCheckCircle };
+    }
+    if (quiz.end_date && new Date(quiz.end_date) < new Date()) {
+      return { text: 'Expired', color: 'red', icon: FaExclamationCircle };
+    }
+    if (quiz.start_date && new Date(quiz.start_date) > new Date()) {
+      return { text: 'Upcoming', color: 'blue', icon: FaHourglassHalf };
+    }
+    return { text: 'Available', color: 'green', icon: FaCheckCircle };
+  };
+
+  // Define table columns
+  const tableColumns = useMemo(() => [
+    { 
+      key: 'title', 
+      label: 'Quiz',
+      render: (_, row) => (
+        <div>
+          <p className="font-semibold text-gray-900">{row.title}</p>
+          <p className="text-xs text-gray-500">{row.course_title}</p>
+        </div>
+      )
     },
-    {
-      id: 5,
-      title: 'Sinhala Essay Assessment',
-      subject: 'Sinhala',
-      questions: 15,
-      score: 92,
-      maxScore: 100,
-      completedDate: 'Dec 13, 2025',
-      timeTaken: 23,
-      rank: 2,
-      totalParticipants: 38,
-      color: 'bg-purple-600',
+    { 
+      key: 'quiz_type', 
+      label: 'Type',
+      render: (_, row) => (
+        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+          row.quiz_type === 'FINAL_EXAM' ? 'bg-red-100 text-red-700' :
+          row.quiz_type === 'GRADED' ? 'bg-blue-100 text-blue-700' :
+          'bg-gray-100 text-gray-700'
+        }`}>
+          {row.quiz_type.replace('_', ' ')}
+        </span>
+      )
     },
-    {
-      id: 6,
-      title: 'Mathematics Chapter 3 Quiz',
-      subject: 'Mathematics',
-      questions: 18,
-      score: 78,
-      maxScore: 100,
-      completedDate: 'Dec 10, 2025',
-      timeTaken: 25,
-      rank: 12,
-      totalParticipants: 42,
-      color: 'bg-green-600',
+    { 
+      key: 'total_questions', 
+      label: 'Questions',
+      render: (_, row) => `${row.total_questions || 0} Q`
     },
-  ];
+    { 
+      key: 'time_limit_minutes', 
+      label: 'Duration',
+      render: (_, row) => `${row.time_limit_minutes} min`
+    },
+    { 
+      key: 'passing_score', 
+      label: 'Passing Score',
+      render: (_, row) => `${row.passing_score}%`
+    },
+    { 
+      key: 'user_attempts', 
+      label: 'Attempts',
+      render: (_, row) => `${row.user_attempts}/${row.max_attempts}`
+    },
+    { 
+      key: 'user_best_score', 
+      label: 'Best Score',
+      render: (_, row) => row.user_best_score !== null ? `${Math.round(row.user_best_score)}%` : '-'
+    },
+    { 
+      key: 'status', 
+      label: 'Status',
+      render: (_, row) => {
+        const status = getQuizStatus(row);
+        const StatusIcon = status.icon;
+        return (
+          <span className={`px-2 py-1 bg-${status.color}-100 text-${status.color}-700 text-xs font-semibold rounded-full flex items-center gap-1 w-fit`}>
+            <StatusIcon className="text-xs" /> {status.text}
+          </span>
+        );
+      }
+    },
+    { 
+      key: 'actions', 
+      label: 'Actions',
+      render: (_, row) => {
+        const status = getQuizStatus(row);
+        return (
+          <div className="flex gap-2">
+            {(status.text === 'Available' || status.text === 'Upcoming') && row.user_attempts < row.max_attempts ? (
+              <button 
+                onClick={() => handleStartQuiz(row.id)}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold transition-all"
+              >
+                {row.user_attempts > 0 ? 'Retry' : 'Start'}
+              </button>
+            ) : status.text === 'Completed' ? (
+              <div className="flex gap-2 flex-wrap">
+                <button 
+                  onClick={() => handleViewResults(row.id, row.last_attempt_id)}
+                  className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-bold transition-all"
+                >
+                  Results
+                </button>
+                {row.user_attempts < row.max_attempts && (
+                  <button 
+                    onClick={() => handleStartQuiz(row.id)}
+                    className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold transition-all"
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
+            ) : (
+              <span className="text-xs text-gray-500 font-medium">-</span>
+            )}
+          </div>
+        );
+      }
+    }
+  ], [handleStartQuiz, handleViewResults]);
 
-  const leaderboard = [
-    { rank: 1, name: 'Kasun P.', score: 485, quizzes: 12, badge: '🥇' },
-    { rank: 2, name: 'You', score: 452, quizzes: 11, badge: '🥈', isCurrentUser: true },
-    { rank: 3, name: 'Nimal S.', score: 438, quizzes: 12, badge: '🥉' },
-    { rank: 4, name: 'Saman W.', score: 425, quizzes: 11, badge: '' },
-    { rank: 5, name: 'Ruwan K.', score: 412, quizzes: 10, badge: '' },
-  ];
-
-  // Get unique subjects for filter
-  const allSubjects = ['all', ...new Set([...availableQuizzes, ...completedQuizzes].map(q => q.subject))];
-
-  // Filter quizzes based on search and subject
-  const filterQuizzes = (quizzes) => {
-    return quizzes.filter(quiz => {
-      const matchesSearch = quiz.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                           quiz.subject.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesSubject = subjectFilter === 'all' || quiz.subject === subjectFilter;
-      return matchesSearch && matchesSubject;
+  // Filter quizzes based on course filter
+  const getFilteredQuizzes = (quizzesList) => {
+    return quizzesList.filter(quiz => {
+      const matchesCourse = courseFilter === 'all' || quiz.course_id === courseFilter;
+      return matchesCourse;
     });
   };
 
-  const filteredAvailableQuizzes = filterQuizzes(availableQuizzes);
-  const filteredCompletedQuizzes = filterQuizzes(completedQuizzes);
+  // Filter courses for dropdown
+  const filteredCourses = courses.filter(course =>
+    course.title.toLowerCase().includes(courseSearchTerm.toLowerCase())
+  );
+
+  const getCourseCount = (courseId) => {
+    let count = 0;
+    if (filter === 'available') {
+      count = availableQuizzes.filter(q => q.course_id === courseId).length;
+    } else if (filter === 'completed') {
+      count = completedQuizzes.filter(q => q.course_id === courseId).length;
+    } else if (filter === 'expired') {
+      count = expiredQuizzes.filter(q => q.course_id === courseId).length;
+    } else if (filter === 'upcoming') {
+      count = upcomingQuizzes.filter(q => q.course_id === courseId).length;
+    } else if (filter === 'missed') {
+      count = missedQuizzes.filter(q => q.course_id === courseId).length;
+    }
+    return count;
+  };
+
+  const filteredAvailable = getFilteredQuizzes(availableQuizzes);
+  const filteredCompleted = getFilteredQuizzes(completedQuizzes);
+  const filteredExpired = getFilteredQuizzes(expiredQuizzes);
+  const filteredUpcoming = getFilteredQuizzes(upcomingQuizzes);
+  const filteredMissed = getFilteredQuizzes(missedQuizzes);
+
+  // Get current filtered data based on active tab
+  const getDisplayData = () => {
+    switch(filter) {
+      case 'completed':
+        return filteredCompleted;
+      case 'missed':
+        return filteredMissed;
+      case 'upcoming':
+        return filteredUpcoming;
+      case 'expired':
+        return filteredExpired;
+      default:
+        return filteredAvailable;
+    }
+  };
+
+  const displayData = getDisplayData();
+
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   return (
     <div className="p-8">
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Quizzes & Assessments
-                </h1>
-                <p className="text-slate-600 mt-1">Test your knowledge and track your performance</p>
-              </div>
-              <div className="text-5xl"><FaGraduationCap className="text-blue-600" /></div>
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-10 mb-6">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Quizzes & Assessments
+              </h1>
+              <p className="text-slate-600 mt-1">Test your knowledge and track your performance</p>
             </div>
+            <div className="text-5xl"><FaGraduationCap className="text-blue-600" /></div>
           </div>
+        </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Completed</div>
-          <div className="text-2xl font-bold text-gray-900">11 Quizzes</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Average Score</div>
-          <div className="text-2xl font-bold text-primary-600">85%</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Best Score</div>
-          <div className="text-2xl font-bold text-green-600">95%</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Leaderboard Rank</div>
-          <div className="text-2xl font-bold text-yellow-600">#2</div>
-        </div>
-      </div>
+      <StatCard stats={stats} metricsConfig={quizzesMetricsConfig} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content */}
-        <div className="lg:col-span-2">
+      {loading ? (
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Loading quizzes...</p>
+        </div>
+      ) : (
+        <div>
           {/* Filter Tabs */}
-          <div className="flex space-x-4 mb-6 border-b pb-4">
-            <button
-              onClick={() => setFilter('available')}
-              className={`pb-3 px-4 font-medium transition-colors ${
-                filter === 'available'
-                  ? 'text-primary-600 border-b-2 border-primary-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Available ({filteredAvailableQuizzes.length})
-            </button>
-            <button
-              onClick={() => setFilter('completed')}
-              className={`pb-3 px-4 font-medium transition-colors ${
-                filter === 'completed'
-                  ? 'text-primary-600 border-b-2 border-primary-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Completed ({filteredCompletedQuizzes.length})
-            </button>
-          </div>
-
-          {/* Search and Filter Section */}
-          <div className="mb-6 space-y-4">
-            {/* Search Bar */}
-            <div className="relative">
-              <FaSearch className="absolute left-3 top-3 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search quizzes by title or subject..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-600"
-              />
-            </div>
-
-            {/* Subject Filter */}
-            <div className="flex flex-wrap gap-2">
-              {allSubjects.map((subject) => (
+          <div className="flex flex-wrap gap-2 mb-6 border-b border-slate-200 pb-4">
+            {[
+              { id: 'available', label: 'Available', icon: FaHourglassHalf, count: filteredAvailable.length },
+              { id: 'completed', label: 'Completed', icon: FaCheckCircle, count: filteredCompleted.length },
+              { id: 'missed', label: 'Missed', icon: FaCalendarTimes, count: filteredMissed.length },
+              { id: 'upcoming', label: 'Upcoming', icon: FaClock, count: filteredUpcoming.length },
+              { id: 'expired', label: 'Expired', icon: FaExclamationCircle, count: filteredExpired.length },
+            ].map((tab) => {
+              const TabIcon = tab.icon;
+              return (
                 <button
-                  key={subject}
-                  onClick={() => setSubjectFilter(subject)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    subjectFilter === subject
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  key={tab.id}
+                  onClick={() => setFilter(tab.id)}
+                  className={`pb-3 px-4 font-semibold transition-all flex items-center gap-2 ${
+                    filter === tab.id
+                      ? 'text-blue-600 border-b-2 border-blue-600'
+                      : 'text-slate-600 hover:text-slate-900'
                   }`}
                 >
-                  {subject.charAt(0).toUpperCase() + subject.slice(1)}
+                  <TabIcon className="text-sm" />
+                  {tab.label} ({tab.count})
                 </button>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
-          {/* Available Quizzes */}
-          {filter === 'available' && (
-            <div className="space-y-4">
-              {filteredAvailableQuizzes.length > 0 ? (
-                filteredAvailableQuizzes.map((quiz) => (
-                  <div key={quiz.id} className="card">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4 flex-1">
-                        <div className={`${quiz.color} text-white p-3 rounded-lg`}>
-                          <FaFilePdf className="text-2xl" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 mb-2">{quiz.title}</h3>
-                          <div className="grid grid-cols-2 gap-3 text-sm mb-3">
-                            <div className="text-gray-600">
-                              <span className="font-medium text-gray-900">{quiz.questions}</span> Questions
-                            </div>
-                            <div className="text-gray-600">
-                              <span className="font-medium text-gray-900">{quiz.duration}</span> Minutes
-                            </div>
-                            <div className="text-gray-600">
-                              Difficulty: <span className="font-medium text-gray-900">{quiz.difficulty}</span>
-                            </div>
-                            <div className="text-gray-600">
-                              Due: <span className="font-medium text-gray-900">{quiz.dueDate}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2 text-sm">
-                            <span className="text-gray-600">
-                              Attempts: {quiz.attempts}/{quiz.maxAttempts}
-                            </span>
-                            {quiz.attempts > 0 && (
-                              <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">
-                                Retry Available
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <button className="btn-primary px-6">
-                        Start Quiz
-                      </button>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="card text-center py-8">
-                  <p className="text-gray-600">No quizzes found matching your search.</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Completed Quizzes */}
-          {filter === 'completed' && (
-            <div className="space-y-4">
-              {filteredCompletedQuizzes.length > 0 ? (
-                filteredCompletedQuizzes.map((quiz) => (
-                  <div key={quiz.id} className="card">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-start space-x-4 flex-1">
-                        <div className={`${quiz.color} text-white p-3 rounded-lg`}>
-                          <FaCheck className="text-2xl" />
-                        </div>
-                        <div className="flex-1">
-                          <h3 className="text-lg font-bold text-gray-900 mb-2">{quiz.title}</h3>
-                          <div className="flex items-center space-x-4 mb-3">
-                            <div className="flex items-center">
-                              <span className="text-3xl font-bold text-primary-600 mr-2">
-                                {quiz.score}%
-                              </span>
-                              <div className="text-sm text-gray-600">
-                                {quiz.score}/{quiz.maxScore} points
-                              </div>
-                            </div>
-                            <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                              quiz.score >= 90 ? 'bg-green-100 text-green-700' :
-                              quiz.score >= 75 ? 'bg-blue-100 text-blue-700' :
-                              'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {quiz.score >= 90 ? 'Excellent' :
-                               quiz.score >= 75 ? 'Good' : 'Fair'}
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-3 text-sm text-gray-600">
-                            <div>Completed: {quiz.completedDate}</div>
-                            <div>Time: {quiz.timeTaken} mins</div>
-                            <div>Rank: #{quiz.rank} of {quiz.totalParticipants}</div>
-                            <div>{quiz.questions} Questions</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex flex-col space-y-2">
-                        <button 
-                          onClick={() => navigate(`/student/quiz/${quiz.id}/details`)}
-                          className="px-4 py-2 border-2 border-primary-600 text-primary-600 rounded-lg hover:bg-primary-50 text-sm font-medium"
-                        >
-                          View Results
-                        </button>
-                        <button className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-                          Retake
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="card text-center py-8">
-                  <p className="text-gray-600">No completed quizzes found matching your search.</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* Leaderboard Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="card sticky top-8">
-            <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-              <FaTrophy className="mr-2" />
-              Overall Leaderboard
-            </h3>
-            <div className="space-y-3">
-              {leaderboard.map((entry) => (
-                <div
-                  key={entry.rank}
-                  className={`flex items-center justify-between p-3 rounded-lg ${
-                    entry.isCurrentUser ? 'bg-primary-50 border-2 border-primary-600' : 'bg-gray-50'
-                  }`}
+          {/* Course Filter Dropdown */}
+          {courses.length > 0 && (
+            <div className="mb-6">
+              <div className="relative w-full md:w-64">
+                <div 
+                  onClick={() => setShowCourseDropdown(!showCourseDropdown)}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg bg-white cursor-pointer hover:border-blue-600 transition-colors font-medium text-gray-700"
                 >
-                  <div className="flex items-center space-x-3">
-                    <div className="text-2xl">{entry.badge || entry.rank}</div>
-                    <div>
-                      <div className={`font-medium ${entry.isCurrentUser ? 'text-primary-600' : 'text-gray-900'}`}>
-                        {entry.name}
-                      </div>
-                      <div className="text-xs text-gray-600">{entry.quizzes} quizzes</div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-gray-900">{entry.score}</div>
-                    <div className="text-xs text-gray-600">points</div>
+                  <div className="flex items-center justify-between">
+                    <span>
+                      {courseFilter === 'all' 
+                        ? 'All Courses' 
+                        : courses.find(c => c.id === courseFilter)?.title || 'Select Course'
+                      }
+                    </span>
+                    <FaSearch className="text-gray-400 text-sm" />
                   </div>
                 </div>
-              ))}
+
+                {showCourseDropdown && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-300 rounded-lg shadow-lg z-20">
+                    {/* Course Search Input */}
+                    <div className="p-3 border-b border-gray-200">
+                      <input
+                        type="text"
+                        placeholder="Search courses..."
+                        value={courseSearchTerm}
+                        onChange={(e) => setCourseSearchTerm(e.target.value)}
+                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-600"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+
+                    {/* Course Options */}
+                    <div className="max-h-48 overflow-y-auto">
+                      <button
+                        onClick={() => {
+                          setCourseFilter('all');
+                          setShowCourseDropdown(false);
+                          setCourseSearchTerm('');
+                        }}
+                        className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors ${
+                          courseFilter === 'all' ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span>All Courses</span>
+                          <span className="text-sm text-gray-500">{availableQuizzes.length + completedQuizzes.length}</span>
+                        </div>
+                      </button>
+
+                      {filteredCourses.map((course) => (
+                        <button
+                          key={course.id}
+                          onClick={() => {
+                            setCourseFilter(course.id);
+                            setShowCourseDropdown(false);
+                            setCourseSearchTerm('');
+                          }}
+                          className={`w-full text-left px-4 py-2 hover:bg-gray-100 transition-colors border-b border-gray-100 ${
+                            courseFilter === course.id ? 'bg-blue-50 text-blue-600 font-medium' : 'text-gray-700'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{course.title}</span>
+                            <span className="text-sm text-gray-500">{getCourseCount(course.id)}</span>
+                          </div>
+                        </button>
+                      ))}
+
+                      {filteredCourses.length === 0 && courseSearchTerm && (
+                        <div className="px-4 py-3 text-center text-gray-500">
+                          No courses found
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
-            <button className="w-full mt-4 py-2 text-sm text-primary-600 hover:bg-primary-50 rounded-lg transition-colors">
-              View Full Leaderboard →
-            </button>
-            <p className="text-xs text-gray-600 mt-3 text-center">
-              View quiz-specific leaderboards from the quiz details page
-            </p>
+          )}
+
+          {/* Data Table with Search and Pagination */}
+          <div className="bg-white rounded-xl border border-slate-200 shadow">
+            <DataTable
+              columns={tableColumns}
+              data={displayData}
+              config={{
+                itemsPerPage: 10,
+                searchPlaceholder: 'Search quizzes by title or course...',
+                hideSearch: false,
+                emptyMessage: 'No quizzes found',
+                searchValue: searchTerm,
+                onSearchChange: (value) => setSearchTerm(value),
+              }}
+              loading={loading}
+            />
           </div>
+
+          {/* Active Filters Display */}
+          {(searchTerm || courseFilter !== 'all') && (
+            <div className="flex flex-wrap gap-2 items-center mt-4">
+              {searchTerm && (
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium flex items-center gap-2">
+                  Search: {searchTerm}
+                  <button onClick={() => setSearchTerm('')} className="hover:text-blue-900">
+                    <FaTimes className="text-xs" />
+                  </button>
+                </span>
+              )}
+              {courseFilter !== 'all' && (
+                <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium flex items-center gap-2">
+                  Course: {courses.find(c => c.id === courseFilter)?.title}
+                  <button onClick={() => setCourseFilter('all')} className="hover:text-green-900">
+                    <FaTimes className="text-xs" />
+                  </button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 };

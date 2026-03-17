@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaTrophy, FaCheckCircle, FaTimesCircle, FaClock, FaStar } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 
 const QuizDetails = () => {
   const { quizId } = useParams();
@@ -87,8 +88,24 @@ const QuizDetails = () => {
   const correctCount = questions.filter(q => q.isCorrect).length;
   const accuracy = Math.round((correctCount / questions.length) * 100);
 
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   return (
     <div className="p-8">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header */}
       <div className="mb-8">
         <button

@@ -1,8 +1,14 @@
 import { useState } from 'react';
-import { FaBook, FaCalendar,  FaChartBar, FaCheck, FaCheckCircle, FaFilePdf, FaTimes } from 'react-icons/fa';
+import { FaBook, FaCalendar,  FaChartBar, FaCheck, FaCheckCircle, FaFilePdf, FaTimes, FaHourglassHalf, FaEye } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
+
+import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 
 const AdminQuizzes = () => {
+  const [notification, setNotification] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
 
@@ -61,11 +67,39 @@ const AdminQuizzes = () => {
     },
   ];
 
-  const stats = [
-    { label: 'Total Quizzes', value: '156', icon: FaFilePdf, color: 'bg-blue-100 text-blue-700' },
-    { label: 'Published', value: '142', icon: FaCheckCircle, color: 'bg-green-100 text-green-700' },
-    { label: 'Pending Review', value: '8', icon: '⏳', color: 'bg-orange-100 text-orange-700' },
-    { label: 'Total Submissions', value: '4,567', icon: FaChartBar, color: 'bg-purple-100 text-purple-700' },
+  const quizzesMetricsConfig = [
+    {
+      label: 'Total Quizzes',
+      statsKey: 'total',
+      icon: FaFilePdf,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'All quizzes in system',
+    },
+    {
+      label: 'Published',
+      statsKey: 'published',
+      icon: FaCheckCircle,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'Active quizzes',
+    },
+    {
+      label: 'Pending Review',
+      statsKey: 'pending',
+      icon: FaHourglassHalf,
+      bgColor: 'bg-orange-100',
+      textColor: 'text-orange-600',
+      description: 'Awaiting approval',
+    },
+    {
+      label: 'Total Submissions',
+      statsKey: 'submissions',
+      icon: FaChartBar,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'All attempts',
+    },
   ];
 
   const getStatusColor = (status) => {
@@ -89,96 +123,132 @@ const AdminQuizzes = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Quiz Management</h1>
         <p className="text-gray-600">Review and moderate quiz content</p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <div key={index} className="card">
-            <div className="flex items-center justify-between">
+      <StatCard 
+        stats={{
+          total: '156',
+          published: '142',
+          pending: '8',
+          submissions: '4,567',
+        }}
+        metricsConfig={quizzesMetricsConfig}
+      />
+
+      {/* Quizzes DataTable */}
+      <DataTable
+        data={filteredQuizzes}
+        columns={[
+          {
+            key: 'title',
+            label: 'Quiz Title',
+            searchable: true,
+            render: (value, quiz) => (
               <div>
-                <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                <p className="text-sm font-medium text-gray-900">{value}</p>
+                <p className="text-xs text-gray-500">{quiz.createdDate}</p>
               </div>
-              <div className={`text-3xl ${stat.color} p-3 rounded-lg`}>{stat.icon}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="card mb-6">
-        <div className="flex items-center justify-between">
-          <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="input-field max-w-xs">
-            <option value="all">All Status</option>
-            <option value="published">Published</option>
-            <option value="pending">Pending Review</option>
-            <option value="draft">Draft</option>
-          </select>
-          <button className="btn-outline px-4 py-2">Export Report</button>
-        </div>
-      </div>
-
-      {/* Quizzes Table */}
-      <div className="card">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Quiz Title</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Course</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Teacher</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Questions</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Duration</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Submissions</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Avg Score</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredQuizzes.map((quiz) => (
-                <tr key={quiz.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3">
-                    <p className="text-sm font-medium text-gray-900">{quiz.title}</p>
-                    <p className="text-xs text-gray-500">{quiz.createdDate}</p>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{quiz.course}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{quiz.teacher}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{quiz.totalQuestions}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900">{quiz.duration}</td>
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{quiz.submissions}</td>
-                  <td className="px-4 py-3">
-                    {quiz.avgScore > 0 ? (
-                      <span className={`font-medium ${quiz.avgScore >= (quiz.totalMarks * 0.75) ? 'text-green-600' : quiz.avgScore >= (quiz.totalMarks * 0.5) ? 'text-yellow-600' : 'text-red-600'}`}>
-                        {quiz.avgScore}/{quiz.totalMarks}
-                      </span>
-                    ) : (
-                      <span className="text-gray-400">N/A</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(quiz.status)}`}>
-                      {quiz.status.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      onClick={() => handleViewDetails(quiz)}
-                      className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs"
-                    >
-                      {quiz.status === 'pending' ? 'Review' : 'View'}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            ),
+          },
+          {
+            key: 'course',
+            label: 'Course',
+            searchable: true,
+            render: (value) => <p className="text-sm text-gray-900">{value}</p>,
+          },
+          {
+            key: 'teacher',
+            label: 'Teacher',
+            searchable: true,
+            render: (value) => <p className="text-sm text-gray-600">{value}</p>,
+          },
+          {
+            key: 'totalQuestions',
+            label: 'Questions',
+            render: (value) => <p className="text-sm text-gray-900">{value}</p>,
+          },
+          {
+            key: 'duration',
+            label: 'Duration',
+            render: (value) => <p className="text-sm text-gray-900">{value}</p>,
+          },
+          {
+            key: 'submissions',
+            label: 'Submissions',
+            render: (value) => <p className="text-sm font-medium text-gray-900">{value}</p>,
+          },
+          {
+            key: 'avgScore',
+            label: 'Avg Score',
+            render: (value, quiz) => {
+              if (value > 0) {
+                const color = value >= (quiz.totalMarks * 0.75) ? 'text-green-600' : value >= (quiz.totalMarks * 0.5) ? 'text-yellow-600' : 'text-red-600';
+                return <span className={`font-medium ${color}`}>{value}/{quiz.totalMarks}</span>;
+              }
+              return <span className="text-gray-400">N/A</span>;
+            },
+          },
+          {
+            key: 'status',
+            label: 'Status',
+            filterable: true,
+            filterOptions: [
+              { label: 'Published', value: 'published' },
+              { label: 'Pending', value: 'pending' },
+              { label: 'Draft', value: 'draft' },
+              { label: 'Suspended', value: 'suspended' },
+            ],
+            render: (value) => (
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(value)}`}>
+                {value.toUpperCase()}
+              </span>
+            ),
+          },
+          {
+            key: 'actions',
+            label: 'Actions',
+            render: (_, quiz) => (
+              <button
+                onClick={() => handleViewDetails(quiz)}
+                className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
+              >
+                <FaEye /> View
+              </button>
+            ),
+          },
+        ]}
+        config={{
+          itemsPerPage: 10,
+          searchPlaceholder: 'Search by title, course, teacher...',
+          hideSearch: false,
+          emptyMessage: 'No quizzes found',
+          searchValue: searchTerm,
+          onSearchChange: (value) => {
+            setSearchTerm(value);
+          },
+          statusFilterOptions: [
+            { label: 'All Status', value: 'all' },
+            { label: 'Published', value: 'published' },
+            { label: 'Pending', value: 'pending' },
+            { label: 'Draft', value: 'draft' },
+          ],
+          statusFilterValue: filterStatus,
+          onStatusFilterChange: (value) => setFilterStatus(value),
+        }}
+        loading={false}
+      />
 
       {/* Details Modal */}
       {showDetailsModal && selectedQuiz && (

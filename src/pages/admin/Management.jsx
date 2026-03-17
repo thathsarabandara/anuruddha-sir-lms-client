@@ -1,9 +1,21 @@
 import { useState } from 'react';
-import { FaBook, FaCalendar,  FaChartBar, FaCheckCircle, FaFilePdf, FaGraduationCap, FaTimes, FaUserGraduate } from 'react-icons/fa';
+import { FaBook, FaCalendar,  FaChartBar, FaCheckCircle, FaFilePdf, FaGraduationCap, FaTimes, FaUserGraduate, FaStar, FaEye } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
+
+import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 
 const AdminManagement = () => {
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [_selectedAdmin, setSelectedAdmin] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterRole, setFilterRole] = useState('all');
 
   const admins = [
     {
@@ -63,11 +75,46 @@ const AdminManagement = () => {
     { key: 'settings', label: 'System Settings', icon: '⚙️' },
   ];
 
-  const stats = [
-    { label: 'Total Admins', value: '8', icon: '👤', color: 'bg-blue-100 text-blue-700' },
-    { label: 'Super Admins', value: '2', icon: '⭐', color: 'bg-yellow-100 text-yellow-700' },
-    { label: 'Active Admins', value: '6', icon: FaCheckCircle, color: 'bg-green-100 text-green-700' },
-    { label: 'Inactive', value: '2', icon: '⏸️', color: 'bg-gray-100 text-gray-700' },
+  const statsData = {
+    total_admins: 8,
+    super_admins: 2,
+    active_admins: 6,
+    inactive: 2,
+  };
+
+  const metricsConfig = [
+    {
+      label: 'Total Admins',
+      statsKey: 'total_admins',
+      icon: FaUserGraduate,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'all administrators',
+    },
+    {
+      label: 'Super Admins',
+      statsKey: 'super_admins',
+      icon: FaStar,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'full access',
+    },
+    {
+      label: 'Active Admins',
+      statsKey: 'active_admins',
+      icon: FaCheckCircle,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'currently active',
+    },
+    {
+      label: 'Inactive',
+      statsKey: 'inactive',
+      icon: FaTimes,
+      bgColor: 'bg-gray-100',
+      textColor: 'text-gray-600',
+      description: 'not active',
+    },
   ];
 
   const getRoleBadge = (role) => {
@@ -88,6 +135,14 @@ const AdminManagement = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Management</h1>
@@ -98,99 +153,103 @@ const AdminManagement = () => {
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        {stats.map((stat, index) => (
-          <div key={index} className="card">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-600 mb-1">{stat.label}</p>
-                <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-              </div>
-              <div className={`text-3xl ${stat.color} p-3 rounded-lg`}>{stat.icon}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <StatCard stats={statsData} metricsConfig={metricsConfig} />
 
-      {/* Admins Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-        {admins.map((admin) => (
-          <div key={admin.id} className="card hover:shadow-lg transition-shadow">
-            <div className="flex items-start justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white text-xl font-bold">
+      {/* Admins DataTable */}
+      <DataTable
+        data={admins}
+        columns={[
+          {
+            key: 'name',
+            label: 'Name',
+            searchable: true,
+            render: (value, admin) => (
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
                   {admin.name.charAt(0)}
                 </div>
-                <div>
-                  <h3 className="font-bold text-gray-900">{admin.name}</h3>
-                  <p className="text-sm text-gray-500">{admin.email}</p>
-                </div>
+                <span className="text-sm font-medium text-gray-900">{value}</span>
               </div>
-              <div className="flex flex-col space-y-1 items-end">
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getRoleBadge(admin.role).color}`}>
-                  {getRoleBadge(admin.role).label}
-                </span>
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(admin.status)}`}>
-                  {admin.status.toUpperCase()}
-                </span>
-              </div>
-            </div>
-
-            <div className="space-y-2 mb-4">
-              <div className="flex items-center text-sm text-gray-600">
-                <span className="mr-2">📱</span>
-                {admin.phone}
-              </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <FaCalendar className="mr-2" />
-                Joined {admin.joinDate}
-              </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <span className="mr-2">🕒</span>
-                Last login: {admin.lastLogin}
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <label className="text-xs font-medium text-gray-500 mb-2 block">Permissions</label>
-              <div className="flex flex-wrap gap-2">
-                {admin.permissions.includes('all') ? (
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">
-                    ⭐ All Permissions
-                  </span>
-                ) : (
-                  admin.permissions.map((perm, index) => {
-                    const permission = permissionsList.find((p) => p.key === perm);
-                    return (
-                      <span key={index} className="px-2 py-1 bg-primary-100 text-primary-700 rounded text-xs font-medium">
-                        {permission?.icon} {permission?.label}
-                      </span>
-                    );
-                  })
-                )}
-              </div>
-            </div>
-
-            <div className="flex space-x-2 mt-4">
+            ),
+          },
+          {
+            key: 'email',
+            label: 'Email',
+            searchable: true,
+            render: (value) => <p className="text-sm text-gray-600">{value}</p>,
+          },
+          {
+            key: 'phone',
+            label: 'Phone',
+            render: (value) => <p className="text-sm text-gray-600">{value}</p>,
+          },
+          {
+            key: 'role',
+            label: 'Role',
+            filterable: true,
+            filterOptions: [
+              { label: 'All Roles', value: 'all' },
+              { label: 'Super Admin', value: 'super_admin' },
+              { label: 'Admin', value: 'admin' },
+            ],
+            render: (value) => (
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getRoleBadge(value).color}`}>
+                {getRoleBadge(value).label}
+              </span>
+            ),
+          },
+          {
+            key: 'status',
+            label: 'Status',
+            render: (value) => (
+              <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(value)}`}>
+                {value.toUpperCase()}
+              </span>
+            ),
+          },
+          {
+            key: 'joinDate',
+            label: 'Joined',
+            render: (value) => <p className="text-sm text-gray-600">{value}</p>,
+          },
+          {
+            key: 'lastLogin',
+            label: 'Last Login',
+            render: (value) => <p className="text-sm text-gray-600">{value}</p>,
+          },
+          {
+            key: 'actions',
+            label: 'Actions',
+            render: (_, admin) => (
               <button
                 onClick={() => setSelectedAdmin(admin)}
-                className="flex-1 btn-primary py-2 text-sm"
+                className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
               >
-                Edit Permissions
+                <FaEye /> Edit
               </button>
-              {admin.role !== 'super_admin' && (
-                <button className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-                  {admin.status === 'active' ? 'Deactivate' : 'Activate'}
-                </button>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+            ),
+          },
+        ]}
+        config={{
+          itemsPerPage: 10,
+          searchPlaceholder: 'Search by name or email...',
+          hideSearch: false,
+          emptyMessage: 'No admins found',
+          searchValue: searchTerm,
+          onSearchChange: setSearchTerm,
+          statusFilterOptions: [
+            { label: 'All Roles', value: 'all' },
+            { label: 'Super Admin', value: 'super_admin' },
+            { label: 'Admin', value: 'admin' },
+          ],
+          statusFilterValue: filterRole,
+          onStatusFilterChange: setFilterRole,
+        }}
+        loading={false}
+      />
 
       {/* Activity Log */}
-      <div className="card">
+      <div className="card mt-8">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Admin Activity</h2>
         <div className="space-y-3">
           <div className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">

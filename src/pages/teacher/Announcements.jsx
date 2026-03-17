@@ -1,8 +1,16 @@
 import { useState } from 'react';
-import { FaCalendar, FaTimes, FaUsers } from 'react-icons/fa';
+import { FaCalendar, FaTimes, FaUsers, FaBullhorn, FaEye } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
+import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 
 const TeacherAnnouncements = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   const announcements = [
     {
@@ -43,8 +51,161 @@ const TeacherAnnouncements = () => {
     },
   ];
 
+  const stats = {
+    total_announcements: announcements.length,
+    published_count: announcements.filter((a) => a.status === 'published').length,
+    total_views: announcements.reduce((sum, a) => sum + a.views, 0),
+    this_week: 3,
+  };
+
+  // DataTable columns configuration
+  const columns = [
+    {
+      key: 'title',
+      label: 'Title',
+      searchable: true,
+      width: 'w-1/4',
+    },
+    {
+      key: 'message',
+      label: 'Message',
+      searchable: true,
+      width: 'w-1/3',
+      render: (value) => (
+        <span className="text-gray-700 line-clamp-2">{value}</span>
+      ),
+    },
+    {
+      key: 'target',
+      label: 'Target Audience',
+      searchable: true,
+      filterable: true,
+      filterOptions: [
+        { label: 'All Students', value: 'All Students' },
+        { label: 'Mathematics Excellence', value: 'Mathematics Excellence' },
+        { label: 'Sinhala Language', value: 'Sinhala Language' },
+        { label: 'Complete Scholarship Package', value: 'Complete Scholarship Package' },
+        { label: 'Environment Studies', value: 'Environment Studies' },
+      ],
+      width: 'w-1/5',
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      filterable: true,
+      filterOptions: [
+        { label: 'Published', value: 'published' },
+        { label: 'Draft', value: 'draft' },
+      ],
+      render: (value) => (
+        <span
+          className={`px-3 py-1 text-xs font-semibold rounded-full ${
+            value === 'published'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-gray-200 text-gray-700'
+          }`}
+        >
+          {value.toUpperCase()}
+        </span>
+      ),
+      width: 'w-24',
+    },
+    {
+      key: 'date',
+      label: 'Date',
+      searchable: true,
+      width: 'w-28',
+    },
+    {
+      key: 'views',
+      label: 'Views',
+      render: (value, row) => (
+        <span className={row.status === 'published' ? 'text-gray-700' : 'text-gray-400'}>
+          {row.status === 'published' ? value : '-'}
+        </span>
+      ),
+      width: 'w-20',
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      searchable: false,
+      render: (value, row) => (
+        <div className="flex gap-2 flex-wrap">
+          {row.status === 'draft' ? (
+            <button className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white text-xs rounded font-medium">
+              Publish
+            </button>
+          ) : (
+            <button className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white text-xs rounded font-medium">
+              Details
+            </button>
+          )}
+          <button className="px-3 py-1 border border-gray-300 hover:bg-gray-50 text-xs rounded font-medium">
+            Edit
+          </button>
+          <button className="px-3 py-1 border border-red-300 text-red-600 hover:bg-red-50 text-xs rounded font-medium">
+            Delete
+          </button>
+        </div>
+      ),
+      width: 'w-40',
+    },
+  ];
+
+  const tableConfig = {
+    itemsPerPage: 10,
+    searchPlaceholder: 'Search announcements...',
+    emptyMessage: 'No announcements found',
+  };
+
+  const metricsConfig = [
+    {
+      label: 'Total Announcements',
+      statsKey: 'total_announcements',
+      icon: FaBullhorn,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'all announcements',
+    },
+    {
+      label: 'Published',
+      statsKey: 'published_count',
+      icon: FaUsers,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'active now',
+    },
+    {
+      label: 'Total Views',
+      statsKey: 'total_views',
+      icon: FaEye,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'student views',
+    },
+    {
+      label: 'This Week',
+      statsKey: 'this_week',
+      icon: FaCalendar,
+      bgColor: 'bg-orange-100',
+      textColor: 'text-orange-600',
+      description: 'new posts',
+    },
+  ];
+
   return (
     <div className="p-8">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Announcements</h1>
@@ -55,95 +216,15 @@ const TeacherAnnouncements = () => {
         </button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Announcements</div>
-          <div className="text-2xl font-bold text-gray-900">{announcements.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Published</div>
-          <div className="text-2xl font-bold text-green-600">
-            {announcements.filter((a) => a.status === 'published').length}
-          </div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Views</div>
-          <div className="text-2xl font-bold text-primary-600">
-            {announcements.reduce((sum, a) => sum + a.views, 0)}
-          </div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">This Week</div>
-          <div className="text-2xl font-bold text-gray-900">3</div>
-        </div>
-      </div>
+      <StatCard stats={stats} metricsConfig={metricsConfig} />
 
-      {/* Announcements List */}
-      <div className="space-y-4">
-        {announcements.map((announcement) => (
-          <div key={announcement.id} className="card">
-            <div className="flex items-start justify-between">
-              <div className="flex items-start space-x-4 flex-1">
-                <div
-                  className={`${
-                    announcement.status === 'published' ? 'bg-blue-600' : 'bg-gray-400'
-                  } text-white p-3 rounded-lg`}
-                >
-                  <div className="text-2xl">📢</div>
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <h3 className="text-lg font-bold text-gray-900">{announcement.title}</h3>
-                    <span
-                      className={`px-2 py-1 text-xs font-semibold rounded ${
-                        announcement.status === 'published'
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-gray-200 text-gray-700'
-                      }`}
-                    >
-                      {announcement.status.toUpperCase()}
-                    </span>
-                  </div>
-                  <p className="text-gray-700 mb-3">{announcement.message}</p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-600">
-                    <div className="flex items-center">
-                      <FaUsers className="mr-1" />
-                      {announcement.target}
-                    </div>
-                    <div className="flex items-center">
-                      <FaCalendar className="mr-1" />
-                      {announcement.date}
-                    </div>
-                    {announcement.status === 'published' && (
-                      <div className="flex items-center">
-                        <span className="mr-1">👁️</span>
-                        {announcement.views} views
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="flex flex-col space-y-2 ml-4">
-                {announcement.status === 'draft' ? (
-                  <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium">
-                    Publish
-                  </button>
-                ) : (
-                  <button className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg text-sm font-medium">
-                    View Details
-                  </button>
-                )}
-                <button className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
-                  Edit
-                </button>
-                <button className="px-4 py-2 border-2 border-red-300 text-red-600 hover:bg-red-50 rounded-lg text-sm">
-                  Delete
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+      {/* Announcements DataTable */}
+      <div className="mt-8">
+        <DataTable
+          data={announcements}
+          columns={columns}
+          config={tableConfig}
+        />
       </div>
 
       {/* Create Modal */}

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import Sidebar from './Sidebar';
-import DashboardTopBar from './DashboardTopBar';
-import DashboardFooter from './DashboardFooter';
+import Sidebar from '../common/Sidebar';
+import DashboardTopBar from '../common/DashboardTopBar';
+import DashboardFooter from '../common/DashboardFooter';
 import { Outlet } from 'react-router-dom';
 
 const AuthenticatedLayout = () => {
