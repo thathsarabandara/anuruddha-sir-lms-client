@@ -5,6 +5,7 @@ import { BiLoader } from 'react-icons/bi';
 import { studentAPI } from '../../api/student';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
+import Notification from '../../components/common/Notification';
 
 const AdminStudents = () => {
   const [students, setStudents] = useState([]);
@@ -43,6 +44,11 @@ const AdminStudents = () => {
   const [editFormData, setEditFormData] = useState({});
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   const fetchStats = async () => {
     try {
@@ -61,6 +67,7 @@ const AdminStudents = () => {
       setStudents(response.data.data.students || []);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to fetch students');
+      showNotification(err.response?.data?.message || 'Failed to fetch students', 'error');
       console.error('Error fetching students:', err);
     } finally {
       setLoading(false);
@@ -95,10 +102,12 @@ const AdminStudents = () => {
       ));
       
       setSuccess('Student approved and activated successfully!');
+      showNotification('Student approved and activated successfully!', 'success');
       setShowDetailsModal(false);
       setSelectedStudent(null);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to approve student');
+      showNotification(err.response?.data?.message || 'Failed to approve student', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -107,6 +116,7 @@ const AdminStudents = () => {
   const handleReject = async () => {
     if (!reason.trim()) {
       setError('Please provide a reason for rejection');
+      showNotification('Please provide a reason for rejection', 'error');
       return;
     }
     
@@ -126,12 +136,14 @@ const AdminStudents = () => {
       ));
       
       setSuccess('Student rejected successfully!');
+      showNotification('Student rejected successfully!', 'success');
       setShowRejectModal(false);
       setreason('');
       setShowDetailsModal(false);
       setSelectedStudent(null);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reject student');
+      showNotification(err.response?.data?.message || 'Failed to reject student', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -140,6 +152,7 @@ const AdminStudents = () => {
   const handleSuspend = async () => {
     if (!suspendReason.trim()) {
       setError('Please provide a reason for suspension');
+      showNotification('Please provide a reason for suspension', 'error');
       return;
     }
     
@@ -159,12 +172,14 @@ const AdminStudents = () => {
       ));
       
       setSuccess('Student suspended successfully!');
+      showNotification('Student suspended successfully!', 'success');
       setShowSuspendModal(false);
       setSuspendReason('');
       setShowDetailsModal(false);
       setSelectedStudent(null);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to suspend student');
+      showNotification(err.response?.data?.message || 'Failed to suspend student', 'error');
     } finally {
       setActionLoading(false);
     }
@@ -184,6 +199,7 @@ const AdminStudents = () => {
       ));
       
       setSuccess('Student activated successfully!');
+      showNotification('Student activated successfully!', 'success');
       setShowDetailsModal(false);
       setSelectedStudent(null);
     } catch (err) {
@@ -375,6 +391,16 @@ const AdminStudents = () => {
 
   return (
     <div className="p-8">
+      {/* Notification Component */}
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
