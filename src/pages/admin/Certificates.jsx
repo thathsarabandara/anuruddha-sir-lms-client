@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { FaFilePdf, FaGraduationCap, FaTimes, FaTrophy, FaChartLine, FaChartArea, FaStar, FaEye } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 
 const AdminCertificates = () => {
+  const [notification, setNotification] = useState(null);
   const [filterType, setFilterType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  // const [showIssueModal, setShowIssueModal] = useState(false); // TODO: Implement modal for issuing certificates
 
   const certificates = [
     {
@@ -93,6 +94,12 @@ const AdminCertificates = () => {
       description: 'badge badges awarded',
     },
   ];
+  const achievements = [
+    { name: 'Top Performer', count: 45, icon: FaTrophy, color: 'bg-yellow-100 text-yellow-700' },
+    { name: 'Perfect Attendance', count: 78, icon: FaStar, color: 'bg-blue-100 text-blue-700' },
+    { name: 'Quiz Master', count: 34, icon: FaFilePdf, color: 'bg-green-100 text-green-700' },
+    { name: 'Fast Learner', count: 56, icon: FaChartArea, color: 'bg-purple-100 text-purple-700' },
+  ];
 
   const getCertTypeColor = (type) => {
     const colors = {
@@ -107,15 +114,17 @@ const AdminCertificates = () => {
     return filterType === 'all' || cert.type === filterType;
   });
 
-  const achievements = [
-    { name: 'Top Performer', count: 45, icon: FaTrophy, color: 'bg-yellow-100 text-yellow-700' },
-    { name: 'Perfect Attendance', count: 78, icon: FaStar, color: 'bg-blue-100 text-blue-700' },
-    { name: 'Quiz Master', count: 34, icon: FaFilePdf, color: 'bg-green-100 text-green-700' },
-    { name: 'Fast Learner', count: 56, icon: FaChartArea, color: 'bg-purple-100 text-purple-700' },
-  ];
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Certificate Management</h1>
