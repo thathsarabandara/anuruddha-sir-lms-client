@@ -3,11 +3,17 @@ import { useSelector } from 'react-redux';
 import { FaAward, FaBook, FaGraduationCap, FaUserGraduate , FaStar, FaBell} from 'react-icons/fa';
 import { IoLockClosed } from "react-icons/io5";
 import { CgProfile } from "react-icons/cg";
+import Notification from '../../components/common/Notification';
 
 const TeacherProfile = () => {
   const { user } = useSelector((state) => state.auth);
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
   const [formData, setFormData] = useState({
     firstName: user?.first_name || '',
     lastName: user?.last_name || '',
@@ -55,6 +61,16 @@ const TeacherProfile = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Teacher Profile</h1>
         <p className="text-gray-600">Manage your professional profile and settings</p>
