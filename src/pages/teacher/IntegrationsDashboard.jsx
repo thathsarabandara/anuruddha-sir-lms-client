@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FaZoom, FaWhatsapp, FaCC, FaCog, FaChartLine, FaHistory } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 import {
   IntegrationStatusCard,
   AlertBox,
@@ -11,6 +12,10 @@ import {
 
 const IntegrationsDashboard = () => {
   const navigate = useNavigate();
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
   
   // Dummy Zoom status
   const dummyZoomStatus = {
@@ -48,6 +53,16 @@ const IntegrationsDashboard = () => {
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="bg-white border-b-2 border-slate-200 pb-6 mb-8">
