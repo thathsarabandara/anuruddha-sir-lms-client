@@ -59,6 +59,11 @@ const DataTable = ({
     onStatusFilterChange = null,
     searchValue = '',
     onSearchChange = null,
+    dateFilterEnabled = false,
+    fromDate = '',
+    toDate = '',
+    onFromDateChange = null,
+    onToDateChange = null,
   } = config;
 
   // State
@@ -120,10 +125,16 @@ const DataTable = ({
     if (onSearchChange) {
       onSearchChange('');
     }
+    if (onFromDateChange) {
+      onFromDateChange('');
+    }
+    if (onToDateChange) {
+      onToDateChange('');
+    }
     setCurrentPage(1);
   };
 
-  const hasActiveFilters = Object.values(filters).some(v => v) || searchValue;
+  const hasActiveFilters = Object.values(filters).some(v => v) || searchValue || fromDate || toDate;
 
   // Loading skeleton
   if (loading) {
@@ -166,6 +177,29 @@ const DataTable = ({
                 </option>
               ))}
             </select>
+          )}
+
+          {/* Date Range Filter */}
+          {dateFilterEnabled && (
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={fromDate}
+                onChange={(e) => onFromDateChange && onFromDateChange(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-700"
+                placeholder="From Date"
+                title="Filter from date"
+              />
+              <span className="text-gray-500">to</span>
+              <input
+                type="date"
+                value={toDate}
+                onChange={(e) => onToDateChange && onToDateChange(e.target.value)}
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm text-gray-700"
+                placeholder="To Date"
+                title="Filter to date"
+              />
+            </div>
           )}
 
           {/* Active Filters Indicator */}
