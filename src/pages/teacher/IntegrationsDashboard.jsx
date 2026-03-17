@@ -231,5 +231,5 @@ const IntegrationsDashboard = () => {
     </div>
   );
 };
-
+};
 export default IntegrationsDashboard;
