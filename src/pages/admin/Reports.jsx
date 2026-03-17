@@ -1,9 +1,16 @@
 import { useState } from 'react';
 import { FaChartBar, FaGraduationCap, FaUserGraduate, FaStar } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 
 import StatCard from '../../components/common/StatCard';
 
 const AdminReports = () => {
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   const [reportType, setReportType] = useState('overview');
   const [dateRange, setDateRange] = useState('this-month');
 
@@ -81,6 +88,14 @@ const AdminReports = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Reports & Analytics</h1>
         <p className="text-gray-600">Comprehensive insights and data analytics</p>
