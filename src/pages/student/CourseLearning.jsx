@@ -21,6 +21,7 @@ import {
 import VideoPlayer from '../../components/VideoPlayer';
 import PDFViewer from '../../components/PDFViewer';
 import SectionProgress from '../../components/SectionProgress';
+import Notification from '../../components/common/Notification';
 
 // Dummy Course Data
 const getDummyCourseData = () => ({
@@ -255,6 +256,11 @@ const StudentCourseLearning = () => {
   const [allLessons, setAllLessons] = useState([]);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   useEffect(() => {
     const fetchCourseDetails = async () => {
@@ -366,7 +372,7 @@ const StudentCourseLearning = () => {
 
   const handleLessonClick = async (lesson) => {
     if (lesson.is_locked) {
-      alert('This lesson is locked. Complete previous lessons to unlock it.');
+      showNotification('This lesson is locked. Complete previous lessons to unlock it.', 'warning');
       return;
     }
     
@@ -430,7 +436,7 @@ const StudentCourseLearning = () => {
         response: err?.response?.data,
         lessonId: lesson.id
       });
-      alert('Failed to mark lesson as complete. Please try again.');
+      showNotification('Failed to mark lesson as complete. Please try again.', 'error');
     }
   };
 
@@ -526,6 +532,16 @@ const StudentCourseLearning = () => {
 
   return (
     <div className="min-h-screen bg-white">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header */}
       <div className="sticky top-0 z-30 bg-white border-b border-slate-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
