@@ -4,6 +4,7 @@ import { FaShoppingCart, FaTrash, FaArrowLeft } from 'react-icons/fa';
 import { useCart } from '../../hooks/useCart';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
 import { ROUTES } from '../../utils/constants';
+import Notification from '../../components/common/Notification';
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -11,8 +12,11 @@ const CartPage = () => {
   const [removingItemId, setRemovingItemId] = useState(null);
   const [showCoupon, setShowCoupon] = useState(false);
   const [couponCode, setCouponCode] = useState('');
-  const [successMessage, setSuccessMessage] = useState(null);
-  const [cartError, setCartError] = useState(null);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   // Handle remove item
   const handleRemoveItem = async (itemId) => {
@@ -21,10 +25,9 @@ const CartPage = () => {
     setRemovingItemId(null);
     
     if (result.success) {
-      setSuccessMessage(result.message);
-      setTimeout(() => setSuccessMessage(null), 3000);
+      showNotification(result.message, 'success');
     } else {
-      setCartError(result.message);
+      showNotification(result.message, 'error');
     }
   };
 
@@ -33,10 +36,9 @@ const CartPage = () => {
     if (window.confirm('Are you sure you want to clear your cart?')) {
       const result = await clearCart();
       if (result.success) {
-        setSuccessMessage(result.message);
-        setTimeout(() => setSuccessMessage(null), 3000);
+        showNotification(result.message, 'success');
       } else {
-        setCartError(result.message);
+        showNotification(result.message, 'error');
       }
     }
   };
@@ -113,6 +115,16 @@ const CartPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 lg:p-8">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
@@ -136,24 +148,6 @@ const CartPage = () => {
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 flex justify-between items-center">
             <span>{error}</span>
             <button onClick={() => {}} className="text-red-600 hover:text-red-700">
-              ✕
-            </button>
-          </div>
-        )}
-
-        {cartError && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-800 flex justify-between items-center">
-            <span>{cartError}</span>
-            <button onClick={() => setCartError(null)} className="text-red-600 hover:text-red-700">
-              ✕
-            </button>
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg text-green-800 flex justify-between items-center">
-            <span>{successMessage}</span>
-            <button onClick={() => setSuccessMessage(null)} className="text-green-600 hover:text-green-700">
               ✕
             </button>
           </div>
