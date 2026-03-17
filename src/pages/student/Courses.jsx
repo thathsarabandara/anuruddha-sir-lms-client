@@ -3,6 +3,7 @@ import { FaSearch, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaBook, FaB
 import CourseCard from '../../components/common/CourseCard';
 import { MdOutlineWorkspacePremium } from 'react-icons/md';
 import { GrCompliance } from 'react-icons/gr';
+import Notification from '../../components/common/Notification';
 
 const StudentCourses = () => {
   // Dummy data
@@ -44,6 +45,12 @@ const StudentCourses = () => {
     priceRange: [0, 15000],
     rating: 0
   });
+
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   useEffect(() => {
     // Dummy data already loaded
@@ -179,6 +186,16 @@ const StudentCourses = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6 lg:p-8">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header Section */}
       <div className="max-w-7xl mx-auto mb-8">
         <div className="flex items-center justify-between">
