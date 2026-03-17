@@ -1,32 +1,151 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaPlus, FaEdit, FaTrash, FaGripVertical, FaClipboardList, FaBook, FaSearch } from 'react-icons/fa';
+import { FaArrowLeft, FaPlus, FaEdit, FaTrash, FaGripVertical, FaClipboardList, FaBook, FaSearch, FaCheckDouble, FaPencilAlt, FaBrain } from 'react-icons/fa';
 import QuestionModal from '../../components/teacher/QuestionModal';
 import Notification from '../../components/common/Notification';
-import { BiLoader } from 'react-icons/bi';
-import { getAbsoluteImageUrl } from '../../utils/helpers';
+import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
 
 const ManageQuestions = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
   
-  // Dummy data
-  const dummyQuestions = [
-    { id: 1, text: 'What is Python?', type: 'SINGLE_CHOICE', order: 1, options: ['Programming language', 'Snake', 'Other'] },
-    { id: 2, text: 'Define OOP', type: 'SHORT_ANSWER', order: 2 },
+  // Dummy data for questions
+  const dummyQuestionsList = [
+    { id: 1, question_text: 'What is Python?', question_type: 'MCQ_SINGLE', marks: 2, difficulty: 'EASY', tags: 'basics' },
+    { id: 2, question_text: 'Define OOP', question_type: 'SHORT_ANSWER', marks: 3, difficulty: 'MEDIUM', tags: 'concepts' },
+    { id: 3, question_text: 'Explain Data Structures', question_type: 'LONG_ANSWER', marks: 5, difficulty: 'HARD', tags: 'advanced' },
+    { id: 4, question_text: 'True or False: Python is dynamically typed', question_type: 'TRUE_FALSE', marks: 1, difficulty: 'EASY', tags: 'basics' },
+    { id: 5, question_text: 'Select all correct answers about loops', question_type: 'MCQ_MULTIPLE', marks: 4, difficulty: 'MEDIUM', tags: 'control-flow' },
   ];
 
-  const [questions, setQuestions] = useState(dummyQuestions);
-  const [selectedBank, setSelectedBank] = useState(null);
-  const [bankQuestions, setBankQuestions] = useState([]);
+  // Stats data for StatCard
+  const questionsStats = {
+    total_questions: 5,
+    total_marks: 15,
+    auto_graded: 2,
+    manual_review: 3,
+  };
+
+  const questionsStatsConfig = [
+    {
+      label: 'Total Questions',
+      statsKey: 'total_questions',
+      icon: FaClipboardList,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'questions in quiz',
+    },
+    {
+      label: 'Total Marks',
+      statsKey: 'total_marks',
+      icon: FaBrain,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'maximum marks',
+    },
+    {
+      label: 'Auto-Graded',
+      statsKey: 'auto_graded',
+      icon: FaCheckDouble,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'auto-grading',
+    },
+    {
+      label: 'Manual Review',
+      statsKey: 'manual_review',
+      icon: FaPencilAlt,
+      bgColor: 'bg-yellow-100',
+      textColor: 'text-yellow-600',
+      description: 'needs review',
+    },
+  ];
+
+  // DataTable columns for questions
+  const questionsColumns = [
+    {
+      key: 'question_text',
+      label: 'Question',
+      searchable: true,
+      render: (_, row) => (
+        <div>
+          <p className="font-medium text-gray-900">Q{row.id}. {row.question_text}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'question_type',
+      label: 'Type',
+      render: (_, row) => (
+        <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded">
+          {row.question_type?.replace(/_/g, ' ')}
+        </span>
+      ),
+    },
+    {
+      key: 'marks',
+      label: 'Marks',
+      render: (_, row) => <span className="text-sm font-medium text-gray-900">{row.marks}</span>,
+    },
+    {
+      key: 'difficulty',
+      label: 'Difficulty',
+      render: (_, row) => (
+        <span className={`px-3 py-1 text-sm font-medium rounded ${
+          row.difficulty === 'HARD' ? 'bg-red-100 text-red-700' :
+          row.difficulty === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+          'bg-green-100 text-green-700'
+        }`}>
+          {row.difficulty}
+        </span>
+      ),
+    },
+    {
+      key: 'tags',
+      label: 'Tags',
+      render: (_, row) => (
+        <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded">
+          {row.tags}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (_, row) => (
+        <div className="flex gap-2">
+          <button
+            onClick={() => handleEditQuestion(row)}
+            className="text-blue-600 hover:text-blue-800 font-medium"
+          >
+            <FaEdit />
+          </button>
+          <button
+            onClick={() => handleDeleteQuestion(row.id)}
+            className="text-red-600 hover:text-red-800 font-medium"
+          >
+            <FaTrash />
+          </button>
+        </div>
+      ),
+    },
+  ];
+
+  const [questions, setQuestions] = useState(dummyQuestionsList);
   const [showQuestionModal, setShowQuestionModal] = useState(false);
-  const [showBankModal, setShowBankModal] = useState(false);
   const [editingQuestion, setEditingQuestion] = useState(null);
-  const [searchTerm, setSearchTerm] = useState('');
   const [loading, _setLoading] = useState(false);
   const [hasAttempts, _setHasAttempts] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
   const [notification, setNotification] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [isEditingOrder, setIsEditingOrder] = useState(false);
+  
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
   
   const fetchQuizData = useCallback(() => {
     // Dummy data already set
@@ -94,79 +213,60 @@ const ManageQuestions = () => {
     });
   };
 
-  const handleAddFromBank = (bankQuestionId) => {
-    // Add question from bank to current questions
-    const bankQuestion = bankQuestions.find(q => q.id === bankQuestionId);
-    if (bankQuestion) {
-      const newQuestion = {
-        ...bankQuestion,
-        id: Math.max(...questions.map(q => q.id), 0) + 1,
-        order: questions.length + 1,
-      };
-      setQuestions([...questions, newQuestion]);
-      setNotification({
-        type: 'success',
-        message: 'Question added successfully!',
-      });
+  // Drag and Drop Handlers
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = (e, dropIndex) => {
+    e.preventDefault();
+    
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
     }
+
+    // Create new array with reordered questions
+    const newQuestions = [...questions];
+    const draggedQuestion = newQuestions[draggedIndex];
+    
+    // Remove from old position
+    newQuestions.splice(draggedIndex, 1);
+    // Insert at new position
+    newQuestions.splice(dropIndex, 0, draggedQuestion);
+    
+    // Update state
+    setQuestions(newQuestions);
+    
+    // TODO: Send reorder to backend API
+    // const reorderedIds = newQuestions.map((q, idx) => ({ id: q.id, position: idx }));
+    // await updateQuestionOrder(quizId, reorderedIds);
+    
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+    
+    setNotification({
+      type: 'success',
+      message: 'Questions reordered successfully',
+    });
   };
 
-  const getQuestionTypeLabel = (type) => {
-    const labels = {
-      'MCQ_SINGLE': 'Single Choice',
-      'MCQ_MULTIPLE': 'Multiple Choice',
-      'TRUE_FALSE': 'True/False',
-      'SHORT_ANSWER': 'Short Answer',
-      'LONG_ANSWER': 'Long Answer'
-    };
-    return labels[type] || type;
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
-
-  const filteredBankQuestions = bankQuestions.filter(q =>
-    q.question_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    q.tags?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  if (loading) {
-    return (
-      <div className="p-8">
-        {/* Header Skeleton */}
-        <div className="mb-8">
-          <div className="h-10 w-64 bg-gray-200 rounded-lg animate-pulse mb-3"></div>
-          <div className="h-4 w-96 bg-gray-200 rounded animate-pulse"></div>
-        </div>
-
-        {/* Tabs Skeleton */}
-        <div className="flex gap-4 mb-6 border-b border-gray-200 pb-4">
-          {[...Array(2)].map((_, idx) => (
-            <div key={idx} className="h-10 w-40 bg-gray-200 rounded-lg animate-pulse"></div>
-          ))}
-        </div>
-
-        {/* Questions List Skeleton */}
-        <div className="space-y-4">
-          {[...Array(5)].map((_, idx) => (
-            <div key={idx} className="bg-white rounded-lg border border-gray-200 p-6">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="h-6 w-3/4 bg-gray-200 rounded-lg animate-pulse mb-3"></div>
-                  <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse mb-3"></div>
-                  <div className="flex gap-2">
-                    <div className="h-6 w-20 bg-gray-200 rounded animate-pulse"></div>
-                    <div className="h-6 w-20 bg-gray-200 rounded animate-pulse"></div>
-                  </div>
-                </div>
-                <div className="flex gap-2 flex-shrink-0">
-                  <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-                  <div className="w-10 h-10 bg-gray-200 rounded-lg animate-pulse"></div>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-8">
@@ -231,12 +331,15 @@ const ManageQuestions = () => {
           </div>
           
           <div className="flex gap-3">
-            <button 
-              onClick={() => setShowBankModal(true)} 
-              className="btn-secondary px-6 flex items-center gap-2"
-            >
-              <FaBook /> Add from Bank
-            </button>
+            {!isEditingOrder && (
+              <button 
+                onClick={() => setIsEditingOrder(true)} 
+                className="btn-secondary px-6 flex items-center gap-2"
+                disabled={hasAttempts || questions.length === 0}
+              >
+                <FaGripVertical /> Edit Order
+              </button>
+            )}
             <button 
               onClick={handleAddQuestion} 
               className="btn-primary px-6 flex items-center gap-2"
@@ -249,33 +352,47 @@ const ManageQuestions = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Questions</div>
-          <div className="text-2xl font-bold text-gray-900">{questions.length}</div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Total Marks</div>
-          <div className="text-2xl font-bold text-primary-600">
-            {questions.reduce((sum, q) => sum + parseFloat(q.marks || 0), 0)}
-          </div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Auto-Graded</div>
-          <div className="text-2xl font-bold text-green-600">
-            {questions.filter(q => ['MCQ_SINGLE', 'MCQ_MULTIPLE', 'TRUE_FALSE'].includes(q.question_type)).length}
-          </div>
-        </div>
-        <div className="card">
-          <div className="text-sm text-gray-600 mb-1">Manual Review</div>
-          <div className="text-2xl font-bold text-yellow-600">
-            {questions.filter(q => ['SHORT_ANSWER', 'LONG_ANSWER'].includes(q.question_type)).length}
-          </div>
-        </div>
+      <div className="mb-8">
+        <StatCard stats={questionsStats} metricsConfig={questionsStatsConfig} />
       </div>
 
-      {/* Questions List */}
-      <div className="space-y-4">
+      {/* Questions DataTable */}
+      {!isEditingOrder && (
+        <div className="card mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Questions List</h2>
+          <DataTable
+            data={questions}
+            columns={questionsColumns}
+            config={{
+              itemsPerPage: 10,
+              searchPlaceholder: 'Search by question text...',
+              hideSearch: false,
+            }}
+            loading={loading}
+          />
+        </div>
+      )}
+
+      {/* Draggable Questions List - Edit Order Mode */}
+      {isEditingOrder && (
+      <div className="card mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-gray-900">Reorder Questions (Drag & Drop)</h2>
+          <button 
+            onClick={() => {
+              setIsEditingOrder(false);
+              setDraggedIndex(null);
+              setDragOverIndex(null);
+              setNotification({
+                type: 'success',
+                message: 'Question order updated successfully',
+              });
+            }} 
+            className="btn-primary px-6 flex items-center gap-2"
+          >
+            <FaCheckDouble /> Save Order
+          </button>
+        </div>
         {questions.length === 0 ? (
           <div className="card text-center py-12">
             <FaClipboardList className="mx-auto text-gray-400 text-5xl mb-4" />
@@ -285,125 +402,53 @@ const ManageQuestions = () => {
               <button onClick={handleAddQuestion} className="btn-primary">
                 <FaPlus className="inline mr-2" /> Add Question
               </button>
-              <button onClick={() => setShowBankModal(true)} className="btn-secondary">
-                <FaBook className="inline mr-2" /> Add from Bank
-              </button>
             </div>
           </div>
         ) : (
           questions.map((question, index) => (
-            <div key={question.id} className="card hover:shadow-lg transition-shadow">
-              <div className="flex items-start gap-4">
+            <div 
+              key={question.id} 
+              draggable={true}
+              onDragStart={(e) => handleDragStart(e, index)}
+              onDragOver={(e) => handleDragOver(e, index)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, index)}
+              onDragEnd={handleDragEnd}
+              className={`card hover:shadow-lg transition-all cursor-move ${
+                draggedIndex === index ? 'opacity-50 bg-gray-50' : ''
+              } ${
+                dragOverIndex === index && draggedIndex !== null ? 'border-2 border-blue-400 bg-blue-50' : ''
+              }`}
+            >
+              <div className="flex items-center gap-4">
                 {/* Drag Handle */}
-                {!hasAttempts && (
-                  <button 
-                    className="text-gray-400 hover:text-gray-600 cursor-move mt-2"
-                    title="Drag to reorder"
-                  >
-                    <FaGripVertical size={20} />
-                  </button>
-                )}
+                <div 
+                  className="text-gray-400 hover:text-gray-600 cursor-move flex-shrink-0"
+                  title="Drag to reorder questions"
+                >
+                  <FaGripVertical size={24} />
+                </div>
                 
-                {/* Question Content */}
+                {/* Question Content - Simplified */}
                 <div className="flex-1">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-lg font-bold text-gray-900">Q{index + 1}.</span>
-                        <h3 className="text-lg font-semibold text-gray-900">
-                          {question.question_text}
-                        </h3>
-                      </div>
-                      
-                      <div className="flex flex-wrap items-center gap-2 mb-3">
-                        <span className="px-3 py-1 bg-primary-100 text-primary-700 text-sm font-medium rounded">
-                          {getQuestionTypeLabel(question.question_type)}
-                        </span>
-                        <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-medium rounded">
-                          {question.marks} marks
-                        </span>
-                        {question.difficulty && (
-                          <span className={`px-3 py-1 text-sm font-medium rounded ${
-                            question.difficulty === 'HARD' ? 'bg-red-100 text-red-700' :
-                            question.difficulty === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-green-100 text-green-700'
-                          }`}>
-                            {question.difficulty}
-                          </span>
-                        )}
-                        {question.tags && (
-                          <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded">
-                            {question.tags}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <button 
-                        onClick={() => handleEditQuestion(question)}
-                        className="p-2 text-primary-600 hover:bg-primary-50 rounded-lg"
-                        disabled={hasAttempts}
-                        title="Edit Question"
-                      >
-                        <FaEdit size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteQuestion(question.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg"
-                        disabled={hasAttempts}
-                        title="Delete Question"
-                      >
-                        <FaTrash size={18} />
-                      </button>
-                    </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg font-bold text-gray-900 min-w-fit">Q{index + 1}.</span>
+                    <h3 className="text-base font-semibold text-gray-900">
+                      {question.question_text}
+                    </h3>
                   </div>
-
-                  {/* Question Image */}
-                  {question.image && (
-                    <img 
-                      src={getAbsoluteImageUrl(question.image)} 
-                      alt="Question" 
-                      className="max-w-md h-auto rounded-lg mb-3 border border-gray-200"
-                    />
-                  )}
-
-                  {/* Options Preview for MCQ */}
-                  {(question.question_type === 'MCQ_SINGLE' || 
-                    question.question_type === 'MCQ_MULTIPLE' ||
-                    question.question_type === 'TRUE_FALSE') && (
-                    <div className="space-y-2">
-                      {question.options?.map((option) => (
-                        <div 
-                          key={option.id}
-                          className={`p-2 rounded border ${
-                            option.is_correct 
-                              ? 'bg-green-50 border-green-300' 
-                              : 'bg-gray-50 border-gray-200'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            {option.is_correct && <span className="text-green-600">✓</span>}
-                            <span className="text-sm">{option.option_text}</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Explanation */}
-                  {question.explanation && (
-                    <div className="mt-3 p-3 bg-blue-50 rounded-lg">
-                      <span className="text-sm font-medium text-blue-900">Explanation: </span>
-                      <span className="text-sm text-blue-800">{question.explanation}</span>
-                    </div>
-                  )}
+                  <div className="flex items-center gap-2 mt-2 ml-12">
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">
+                      {question.marks} marks
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           ))
         )}
       </div>
+      )}
 
       {/* Question Modal */}
       {showQuestionModal && (
@@ -416,94 +461,8 @@ const ManageQuestions = () => {
           onSave={handleQuestionSaved}
           question={editingQuestion}
           quizId={quizId}
+          onNotification={showNotification}
         />
-      )}
-
-      {/* Question Bank Modal */}
-      {showBankModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col">
-            <div className="p-6 border-b flex justify-between items-center">
-              <h2 className="text-2xl font-bold">Add from Question Bank</h2>
-              <button 
-                onClick={() => {
-                  setShowBankModal(false);
-                  setSelectedBank(null);
-                  setBankQuestions([]);
-                }}
-                className="text-gray-500 hover:text-gray-700 text-2xl"
-              >
-                ×
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto flex-1">
-
-                <div>
-                  {/* Back Button */}
-                  <button 
-                    onClick={() => {
-                      setSelectedBank(null);
-                      setBankQuestions([]);
-                      setSearchTerm('');
-                    }}
-                    className="btn-secondary mb-4 flex items-center gap-2"
-                  >
-                    <FaArrowLeft /> Back to Banks
-                  </button>
-
-                  <h3 className="font-semibold text-gray-900 mb-4">{selectedBank.title}</h3>
-
-                  {/* Search */}
-                  <div className="relative mb-4">
-                    <FaSearch className="absolute left-3 top-3 text-gray-400" />
-                    <input
-                      type="text"
-                      placeholder="Search questions..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
-                    />
-                  </div>
-
-                  {/* Questions */}
-                  <div className="space-y-3">
-                    {filteredBankQuestions.length === 0 ? (
-                      <div className="text-center py-8 text-gray-600">
-                        No questions found
-                      </div>
-                    ) : (
-                      filteredBankQuestions.map((question) => (
-                        <div key={question.id} className="border border-gray-200 rounded-lg p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <p className="font-medium text-gray-900 mb-2">
-                                {question.question_text}
-                              </p>
-                              <div className="flex gap-2 mb-2">
-                                <span className="px-2 py-1 bg-primary-100 text-primary-700 text-xs rounded">
-                                  {getQuestionTypeLabel(question.question_type)}
-                                </span>
-                                <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                                  {question.marks} marks
-                                </span>
-                              </div>
-                            </div>
-                            <button 
-                              onClick={() => handleAddFromBank(question.id)}
-                              className="btn-primary px-4 py-2 text-sm"
-                            >
-                              Add
-                            </button>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );
