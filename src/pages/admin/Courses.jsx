@@ -1,11 +1,17 @@
 import { useState, useEffect } from 'react';
 import { FaBook, FaCalendar, FaCheck, FaCheckCircle, FaTimes, FaEye, FaTrash, FaToggleOn, FaToggleOff, FaStar, FaExclamationTriangle } from 'react-icons/fa';
 import { CgSandClock } from 'react-icons/cg';
+import Notification from '../../components/common/Notification';
 import StatCard from '../../components/common/StatCard';
 import CourseCard from '../../components/common/CourseCard';
-import { getAbsoluteImageUrl } from '../../utils/helpers';
 
 const AdminCourses = () => {
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   // Dummy data
   const dummyCourses = [
     { id: 1, title: 'Advanced Python Programming', teacher_name: 'Dr. John Smith', category: 'Programming', grade_level: '10-12', status: 'PUBLISHED', total_enrollments: 245, average_rating: 4.8, price: 49.99, price_type: 'PAID', total_revenue: 12247.5, is_featured: true, enrollments_enabled: true, created_at: '2024-01-15' },
@@ -180,6 +186,14 @@ const AdminCourses = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Course Management</h1>
