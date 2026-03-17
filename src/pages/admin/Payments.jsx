@@ -11,8 +11,8 @@ import {
   FaExclamationTriangle,
   FaCalendarAlt,
 } from 'react-icons/fa';
-import { toast } from 'react-toastify';
 
+import Notification from '../../components/common/Notification';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 
@@ -52,7 +52,7 @@ const paymentsMetricsConfig = [
 ];
 
 // ==================== PAYMENT DETAILS MODAL ====================
-const PaymentDetailsModal = ({ payment, onClose, onAction, actionLoading }) => {
+const PaymentDetailsModal = ({ payment, onClose, onAction, actionLoading, onShowNotification }) => {
   const [notes, setNotes] = useState('');
   const [rejectionReason, setRejectionReason] = useState('');
   const [activeTab, setActiveTab] = useState('details');
@@ -65,7 +65,7 @@ const PaymentDetailsModal = ({ payment, onClose, onAction, actionLoading }) => {
 
   const handleReject = () => {
     if (!rejectionReason.trim()) {
-      toast.error('Please provide a rejection reason');
+      onShowNotification?.('Please provide a rejection reason', 'error');
       return;
     }
     if (onAction) {
@@ -377,6 +377,13 @@ const AdminPayments = () => {
   const [actionLoading, setActionLoading] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, per_page: 10 });
 
+  // Notification State
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   // Fetch Stats
   const fetchStats = useCallback(async () => {
     const dummyStats = {
@@ -639,10 +646,11 @@ const AdminPayments = () => {
     
     // Simulate API call with delay
     setTimeout(() => {
-      toast.success(
+      showNotification(
         action === 'approve'
           ? 'Payment approved successfully!'
-          : 'Payment rejected successfully!'
+          : 'Payment rejected successfully!',
+        'success'
       );
       setShowDetailsModal(false);
       fetchStats();
@@ -708,6 +716,16 @@ const AdminPayments = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {/* Notification Component */}
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
+
       {/* Header */}
       <div className="bg-gradient-to-r from-primary-600 to-primary-700 text-white p-8">
         <h1 className="text-4xl font-bold mb-2">Payment Management</h1>
@@ -1059,6 +1077,7 @@ const AdminPayments = () => {
           onClose={() => setShowDetailsModal(false)}
           onAction={handlePaymentAction}
           actionLoading={actionLoading}
+          onShowNotification={showNotification}
         />
       )}
     </div>
