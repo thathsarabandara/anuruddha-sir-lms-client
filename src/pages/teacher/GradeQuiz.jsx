@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaTimes, FaUser, FaClock, FaClipboardCheck, FaSave } from 'react-icons/fa';
-import { toast } from 'react-toastify';
 import { quizAPI } from '../../api/quiz';
+import Notification from '../../components/common/Notification';
 
 const GradeQuiz = () => {
   const { quizId } = useParams();
@@ -15,13 +15,16 @@ const GradeQuiz = () => {
   const [feedback, setFeedback] = useState({});
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const [notification, setNotification] = useState(null);
+  
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   // Fetch submissions for grading
   useEffect(() => {
     const fetchSubmissions = async () => {
       setLoading(true);
-      setError('');
       try {
         // Get quiz details
         const quizDetail = await quizAPI.getQuizDetails(quizId);
@@ -42,8 +45,7 @@ const GradeQuiz = () => {
         setGrades(initialGrades);
         setFeedback(initialFeedback);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch submissions');
-        toast.error('Failed to load submissions for grading');
+        showNotification('Failed to load submissions for grading', 'error');
       } finally {
         setLoading(false);
       }
@@ -83,7 +85,7 @@ const GradeQuiz = () => {
         feedback: feedback[currentSubmission.answer_id],
       });
       
-      toast.success('Grade saved successfully!');
+      showNotification('Grade saved successfully!', 'success');
       
       // Move to next review or go back if this was the last one
       if (currentReviewIndex < submissions.length - 1) {
@@ -92,7 +94,7 @@ const GradeQuiz = () => {
         navigate(-1);
       }
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to save grade');
+      showNotification(err.response?.data?.message || 'Failed to save grade', 'error');
     } finally {
       setSaving(false);
     }
@@ -181,6 +183,16 @@ const GradeQuiz = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-8">
       <div className="max-w-5xl mx-auto">
+        {notification && (
+          <div className="mb-4">
+            <Notification
+              message={notification.message}
+              type={notification.type}
+              duration={notification.duration}
+              onClose={() => setNotification(null)}
+            />
+          </div>
+        )}
         {/* Header */}
         <button 
           onClick={() => navigate('/teacher/quizzes')} 
