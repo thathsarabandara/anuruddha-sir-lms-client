@@ -1,7 +1,9 @@
+/* eslint-disable react-hooks/preserve-manual-memoization */
 import { useState, useMemo } from 'react';
 import { FaBook, FaCheck, FaFilePdf, FaGem, FaGraduationCap, FaTrophy, FaVideo, FaCoins, FaStar, FaHandshake, FaAward, FaWallet } from 'react-icons/fa';
 import DataTable from '../../components/common/DataTable';
 import StatCard from '../../components/common/StatCard';
+import Notification from '../../components/common/Notification';
 
 const StudentRewards = () => {
   const [selectedTab, setSelectedTab] = useState('earnings');
@@ -193,7 +195,7 @@ const StudentRewards = () => {
       description: `${stats.itemsRedeemed} items redeemed`,
       formatter: (value) => `${value} done`,
     },
-  ], [stats]);
+  ], [stats.coins, stats.gems, stats.totalValue, stats.itemsRedeemed]);
 
   const earnMethods = [
     { title: 'Complete a Quiz', reward: '25-100 coins', icon: FaFilePdf },
@@ -375,8 +377,24 @@ const StudentRewards = () => {
     });
   }, [redeemSearchTerm, redeemTypeFilter, redeemableItems]);
 
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   return (
     <div className="p-8">
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 py-8">
             <div className="flex items-center justify-between">
