@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import { FaClock, FaCheck, FaExclamationTriangle, FaSave, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 
 const dummyQuizData = {
   quiz: {
@@ -35,9 +35,14 @@ const TakeQuiz = () => {
   const [autoSaving, setAutoSaving] = useState(false);
   const [_tabSwitchCount, _setTabSwitchCount] = useState(0);
   const [showWarning, setShowWarning] = useState(false);
+  const [notification, setNotification] = useState(null);
   const timerRef = useRef(null);
   const autoSaveTimerRef = useRef(null);
   const lastSaveRef = useRef({});
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
 
   const startQuizAttempt = useCallback(() => {
     setLoading(true);
@@ -73,7 +78,7 @@ const TakeQuiz = () => {
     }
     setSubmitting(true);
     setTimeout(() => {
-      toast.success('Quiz submitted successfully!');
+      showNotification('Quiz submitted successfully!', 'success');
       setSubmitting(false);
       navigate(`/student/quiz/${quizId}/results/${attempt.id}`);
     }, 500);
@@ -171,6 +176,16 @@ const TakeQuiz = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="max-w-4xl mx-auto">
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
           <div className="flex items-center justify-between">
