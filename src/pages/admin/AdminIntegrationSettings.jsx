@@ -1,135 +1,40 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaZoom, FaWhatsapp, FaCC, FaCog, FaSave, FaSync } from 'react-icons/fa';
-import {
-  CredentialsForm,
-  AlertBox,
-  LoadingSpinner,
-  IntegrationStatusCard,
-} from '../components/IntegrationComponents';
-
+import { FaZoom, FaWhatsapp, FaCC, FaCog} from 'react-icons/fa';
+import { CredentialsForm, LoadingSpinner } from '../components/IntegrationComponents';
+import Notification from '../../components/common/Notification';
 
 const AdminIntegrationSettings = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('zoom');
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [integrationStatus, setIntegrationStatus] = useState(dummyIntegrationStatus);
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+  const handleError = (errorMsg) => {
+    showNotification(errorMsg, 'error');
+  };
+  const handleSuccess = (successMsg) => {
+    showNotification(successMsg, 'success');
+  };
   const dummyIntegrationStatus = {
-    zoom: { is_connected: true, account_email: 'admin@zoom.us' },
-    whatsapp: { is_connected: false },
-    payhere: { is_connected: true, merchant_id: 'DEMO_MERCHANT' },
+    zoom: { 
+      configured: true, 
+      client_id: 'zoom_demo_client_123',
+      updated_at: new Date().toISOString(),
+    },
+    whatsapp: { 
+      configured: false,
+      updated_at: new Date().toISOString(),
+    },
+    payhere: { 
+      configured: true, 
+      merchant_id: 'DEMO_MERCHANT',
+      updated_at: new Date().toISOString(),
+    },
   };
-
-  const [integrationStatus, _setIntegrationStatus] = useState(dummyIntegrationStatus);
-
-  useEffect(() => {
-    // Initialize with dummy data
-    setLoading(false);
-  }, []);
-
-  const fetchIntegrationStatuses = async () => {
-    try {
-      setIsLoading(true);
-      const response = await adminIntegrationAPI.getIntegrationStatus();
-      setIntegrationStatus(response.data.integrations);
-      setError(null);
-
-      // Fetch individual credentials
-      await Promise.all([
-        fetchZoomCredentials(),
-        fetchWhatsAppCredentials(),
-        fetchPayHereCredentials(),
-      ]);
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to fetch integration status');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchZoomCredentials = async () => {
-    try {
-      await adminIntegrationAPI.zoomCredentials.get();
-    } catch (err) {
-      console.error('Error fetching Zoom credentials:', err);
-    }
-  };
-
-  const fetchWhatsAppCredentials = async () => {
-    try {
-      await adminIntegrationAPI.whatsappCredentials.get();
-    } catch (err) {
-      console.error('Error fetching WhatsApp credentials:', err);
-    }
-  };
-
-  const fetchPayHereCredentials = async () => {
-    try {
-      await adminIntegrationAPI.payhereCredentials.get();
-    } catch (err) {
-      console.error('Error fetching PayHere credentials:', err);
-    }
-  };
-
-  const handleSaveZoomCredentials = async (formData) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await adminIntegrationAPI.zoomCredentials.update(formData);
-
-      if (response.data.success) {
-        setSuccess('Zoom credentials saved successfully!');
-        setTimeout(() => setSuccess(null), 5000);
-        fetchIntegrationStatuses();
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save Zoom credentials');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSaveWhatsAppCredentials = async (formData) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await adminIntegrationAPI.whatsappCredentials.update(formData);
-
-      if (response.data.success) {
-        setSuccess('WhatsApp credentials saved successfully!');
-        setTimeout(() => setSuccess(null), 5000);
-        fetchIntegrationStatuses();
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save WhatsApp credentials');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSavePayHereCredentials = async (formData) => {
-    try {
-      setIsLoading(true);
-      setError(null);
-      const response = await adminIntegrationAPI.payhereCredentials.update(formData);
-
-      if (response.data.success) {
-        setSuccess('PayHere credentials saved successfully!');
-        setTimeout(() => setSuccess(null), 5000);
-        fetchIntegrationStatuses();
-      }
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to save PayHere credentials');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  if (isLoading && !integrationStatus) {
-    return <LoadingSpinner text="Loading integration settings..." />;
-  }
-
   const zoomFields = [
     {
       name: 'client_id',
@@ -235,8 +140,92 @@ const AdminIntegrationSettings = () => {
     },
   ];
 
+  useEffect(() => {
+    setIsLoading(false);
+  }, []);
+
+  const handleSaveZoomCredentials = async (formData) => {
+    try {
+      setIsLoading(true);
+      // Simulate API call with dummy data
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const updatedStatus = {
+        ...integrationStatus,
+        zoom: {
+          configured: true,
+          client_id: formData.client_id,
+          updated_at: new Date().toISOString(),
+        }
+      };
+      setIntegrationStatus(updatedStatus);
+      handleSuccess('Zoom credentials saved successfully!');
+    } catch {
+      handleError('Failed to save Zoom credentials');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveWhatsAppCredentials = async (formData) => {
+    try {
+      setIsLoading(true);
+      // Simulate API call with dummy data
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const updatedStatus = {
+        ...integrationStatus,
+        whatsapp: {
+          configured: true,
+          app_id: formData.app_id,
+          updated_at: new Date().toISOString(),
+        }
+      };
+      setIntegrationStatus(updatedStatus);
+      handleSuccess('WhatsApp credentials saved successfully!');
+    } catch {
+      handleError('Failed to save WhatsApp credentials');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSavePayHereCredentials = async (formData) => {
+    try {
+      setIsLoading(true);
+      // Simulate API call with dummy data
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const updatedStatus = {
+        ...integrationStatus,
+        payhere: {
+          configured: true,
+          merchant_id: formData.merchant_id,
+          updated_at: new Date().toISOString(),
+        }
+      };
+      setIntegrationStatus(updatedStatus);
+      handleSuccess('PayHere credentials saved successfully!');
+    } catch {
+      handleError('Failed to save PayHere credentials');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  
+
   return (
     <div className="min-h-screen bg-slate-50 p-8">
+      {/* Notification Component */}
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
+
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="bg-white border-b-2 border-slate-200 pb-6 mb-8">
@@ -258,10 +247,6 @@ const AdminIntegrationSettings = () => {
             </button>
           </div>
         </div>
-
-        {/* Alerts */}
-        {error && <AlertBox type="error" title="Error" message={error} onClose={() => setError(null)} />}
-        {success && <AlertBox type="success" title="Success" message={success} onClose={() => setSuccess(null)} />}
 
         {/* Status Overview */}
         {integrationStatus && (
