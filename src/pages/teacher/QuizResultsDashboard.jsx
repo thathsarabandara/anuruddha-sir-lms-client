@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaArrowLeft, FaDownload, FaUser, FaCheck, FaTimes, FaClock, FaChartBar, FaSearch, FaEye } from 'react-icons/fa';
-import { toast } from 'react-toastify';
+import { FaArrowLeft, FaDownload, FaUser, FaCheck, FaTimes, FaClock, FaChartBar, FaSearch, FaEye, FaTrophy, FaFire, FaAward } from 'react-icons/fa';
 import { quizAPI } from '../../api/quiz';
-import QuizStatsCard from '../../components/teacher/QuizStatsCard';
+import StatCard from '../../components/common/StatCard';
+import DataTable from '../../components/common/DataTable';
+import Notification from '../../components/common/Notification';
 
 const QuizResultsDashboard = () => {
   const { quizId } = useParams();
@@ -17,14 +18,197 @@ const QuizResultsDashboard = () => {
   const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(false);
   const [statsLoading, setStatsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [notification, setNotification] = useState(null);
+  
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
+  // Dummy data for StatCard
+  const dummyStats = {
+    avg_score: 72.5,
+    highest_score: 95,
+    lowest_score: 35,
+    completion_rate: 88
+  };
+
+  // Dummy data for DataTable
+  const dummyAttempts = [
+    {
+      id: 1,
+      student_name: 'John Doe',
+      student_id: 'STU001',
+      student_email: 'john@example.com',
+      score: 85,
+      max_score: 100,
+      attempt_number: 1,
+      time_taken: 2400,
+      submitted_at: '2024-03-15T10:30:00',
+    },
+    {
+      id: 2,
+      student_name: 'Jane Smith',
+      student_id: 'STU002',
+      student_email: 'jane@example.com',
+      score: 92,
+      max_score: 100,
+      attempt_number: 1,
+      time_taken: 1800,
+      submitted_at: '2024-03-15T11:15:00',
+    },
+    {
+      id: 3,
+      student_name: 'Mike Johnson',
+      student_id: 'STU003',
+      student_email: 'mike@example.com',
+      score: 65,
+      max_score: 100,
+      attempt_number: 2,
+      time_taken: 3200,
+      submitted_at: '2024-03-15T12:00:00',
+    },
+    {
+      id: 4,
+      student_name: 'Sarah Wilson',
+      student_id: 'STU004',
+      student_email: 'sarah@example.com',
+      score: 78,
+      max_score: 100,
+      attempt_number: 1,
+      time_taken: 2100,
+      submitted_at: '2024-03-15T13:45:00',
+    },
+    {
+      id: 5,
+      student_name: 'Tom Brown',
+      student_id: 'STU005',
+      student_email: 'tom@example.com',
+      score: 88,
+      max_score: 100,
+      attempt_number: 1,
+      time_taken: 1950,
+      submitted_at: '2024-03-15T14:20:00',
+    },
+  ];
+
+  // StatCard metrics configuration
+  const statCardMetricsConfig = [
+    {
+      label: 'Average Score',
+      statsKey: 'avg_score',
+      icon: FaChartBar,
+      bgColor: 'bg-blue-100',
+      textColor: 'text-blue-600',
+      description: 'class average',
+      formatter: (value) => `${value.toFixed(1)}%`,
+    },
+    {
+      label: 'Highest Score',
+      statsKey: 'highest_score',
+      icon: FaTrophy,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: 'top score',
+      formatter: (value) => `${value}%`,
+    },
+    {
+      label: 'Lowest Score',
+      statsKey: 'lowest_score',
+      icon: FaFire,
+      bgColor: 'bg-red-100',
+      textColor: 'text-red-600',
+      description: 'minimum score',
+      formatter: (value) => `${value}%`,
+    },
+    {
+      label: 'Completion Rate',
+      statsKey: 'completion_rate',
+      icon: FaAward,
+      bgColor: 'bg-purple-100',
+      textColor: 'text-purple-600',
+      description: 'students completed',
+      formatter: (value) => `${value}%`,
+    },
+  ];
+
+  // DataTable columns configuration
+  const dataTableColumns = [
+    {
+      key: 'student_name',
+      label: 'Student Name',
+      searchable: true,
+      render: (_, row) => (
+        <div className="flex items-center">
+          <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
+            <FaUser className="text-primary-600" />
+          </div>
+          <div className="ml-3">
+            <div className="font-medium text-gray-900">{row.student_name}</div>
+            <div className="text-sm text-gray-500">{row.student_email}</div>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: 'attempt_number',
+      label: 'Attempt',
+      render: (_, row) => <span className="text-sm text-gray-900">#{row.attempt_number}</span>,
+    },
+    {
+      key: 'score',
+      label: 'Score',
+      render: (_, row) => (
+        <span className="text-sm font-medium text-gray-900">
+          {row.score} / {row.max_score}
+        </span>
+      ),
+    },
+    {
+      key: 'percentage',
+      label: 'Percentage',
+      render: (_, row) => {
+        const percentage = Math.round((row.score / row.max_score) * 100);
+        return (
+          <span className={`text-lg font-bold ${percentage >= 60 ? 'text-green-600' : 'text-red-600'}`}>
+            {percentage}%
+          </span>
+        );
+      },
+    },
+    {
+      key: 'time_taken',
+      label: 'Time Taken',
+      render: (_, row) => (
+        <div className="flex items-center gap-2 text-sm text-gray-900">
+          <FaClock className="text-gray-400" />
+          {Math.floor(row.time_taken / 60)}m {row.time_taken % 60}s
+        </div>
+      ),
+    },
+    {
+      key: 'submitted_at',
+      label: 'Submitted',
+      render: (_, row) => <span className="text-sm text-gray-500">{new Date(row.submitted_at).toLocaleDateString()}</span>,
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (_, row) => (
+        <button
+          onClick={() => handleViewAttempt(row.id)}
+          className="text-primary-600 hover:text-primary-800 font-medium flex items-center gap-1"
+        >
+          <FaEye /> View
+        </button>
+      ),
+    },
+  ];
 
   // Fetch quiz results and analytics
   useEffect(() => {
     const fetchResults = async () => {
       setLoading(true);
       setStatsLoading(true);
-      setError('');
       try {
         // Get quiz details
         const quizDetail = await quizAPI.getQuizDetails(quizId);
@@ -40,8 +224,7 @@ const QuizResultsDashboard = () => {
         const statsData = await quizAPI.getQuizStatistics(quizId);
         setQuizStats(statsData.data?.data || null);
       } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch results');
-        toast.error('Failed to load quiz results');
+        showNotification('Failed to load quiz results', 'error');
       } finally {
         setLoading(false);
         setStatsLoading(false);
@@ -80,9 +263,9 @@ const QuizResultsDashboard = () => {
       element.click();
       document.body.removeChild(element);
 
-      toast.success('Results exported successfully!');
+      showNotification('Results exported successfully!', 'success');
     } catch (err) {
-      toast.error('Failed to export results');
+      showNotification('Failed to export results', 'error');
     }
   };
 
@@ -169,6 +352,16 @@ const QuizResultsDashboard = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header */}
       <div className="mb-6">
         <button 
@@ -196,64 +389,27 @@ const QuizResultsDashboard = () => {
       {/* Quiz Statistics - 4 Key Metrics */}
       <div className="mb-8">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Quiz Performance Metrics</h2>
-        <QuizStatsCard stats={quizStats} loading={statsLoading} />
-      </div>
-
-      {/* Filters */}
-      <div className="card mb-6">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="flex-1">
-            <div className="relative">
-              <FaSearch className="absolute left-3 top-3 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search by student name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg"
-              />
-            </div>
-          </div>
-
-          {/* Status Filter */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setFilterStatus('all')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterStatus === 'all'
-                  ? 'bg-primary-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              All ({attempts.length})
-            </button>
-            <button
-              onClick={() => setFilterStatus('passed')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterStatus === 'passed'
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              Passed
-            </button>
-            <button
-              onClick={() => setFilterStatus('failed')}
-              className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-                filterStatus === 'failed'
-                  ? 'bg-red-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
-            >
-              Failed
-            </button>
-          </div>
-        </div>
+        <StatCard stats={dummyStats} metricsConfig={statCardMetricsConfig} loading={statsLoading} />
       </div>
 
       {/* Results Table */}
-      <div className="card overflow-hidden">
+      <div className="card">
+        <DataTable
+          data={dummyAttempts}
+          columns={dataTableColumns}
+          config={{
+            itemsPerPage: 10,
+            searchPlaceholder: 'Search by student name...',
+            hideSearch: false,
+            searchValue: searchTerm,
+            onSearchChange: (value) => setSearchTerm(value),
+          }}
+          loading={loading}
+        />
+      </div>
+
+      {/* Original Results Table - Hidden */}
+      <div className="card overflow-hidden hidden">
         {filteredAttempts.length === 0 ? (
           <div className="text-center py-12">
             <FaChartBar className="mx-auto text-gray-400 text-5xl mb-4" />
