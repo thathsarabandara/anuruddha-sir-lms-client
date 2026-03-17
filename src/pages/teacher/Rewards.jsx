@@ -1,9 +1,14 @@
 import { useState } from 'react';
+import Notification from '../../components/common/Notification';
 import { FaAward, FaCheck, FaFilePdf, FaGem, FaLightbulb, FaTimes, FaTrophy, FaUsers, FaCoins, FaFire } from 'react-icons/fa';
 import StatCard from '../../components/common/StatCard';
 
 const TeacherRewards = () => {
   const [showAssignModal, setShowAssignModal] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
 
   const rewardStats = {
     coinsDistributed: 15420,
@@ -73,6 +78,16 @@ const TeacherRewards = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Student Rewards</h1>
