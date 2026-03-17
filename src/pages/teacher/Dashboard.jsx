@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import Notification from '../../components/common/Notification';
 import { FaBook, FaClock, FaDollarSign, FaGraduationCap, FaUserGraduate, FaUsers, FaVideo, FaChartLine, FaAward, FaFire, FaLightbulb, FaCheckCircle, FaComments, FaCertificate } from 'react-icons/fa';
 import { IoIosTrendingUp } from 'react-icons/io';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, AreaChart, Area } from 'recharts';
@@ -12,6 +13,11 @@ const TeacherDashboard = () => {
   const [statLoading, setStatLoading] = useState(false);
   const [error, setEror] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
   const [revenueTrendLoading, setRevenueTrendLoading] = useState(false);
   const [revenueByCoursesLoading, setRevenueByCoursesLoading] = useState(false);
   const [coursePerformanceLoading, setCoursePerformanceLoading] = useState(false);
@@ -230,6 +236,16 @@ const TeacherDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8">
