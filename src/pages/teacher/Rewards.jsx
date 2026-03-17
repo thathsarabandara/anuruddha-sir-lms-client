@@ -298,5 +298,5 @@ const TeacherRewards = () => {
     </div>
   );
 };
-
+};
 export default TeacherRewards;
