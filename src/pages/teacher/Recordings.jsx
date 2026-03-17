@@ -1,10 +1,15 @@
 import { useState } from 'react';
+import Notification from '../../components/common/Notification';
 import { FaCalendar, FaClock, FaFileVideo, FaTimes, FaDatabase, FaEye } from 'react-icons/fa';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 
 const TeacherRecordings = () => {
   const [showUploadModal, setShowUploadModal] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
 
   const recordings = [
     {
@@ -195,6 +200,16 @@ const TeacherRecordings = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="mb-4">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Class Recordings</h1>
@@ -277,5 +292,5 @@ const TeacherRecordings = () => {
     </div>
   );
 };
-
+};
 export default TeacherRecordings;
