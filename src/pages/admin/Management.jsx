@@ -1,10 +1,17 @@
 import { useState } from 'react';
 import { FaBook, FaCalendar,  FaChartBar, FaCheckCircle, FaFilePdf, FaGraduationCap, FaTimes, FaUserGraduate, FaStar, FaEye } from 'react-icons/fa';
+import Notification from '../../components/common/Notification';
 
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 
 const AdminManagement = () => {
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [_selectedAdmin, setSelectedAdmin] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -128,6 +135,14 @@ const AdminManagement = () => {
 
   return (
     <div className="p-8">
+      {notification && (
+        <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
+          <Notification 
+            {...notification} 
+            onClose={() => setNotification(null)} 
+          />
+        </div>
+      )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Admin Management</h1>
