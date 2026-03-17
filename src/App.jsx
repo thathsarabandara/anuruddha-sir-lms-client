@@ -73,7 +73,6 @@ import AdminDashboard from './pages/admin/Dashboard';
 import AdminStudents from './pages/admin/Students';
 import AdminTeachers from './pages/admin/Teachers';
 import AdminCourses from './pages/admin/Courses';
-import AdminCourseModeration from './pages/admin/CourseModeration';
 import AdminPayments from './pages/admin/Payments';
 import AdminQuizzes from './pages/admin/Quizzes';
 import AdminCertificates from './pages/admin/Certificates';
@@ -170,7 +169,7 @@ function App() {
           <Route path={ROUTES.ADMIN_STUDENTS} element={<AdminStudents />} />
           <Route path={ROUTES.ADMIN_TEACHERS} element={<AdminTeachers />} />
           <Route path={ROUTES.ADMIN_COURSES} element={<AdminCourses />} />
-          <Route path="/admin/courses/moderation" element={<AdminCourseModeration />} />
+          <Route path="/admin/courses/moderation" element={<Adminderation />} />
           <Route path={ROUTES.ADMIN_PAYMENTS} element={<AdminPayments />} />
           <Route path={ROUTES.ADMIN_QUIZZES} element={<AdminQuizzes />} />
           <Route path={ROUTES.ADMIN_CERTIFICATES} element={<AdminCertificates />} />
