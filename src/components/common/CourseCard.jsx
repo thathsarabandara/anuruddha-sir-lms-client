@@ -4,7 +4,6 @@ import {
   FaStar, FaClock, FaBook, FaUsers, FaDollarSign, FaCheckCircle,
   FaVideo, FaGraduationCap
 } from 'react-icons/fa';
-import { toast } from 'react-toastify';
 
 /**
  * Reusable CourseCard Component
@@ -26,7 +25,8 @@ const CourseCard = ({
   onViewStats,
   onViewReport,
   loading = false,
-  className = ''
+  className = '',
+  onNotification
 }) => {
   const navigate = useNavigate();
 
@@ -354,7 +354,13 @@ const CourseCard = ({
 
             {/* Student-New Button */}
             <button
-              onClick={() => onAddToCart?.(course) || toast.success('Added to cart!')}
+              onClick={() => {
+                if (onAddToCart) {
+                  onAddToCart(course);
+                } else if (onNotification) {
+                  onNotification('Added to cart!', 'success');
+                }
+              }}
               disabled={loading}
               className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 flex items-center justify-center gap-2"
             >
