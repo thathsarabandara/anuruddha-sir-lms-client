@@ -1,24 +1,20 @@
 import { useState, useEffect } from 'react';
 import { FaTimes, FaCheck } from 'react-icons/fa';
-import { toast } from 'react-toastify';
 
-const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
+const QuizFormModal = ({ isOpen, onClose, onSave, quiz, onNotification }) => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    instructions: '',
-    section_id: '',
-    quiz_type: 'PRACTICE',
-    total_marks: '100',
-    passing_score: '50',
-    time_limit_minutes: '60',
-    max_attempts: '1',
+    total_marks: 100,
+    passing_score: 70,
+    duration_minutes: 60,
+    max_attempts: 1,
     shuffle_questions: false,
     shuffle_answers: false,
-    show_results: 'IMMEDIATELY',
-    start_date: '',
-    end_date: '',
-    visibility: 'DRAFT',
+    show_answers_after: 'submission',
+    available_from: '',
+    available_until: '',
+    is_published: false,
   });
 
   const [loading, setLoading] = useState(false);
@@ -42,22 +38,21 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
         }
       };
 
+      // Form initialization from quiz prop - setState in effect for form hydration
+      // eslint-disable-next-line
       setFormData({
-        title: quiz.title,
+        title: quiz.title || '',
         description: quiz.description || '',
-        instructions: quiz.instructions || '',
-        section_id: quiz.section?.id || '',
-        quiz_type: quiz.quiz_type,
-        total_marks: quiz.total_marks,
-        passing_score: quiz.passing_score,
-        time_limit_minutes: quiz.time_limit_minutes,
-        max_attempts: quiz.max_attempts,
-        shuffle_questions: quiz.shuffle_questions,
-        shuffle_answers: quiz.shuffle_answers,
-        show_results: quiz.show_results,
-        start_date: parseDateTime(quiz.start_date),
-        end_date: parseDateTime(quiz.end_date),
-        visibility: quiz.visibility,
+        total_marks: quiz.total_marks || 100,
+        passing_score: quiz.passing_score || 70,
+        duration_minutes: quiz.duration_minutes || 60,
+        max_attempts: quiz.max_attempts || 1,
+        shuffle_questions: quiz.shuffle_questions || false,
+        shuffle_answers: quiz.shuffle_answers || false,
+        show_answers_after: quiz.show_answers_after || 'submission',
+        available_from: parseDateTime(quiz.available_from),
+        available_until: parseDateTime(quiz.available_until),
+        is_published: quiz.is_published || false,
       });
     }
   }, [quiz]);
@@ -68,7 +63,10 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
 
     // Simulate API delay with dummy data
     setTimeout(() => {
-      toast.success(quiz?.id ? 'Quiz updated successfully' : 'Quiz created successfully');
+      const message = quiz?.id ? 'Quiz updated successfully' : 'Quiz created successfully';
+      if (onNotification) {
+        onNotification(message, 'success');
+      }
       setLoading(false);
       onSave();
       onClose();
@@ -91,7 +89,7 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 max-h-[calc(90vh-120px)] overflow-y-auto space-y-5">
           {/* Title & Type Row */}
-          <div className="grid grid-cols-3 gap-4">
+          <div>
             <div className="col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-2">Quiz Title</label>
               <input
@@ -102,18 +100,6 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
                 placeholder="e.g., Chapter 1 Quiz"
                 required
               />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-              <select
-                value={formData.quiz_type}
-                onChange={(e) => setFormData({ ...formData, quiz_type: e.target.value })}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-              >
-                <option value="PRACTICE">Practice</option>
-                <option value="GRADED">Graded</option>
-                <option value="FINAL_EXAM">Final Exam</option>
-              </select>
             </div>
           </div>
 
@@ -129,18 +115,6 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
             />
           </div>
 
-          {/* Instructions */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Instructions</label>
-            <textarea
-              value={formData.instructions}
-              onChange={(e) => setFormData({ ...formData, instructions: e.target.value })}
-              className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
-              rows="2"
-              placeholder="What students should know..."
-            />
-          </div>
-
           {/* Configuration Grid */}
           <div className="grid grid-cols-2 gap-4 pt-3 border-t border-gray-100">
             <div>
@@ -148,7 +122,7 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
               <input
                 type="number"
                 value={formData.total_marks}
-                onChange={(e) => setFormData({ ...formData, total_marks: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, total_marks: parseInt(e.target.value) || 100 })}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                 min="1"
                 required
@@ -160,7 +134,7 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
               <input
                 type="number"
                 value={formData.passing_score}
-                onChange={(e) => setFormData({ ...formData, passing_score: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, passing_score: parseInt(e.target.value) || 70 })}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                 min="0"
                 max="100"
@@ -172,8 +146,8 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
               <label className="block text-sm font-medium text-gray-700 mb-2">Time Limit (min)</label>
               <input
                 type="number"
-                value={formData.time_limit_minutes}
-                onChange={(e) => setFormData({ ...formData, time_limit_minutes: e.target.value })}
+                value={formData.duration_minutes}
+                onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) || 60 })}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                 min="1"
                 required
@@ -185,7 +159,7 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
               <input
                 type="number"
                 value={formData.max_attempts}
-                onChange={(e) => setFormData({ ...formData, max_attempts: e.target.value })}
+                onChange={(e) => setFormData({ ...formData, max_attempts: parseInt(e.target.value) || 1 })}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
                 min="1"
                 required
@@ -219,50 +193,51 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz }) => {
           {/* Results & Visibility */}
           <div className="grid grid-cols-2 gap-4 pt-3">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Show Results</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Show Answers After</label>
               <select
-                value={formData.show_results}
-                onChange={(e) => setFormData({ ...formData, show_results: e.target.value })}
+                value={formData.show_answers_after}
+                onChange={(e) => setFormData({ ...formData, show_answers_after: e.target.value })}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
               >
-                <option value="IMMEDIATELY">Immediately</option>
-                <option value="AFTER_DEADLINE">After Deadline</option>
-                <option value="MANUAL_REVIEW">Manual Review</option>
+                <option value="submission">After Submission</option>
+                <option value="later">Later</option>
+                <option value="never">Never</option>
               </select>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Visibility</label>
-              <select
-                value={formData.visibility}
-                onChange={(e) => setFormData({ ...formData, visibility: e.target.value })}
-                className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
-              >
-                <option value="DRAFT">Draft</option>
-                <option value="PUBLISHED">Published</option>
-                <option value="ARCHIVED">Archived</option>
-              </select>
+              <label className="flex items-center gap-3 cursor-pointer group mt-8">
+                <input
+                  type="checkbox"
+                  checked={formData.is_published}
+                  onChange={(e) => setFormData({ ...formData, is_published: e.target.checked })}
+                  className="w-4 h-4 text-blue-500 rounded"
+                />
+                <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                  {formData.is_published ? 'Published' : 'Draft'}
+                </span>
+              </label>
             </div>
           </div>
 
           {/* Date Range */}
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Available From</label>
               <input
                 type="datetime-local"
-                value={formData.start_date}
-                onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
+                value={formData.available_from}
+                onChange={(e) => setFormData({ ...formData, available_from: e.target.value })}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Available Until</label>
               <input
                 type="datetime-local"
-                value={formData.end_date}
-                onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
+                value={formData.available_until}
+                onChange={(e) => setFormData({ ...formData, available_until: e.target.value })}
                 className="w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
               />
             </div>
