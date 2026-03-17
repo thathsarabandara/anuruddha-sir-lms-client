@@ -1,5 +1,5 @@
 import React from 'react';
-import { useCart, useCheckout } from '../hooks/useCart';
+import { useCart, useCheckout } from '../../hooks/useCart';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 export const ShoppingCart = () => {
