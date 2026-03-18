@@ -1,7 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ROUTES, ROLES } from './utils/constants';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
 
 // Layouts
 import PublicLayout from './components/layout/PublicLayout';
@@ -169,7 +167,6 @@ function App() {
           <Route path={ROUTES.ADMIN_STUDENTS} element={<AdminStudents />} />
           <Route path={ROUTES.ADMIN_TEACHERS} element={<AdminTeachers />} />
           <Route path={ROUTES.ADMIN_COURSES} element={<AdminCourses />} />
-          <Route path="/admin/courses/moderation" element={<Adminderation />} />
           <Route path={ROUTES.ADMIN_PAYMENTS} element={<AdminPayments />} />
           <Route path={ROUTES.ADMIN_QUIZZES} element={<AdminQuizzes />} />
           <Route path={ROUTES.ADMIN_CERTIFICATES} element={<AdminCertificates />} />
@@ -178,17 +175,6 @@ function App() {
           <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettings />} />
         </Route>
       </Routes>
-      <ToastContainer 
-        position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
     </Router>
   );
 }
