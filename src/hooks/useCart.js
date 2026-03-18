@@ -1,5 +1,4 @@
 import { useState, useCallback, useEffect } from 'react';
-import { toast } from 'react-toastify';
 
 /**
  * Custom hook for managing shopping cart
@@ -32,7 +31,6 @@ export const useCart = () => {
   // eslint-disable-next-line no-unused-vars
   const addToCart = useCallback((_courseId) => {
     setError(null);
-    toast.success('Course added to cart');
     return { success: true, message: 'Added to cart' };
   }, []);
 
@@ -40,14 +38,12 @@ export const useCart = () => {
   // eslint-disable-next-line no-unused-vars
   const removeFromCart = useCallback((_itemId) => {
     setError(null);
-    toast.success('Item removed from cart');
     return { success: true, message: 'Removed from cart' };
   }, []);
 
   // Clear cart
   const clearCart = useCallback(() => {
     setError(null);
-    toast.success('Cart cleared');
     return { success: true, message: 'Cart cleared' };
   }, []);
 
@@ -95,7 +91,6 @@ export const useCheckout = () => {
       setOrder(dummyOrder);
       setPayment(dummyOrder);
       setLoading(false);
-      toast.success('Checkout initiated');
       return {
         success: true,
         order: dummyOrder,
@@ -113,7 +108,6 @@ export const useCheckout = () => {
     setError(null);
     setTimeout(() => {
       setLoading(false);
-      toast.success('Payment confirmed');
       return {
         success: true,
         enrollments: [],
