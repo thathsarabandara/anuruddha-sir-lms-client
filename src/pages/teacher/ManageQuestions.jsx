@@ -5,26 +5,197 @@ import QuestionModal from '../../components/teacher/QuestionModal';
 import Notification from '../../components/common/Notification';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
+import { quizAPI } from '../../api/quiz';
 
 const ManageQuestions = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
   
-  // Dummy data for questions
-  const dummyQuestionsList = [
-    { id: 1, question_text: 'What is Python?', question_type: 'MCQ_SINGLE', marks: 2, difficulty: 'EASY', tags: 'basics' },
-    { id: 2, question_text: 'Define OOP', question_type: 'SHORT_ANSWER', marks: 3, difficulty: 'MEDIUM', tags: 'concepts' },
-    { id: 3, question_text: 'Explain Data Structures', question_type: 'LONG_ANSWER', marks: 5, difficulty: 'HARD', tags: 'advanced' },
-    { id: 4, question_text: 'True or False: Python is dynamically typed', question_type: 'TRUE_FALSE', marks: 1, difficulty: 'EASY', tags: 'basics' },
-    { id: 5, question_text: 'Select all correct answers about loops', question_type: 'MCQ_MULTIPLE', marks: 4, difficulty: 'MEDIUM', tags: 'control-flow' },
-  ];
+  // Actual state from API
+  const [questionsStats, setQuestionsStats] = useState(null);
+  const [questions, setQuestions] = useState([]);
+  const [showQuestionModal, setShowQuestionModal] = useState(false);
+  const [editingQuestion, setEditingQuestion] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [hasAttempts, setHasAttempts] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState(null);
+  const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [notification, setNotification] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
+  const [isEditingOrder, setIsEditingOrder] = useState(false);
+  
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+  
+  const fetchQuizData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setStatsLoading(true);
 
-  // Stats data for StatCard
-  const questionsStats = {
-    total_questions: 5,
-    total_marks: 15,
-    auto_graded: 2,
-    manual_review: 3,
+      // Fetch questions
+      const questionsResponse = await quizAPI.getQuizQuestions(quizId);
+      const questionsData = questionsResponse.data?.data || [];
+      setQuestions(questionsData);
+
+      // Fetch question stats
+      const statsResponse = await quizAPI.getQuizQuestionStats(quizId);
+      const statsData = statsResponse.data?.data || null;
+      setQuestionsStats(statsData);
+
+      // Check if quiz has attempts (would prevent modifications)
+      // This could be added to the stats endpoint if needed
+      setHasAttempts(false);
+    } catch (err) {
+      console.error('Error fetching quiz data:', err);
+      showNotification('Failed to load quiz questions', 'error');
+    } finally {
+      setLoading(false);
+      setStatsLoading(false);
+    }
+  }, [quizId]);
+
+  useEffect(() => {
+    fetchQuizData();
+  }, [fetchQuizData]);
+
+  const handleAddQuestion = () => {
+    if (hasAttempts) {
+      setNotification({
+        type: 'warning',
+        message: 'Cannot add questions after students have started taking the quiz.',
+      });
+      return;
+    }
+    setEditingQuestion(null);
+    setShowQuestionModal(true);
+  };
+
+  const handleEditQuestion = (question) => {
+    if (hasAttempts) {
+      setNotification({
+        type: 'warning',
+        message: 'Cannot edit questions after students have started taking the quiz.',
+      });
+      return;
+    }
+    setEditingQuestion(question);
+    setShowQuestionModal(true);
+  };
+
+  const handleDeleteQuestion = async (questionId) => {
+    if (hasAttempts) {
+      setNotification({
+        type: 'warning',
+        message: 'Cannot delete questions after students have started taking the quiz.',
+      });
+      return;
+    }
+
+    setShowDeleteConfirm(questionId);
+  };
+
+  const confirmDeleteQuestion = async () => {
+    if (!showDeleteConfirm) return;
+
+    try {
+      await quizAPI.deleteQuestion(showDeleteConfirm);
+      setQuestions(questions.filter(q => q.question_id !== showDeleteConfirm));
+      setNotification({
+        type: 'success',
+        message: 'Question deleted successfully',
+      });
+      // Refresh stats after deletion
+      fetchQuizData();
+    } catch (err) {
+      console.error('Error deleting question:', err);
+      setNotification({
+        type: 'error',
+        message: 'Failed to delete question',
+      });
+    } finally {
+      setShowDeleteConfirm(null);
+    }
+  };
+
+  const handleQuestionSaved = () => {
+    fetchQuizData();
+    setShowQuestionModal(false);
+    setEditingQuestion(null);
+    setNotification({
+      type: 'success',
+      message: 'Question saved successfully',
+    });
+  };
+
+  // Drag and Drop Handlers
+  const handleDragStart = (e, index) => {
+    setDraggedIndex(index);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleDragOver = (e, index) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverIndex(index);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverIndex(null);
+  };
+
+  const handleDrop = async (e, dropIndex) => {
+    e.preventDefault();
+    
+    if (draggedIndex === null || draggedIndex === dropIndex) {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+      return;
+    }
+
+    // Create new array with reordered questions
+    const newQuestions = [...questions];
+    const draggedQuestion = newQuestions[draggedIndex];
+    
+    // Remove from old position
+    newQuestions.splice(draggedIndex, 1);
+    // Insert at new position
+    newQuestions.splice(dropIndex, 0, draggedQuestion);
+    
+    // Update state locally first
+    setQuestions(newQuestions);
+
+    try {
+      // Send reorder to backend API
+      const reorderedData = newQuestions.map((q, idx) => ({
+        question_id: q.question_id,
+        question_order: idx + 1,
+      }));
+      
+      await quizAPI.updateQuestionOrder(quizId, reorderedData);
+      
+      setNotification({
+        type: 'success',
+        message: 'Questions reordered successfully',
+      });
+    } catch (err) {
+      console.error('Error reordering questions:', err);
+      setNotification({
+        type: 'error',
+        message: 'Failed to reorder questions',
+      });
+      // Refresh to get correct order from backend
+      fetchQuizData();
+    } finally {
+      setDraggedIndex(null);
+      setDragOverIndex(null);
+    }
+  };
+
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
   };
 
   const questionsStatsConfig = [
@@ -70,7 +241,7 @@ const ManageQuestions = () => {
       searchable: true,
       render: (_, row) => (
         <div>
-          <p className="font-medium text-gray-900">Q{row.id}. {row.question_text}</p>
+          <p className="font-medium text-gray-900">Q{row.question_order || '?'}. {row.question_text}</p>
         </div>
       ),
     },
@@ -84,29 +255,29 @@ const ManageQuestions = () => {
       ),
     },
     {
-      key: 'marks',
+      key: 'points',
       label: 'Marks',
-      render: (_, row) => <span className="text-sm font-medium text-gray-900">{row.marks}</span>,
+      render: (_, row) => <span className="text-sm font-medium text-gray-900">{row.points || 1}</span>,
     },
     {
       key: 'difficulty',
       label: 'Difficulty',
       render: (_, row) => (
         <span className={`px-3 py-1 text-sm font-medium rounded ${
-          row.difficulty === 'HARD' ? 'bg-red-100 text-red-700' :
-          row.difficulty === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700' :
+          row.difficulty === 'hard' ? 'bg-red-100 text-red-700' :
+          row.difficulty === 'medium' ? 'bg-yellow-100 text-yellow-700' :
           'bg-green-100 text-green-700'
         }`}>
-          {row.difficulty}
+          {row.difficulty || 'medium'}
         </span>
       ),
     },
     {
-      key: 'tags',
-      label: 'Tags',
+      key: 'category',
+      label: 'Category',
       render: (_, row) => (
         <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm rounded">
-          {row.tags}
+          {row.category || '-'}
         </span>
       ),
     },
@@ -118,12 +289,14 @@ const ManageQuestions = () => {
           <button
             onClick={() => handleEditQuestion(row)}
             className="text-blue-600 hover:text-blue-800 font-medium"
+            title="Edit question"
           >
             <FaEdit />
           </button>
           <button
-            onClick={() => handleDeleteQuestion(row.id)}
+            onClick={() => handleDeleteQuestion(row.question_id)}
             className="text-red-600 hover:text-red-800 font-medium"
+            title="Delete question"
           >
             <FaTrash />
           </button>
@@ -131,142 +304,6 @@ const ManageQuestions = () => {
       ),
     },
   ];
-
-  const [questions, setQuestions] = useState(dummyQuestionsList);
-  const [showQuestionModal, setShowQuestionModal] = useState(false);
-  const [editingQuestion, setEditingQuestion] = useState(null);
-  const [loading, _setLoading] = useState(false);
-  const [hasAttempts, _setHasAttempts] = useState(false);
-  const [draggedIndex, setDraggedIndex] = useState(null);
-  const [dragOverIndex, setDragOverIndex] = useState(null);
-  const [notification, setNotification] = useState(null);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
-  const [isEditingOrder, setIsEditingOrder] = useState(false);
-  
-  const showNotification = (message, type = 'info', duration = 5000) => {
-    setNotification({ message, type, duration });
-  };
-  
-  const fetchQuizData = useCallback(() => {
-    // Dummy data already set
-  }, []);
-
-  useEffect(() => {
-    fetchQuizData();
-  }, [fetchQuizData]);
-
-  const handleAddQuestion = () => {
-    if (hasAttempts) {
-      setNotification({
-        type: 'warning',
-        message: 'Cannot add questions after students have started taking the quiz.',
-      });
-      return;
-    }
-    setEditingQuestion(null);
-    setShowQuestionModal(true);
-  };
-
-  const handleEditQuestion = (question) => {
-    if (hasAttempts) {
-      setNotification({
-        type: 'warning',
-        message: 'Cannot edit questions after students have started taking the quiz.',
-      });
-      return;
-    }
-    setEditingQuestion(question);
-    setShowQuestionModal(true);
-  };
-
-  const handleDeleteQuestion = async (questionId) => {
-    if (hasAttempts) {
-      setNotification({
-        type: 'warning',
-        message: 'Cannot delete questions after students have started taking the quiz.',
-      });
-      return;
-    }
-
-    setShowDeleteConfirm(questionId);
-  };
-
-  const confirmDeleteQuestion = () => {
-    if (!showDeleteConfirm) return;
-
-    // Remove question from state
-    setQuestions(questions.filter(q => q.id !== showDeleteConfirm));
-    setNotification({
-      type: 'success',
-      message: 'Question deleted successfully',
-    });
-    setShowDeleteConfirm(null);
-  };
-
-  const handleQuestionSaved = () => {
-    fetchQuizData();
-    setShowQuestionModal(false);
-    setEditingQuestion(null);
-    setNotification({
-      type: 'success',
-      message: 'Question saved successfully',
-    });
-  };
-
-  // Drag and Drop Handlers
-  const handleDragStart = (e, index) => {
-    setDraggedIndex(index);
-    e.dataTransfer.effectAllowed = 'move';
-  };
-
-  const handleDragOver = (e, index) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    setDragOverIndex(index);
-  };
-
-  const handleDragLeave = () => {
-    setDragOverIndex(null);
-  };
-
-  const handleDrop = (e, dropIndex) => {
-    e.preventDefault();
-    
-    if (draggedIndex === null || draggedIndex === dropIndex) {
-      setDraggedIndex(null);
-      setDragOverIndex(null);
-      return;
-    }
-
-    // Create new array with reordered questions
-    const newQuestions = [...questions];
-    const draggedQuestion = newQuestions[draggedIndex];
-    
-    // Remove from old position
-    newQuestions.splice(draggedIndex, 1);
-    // Insert at new position
-    newQuestions.splice(dropIndex, 0, draggedQuestion);
-    
-    // Update state
-    setQuestions(newQuestions);
-    
-    // TODO: Send reorder to backend API
-    // const reorderedIds = newQuestions.map((q, idx) => ({ id: q.id, position: idx }));
-    // await updateQuestionOrder(quizId, reorderedIds);
-    
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-    
-    setNotification({
-      type: 'success',
-      message: 'Questions reordered successfully',
-    });
-  };
-
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
 
   return (
     <div className="p-8">
@@ -352,9 +389,11 @@ const ManageQuestions = () => {
       </div>
 
       {/* Stats */}
-      <div className="mb-8">
-        <StatCard stats={questionsStats} metricsConfig={questionsStatsConfig} />
-      </div>
+      {questionsStats && (
+        <div className="mb-8">
+          <StatCard stats={questionsStats} metricsConfig={questionsStatsConfig} loading={statsLoading} />
+        </div>
+      )}
 
       {/* Questions DataTable */}
       {!isEditingOrder && (
@@ -407,7 +446,7 @@ const ManageQuestions = () => {
         ) : (
           questions.map((question, index) => (
             <div 
-              key={question.id} 
+              key={question.question_id} 
               draggable={true}
               onDragStart={(e) => handleDragStart(e, index)}
               onDragOver={(e) => handleDragOver(e, index)}
@@ -439,7 +478,7 @@ const ManageQuestions = () => {
                   </div>
                   <div className="flex items-center gap-2 mt-2 ml-12">
                     <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded">
-                      {question.marks} marks
+                      {question.points || 1} marks
                     </span>
                   </div>
                 </div>
