@@ -208,7 +208,7 @@ export const quizAPI = {
    * @returns {Promise} Dashboard stats (total, published, draft, this month)
    */
   getTeacherDashboardStats: () =>
-    axiosInstance.get("/quiz/dashboard/teacher-stats"),
+    axiosInstance.get("/quiz/teacher/stats"),
 
   /**
    * Get quiz statistics (instructor view)
@@ -225,4 +225,20 @@ export const quizAPI = {
    */
   getQuestionAnalytics: (questionId) =>
     axiosInstance.get(`/quiz/questions/${questionId}/analytics`),
+
+  /**
+   * Get question statistics for manage questions page
+   * @param {string} quizId - Quiz ID
+   * @returns {Promise} Stats including total_questions, total_marks, auto_graded, manual_review
+   */
+  getQuizQuestionStats: (quizId) =>
+    axiosInstance.get(`/quiz/${quizId}/questions/stats`),
+
+  /**
+   * Get quiz results for teacher with all student attempts
+   * @param {string} quizId - Quiz ID
+   * @returns {Promise} Quiz details, analytics, and list of student attempts
+   */
+  getQuizResultsForTeacher: (quizId) =>
+    axiosInstance.get(`/quiz/${quizId}/teacher/results`),
 };
