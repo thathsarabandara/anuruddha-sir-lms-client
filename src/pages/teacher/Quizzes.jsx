@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaAward, FaPencilAlt, FaPlus, FaEye, FaTrash, FaEdit, FaClock, FaUsers, FaClipboardCheck, FaBook, FaCheckCircle, FaCopy, FaCalendar } from 'react-icons/fa';
+import { FaPlus, FaEdit, FaCheckCircle, FaCalendar } from 'react-icons/fa';
 import { MdQuiz } from 'react-icons/md';
 import QuizFormModal from '../../components/teacher/QuizFormModal';
 import TeacherDashboardStats from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
-import { BiLoader } from 'react-icons/bi';
+import { quizAPI } from '../../api/quiz';
 
 const Quizzes = () => {
   const navigate = useNavigate();
@@ -28,71 +28,203 @@ const Quizzes = () => {
     setNotification({ message, type, duration });
   };
 
-  // Fetch quizzes on initial load
+  // Fetch dashboard stats and quizzes on initial load
   useEffect(() => {
     handleFetchDashboardStats();
-    // Fetch quizzes with current filters
-    handleFetchQuizzes(statusFilter, searchTerm, fromDate, toDate);
+    handleFetchQuizzes();
   }, []);
 
   // Fetch quizzes when filters change
   useEffect(() => {
-    handleFetchQuizzes(statusFilter, searchTerm, fromDate, toDate);
+    handleFetchQuizzes();
   }, [statusFilter, searchTerm, fromDate, toDate]);
 
 
-  const dummyQuizzes = [
+  const handleFetchQuizzes = async () => {
+    setLoading(true);
+    try {
+      const response = await quizAPI.getAllQuizzes();
+      const quizzesData = response.data?.data || [];
+      console.log('Fetched quizzes:', quizzesData);
+      setQuizzes(quizzesData);
+    } catch (err) {
+      console.error('Error fetching quizzes:', err);
+      showNotification('Failed to fetch quizzes', 'error');
+      setQuizzes([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFetchDashboardStats = async () => {
+    setStatsLoading(true);
+    try {
+      const response = await quizAPI.getTeacherDashboardStats();
+      setDashboardStats(response.data?.data || null);
+    } catch (err) {
+      console.error('Error fetching dashboard stats:', err);
+      showNotification('Failed to load dashboard statistics', 'error');
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+
+
+  const handleCreateQuiz = () => {
+    setSelectedQuiz(null);
+    setShowCreateModal(true);
+  };
+
+  const handleEditQuiz = (quiz) => {
+    setSelectedQuiz(quiz);
+    setShowEditModal(true);
+  };
+
+  const handleDeleteQuiz = async (quizId) => {
+    if (!confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
+      return;
+    }
+    try {
+      await quizAPI.deleteQuiz(quizId);
+      const updatedQuizzes = quizzes.filter(q => q.quiz_id !== quizId);
+      setQuizzes(updatedQuizzes);
+      showNotification('Quiz deleted successfully', 'success');
+      // Refresh stats
+      handleFetchDashboardStats();
+    } catch (err) {
+      console.error('Error deleting quiz:', err);
+      showNotification('Failed to delete quiz', 'error');
+    }
+  };
+
+  const handleQuizSaved = () => {
+    handleFetchQuizzes();
+    handleFetchDashboardStats();
+  };
+
+  const handleManageQuestions = (quizId) => {
+    navigate(`/teacher/quizzes/${quizId}/questions`);
+  };
+
+  const handleViewResults = (quizId) => {
+    navigate(`/teacher/quizzes/${quizId}/results`);
+  };
+
+  const _handleCopyQuizId = (_quizId) => {
+    navigator.clipboard.writeText(_quizId);
+    _setCopiedId(_quizId);
+    showNotification('Quiz ID copied to clipboard!', 'success');
+    setTimeout(() => _setCopiedId(null), 2000);
+  };
+
+  const quizzesArray = Array.isArray(quizzes) ? quizzes : [];
+
+  const filteredQuizzes = quizzesArray.filter((q) => {
+    // Status filter
+    if (statusFilter === 'published' && !q.is_published) return false;
+    if (statusFilter === 'draft' && q.is_published) return false;
+    
+    // Date range filter
+    if (fromDate && q.available_from) {
+      const quizStartDate = new Date(q.available_from).toISOString().split('T')[0];
+      if (quizStartDate < fromDate) return false;
+    }
+    
+    if (toDate && q.available_until) {
+      const quizEndDate = new Date(q.available_until).toISOString().split('T')[0];
+      if (quizEndDate > toDate) return false;
+    }
+    
+    return true;
+  });
+
+  const quizColumns = [
     {
-      id: 'quiz-001',
-      title: 'JavaScript Basics',
-      description: 'Test your knowledge on JavaScript fundamentals',
-      is_published: true,
-      total_questions: 10,
-      time_limit_minutes: 30,
-      total_attempts: 25,
-      start_date: '2024-01-15',
-      end_date: '2024-02-15',
+      key: 'title',
+      label: 'Title',
+      searchable: true,
     },
     {
-      id: 'quiz-002',
-      title: 'React Advanced Patterns',
-      description: 'Advanced React concepts including hooks and state management',
-      is_published: true,
-      total_questions: 15,
-      time_limit_minutes: 45,
-      total_attempts: 18,
-      start_date: '2024-02-01',
-      end_date: '2024-03-01',
+      key: 'is_published',
+      label: 'Status',
+      render: (_, row) => (
+        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+          row.is_published ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+        }`}>
+          {row.is_published ? 'Published' : 'Draft'}
+        </span>
+      ),
     },
     {
-      id: 'quiz-003',
-      title: 'Midterm Exam',
-      description: 'Comprehensive midterm examination',
-      is_published: true,
-      total_questions: 30,
-      time_limit_minutes: 120,
-      total_attempts: 45,
-      start_date: '2024-03-15',
-      end_date: '2024-04-15',
+      key: 'total_questions',
+      label: 'Questions',
+      render: (_, row) => <span>{row.total_questions || 0}</span>,
     },
     {
-      id: 'quiz-004',
-      title: 'CSS Flexbox & Grid',
-      description: 'Master CSS layout techniques',
-      is_published: false,
-      total_questions: 8,
-      time_limit_minutes: 25,
-      total_attempts: 0,
-      start_date: null,
-      end_date: null,
+      key: 'duration_minutes',
+      label: 'Duration',
+      render: (_, row) => <span>{row.duration_minutes ? `${row.duration_minutes} min` : 'Unlimited'}</span>,
+    },
+    {
+      key: 'available_from',
+      label: 'Start Date',
+      render: (_, row) => <span>{row.available_from ? new Date(row.available_from).toLocaleDateString() : '-'}</span>,
+    },
+    {
+      key: 'available_until',
+      label: 'End Date',
+      render: (_, row) => <span>{row.available_until ? new Date(row.available_until).toLocaleDateString() : '-'}</span>,
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (_, row) => (
+        <div className="flex gap-1 flex-wrap">
+          <button 
+            onClick={() => handleEditQuiz(row)}
+            className="px-2 py-1 border border-gray-300 rounded text-xs font-medium hover:bg-gray-50"
+            title="Edit Quiz"
+          >
+            Edit
+          </button>
+          <button 
+            onClick={() => handleDeleteQuiz(row.quiz_id)}
+            className="px-2 py-1 border border-red-300 text-red-600 rounded text-xs font-medium hover:bg-red-50"
+            title="Delete Quiz"
+          >
+            Delete
+          </button>
+          {row.is_published && (
+            <>
+              <button 
+                onClick={() => handleManageQuestions(row.quiz_id)}
+                className="px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs font-medium"
+                title="Manage Questions"
+              >
+                Manage
+              </button>
+              <button 
+                onClick={() => handleViewResults(row.quiz_id)}
+                className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium"
+                title="View Results"
+              >
+                Results
+              </button>
+            </>
+          )}
+          {!row.is_published && (
+            <button 
+              onClick={() => handleManageQuestions(row.quiz_id)}
+              className="px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs font-medium"
+              title="Add Questions"
+            >
+              Questions
+            </button>
+          )}
+        </div>
+      ),
     },
   ];
-  const dummyStats = {
-    total_quizzes: 4,
-    published_quizzes: 3,
-    draft_quizzes: 1,
-    quizzes_this_month: 2,
-  };
 
   const metricsConfig = [
     {
@@ -126,189 +258,6 @@ const Quizzes = () => {
       bgColor: 'bg-yellow-100',
       textColor: 'text-yellow-600',
       description: 'quizzes created',
-    },
-  ];
-
-  const handleFetchQuizzes = async () => {
-    setLoading(true);
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setQuizzes(dummyQuizzes);
-    } catch (err) {
-      showNotification('Failed to fetch quizzes', 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleFetchDashboardStats = async () => {
-    setStatsLoading(true);
-    try {
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setDashboardStats(dummyStats);
-    } catch (err) {
-      showNotification('Failed to load dashboard statistics', 'error');
-    } finally {
-      setStatsLoading(false);
-    }
-  };
-
-
-  const handleCreateQuiz = () => {
-    setSelectedQuiz(null);
-    setShowCreateModal(true);
-  };
-
-  const handleEditQuiz = (quiz) => {
-    setSelectedQuiz(quiz);
-    setShowEditModal(true);
-  };
-
-  const handleDeleteQuiz = async (quizId) => {
-    if (!confirm('Are you sure you want to delete this quiz? This action cannot be undone.')) {
-      return;
-    }
-    try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      const updatedQuizzes = quizzes.filter(q => q.id !== quizId);
-      setQuizzes(updatedQuizzes);
-      showNotification('Quiz deleted successfully', 'success');
-    } catch (err) {
-      showNotification('Failed to delete quiz', 'error');
-    }
-  };
-
-  const handleQuizSaved = () => {
-    handleFetchQuizzes();
-  };
-
-  const handleManageQuestions = (quizId) => {
-    navigate(`/teacher/quizzes/${quizId}/questions`);
-  };
-
-  const handleViewResults = (quizId) => {
-    navigate(`/teacher/quizzes/${quizId}/results`);
-  };
-
-  const _handleCopyQuizId = (_quizId) => {
-    navigator.clipboard.writeText(_quizId);
-    _setCopiedId(_quizId);
-    showNotification('Quiz ID copied to clipboard!', 'success');
-    setTimeout(() => _setCopiedId(null), 2000);
-  };
-
-  const quizzesArray = Array.isArray(quizzes) ? quizzes : [];
-
-  const filteredQuizzes = quizzesArray.filter((q) => {
-    // Status filter
-    if (statusFilter === 'published' && !q.is_published) return false;
-    if (statusFilter === 'draft' && q.is_published) return false;
-    
-    // Date range filter
-    if (fromDate && q.start_date) {
-      const quizStartDate = new Date(q.start_date).toISOString().split('T')[0];
-      if (quizStartDate < fromDate) return false;
-    }
-    
-    if (toDate && q.end_date) {
-      const quizEndDate = new Date(q.end_date).toISOString().split('T')[0];
-      if (quizEndDate > toDate) return false;
-    }
-    
-    return true;
-  });
-
-  const quizColumns = [
-    {
-      key: 'title',
-      label: 'Title',
-      searchable: true,
-    },
-    {
-      key: 'is_published',
-      label: 'Status',
-      render: (_, row) => (
-        <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-          row.is_published ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
-        }`}>
-          {row.is_published ? 'Published' : 'Draft'}
-        </span>
-      ),
-    },
-    {
-      key: 'total_questions',
-      label: 'Questions',
-      render: (_, row) => <span>{row.total_questions || 0}</span>,
-    },
-    {
-      key: 'time_limit_minutes',
-      label: 'Duration',
-      render: (_, row) => <span>{row.time_limit_minutes} min</span>,
-    },
-    {
-      key: 'total_attempts',
-      label: 'Attempts',
-      render: (_, row) => <span>{row.is_published ? row.total_attempts || 0 : '-'}</span>,
-    },
-    {
-      key: 'start_date',
-      label: 'Start Date',
-      render: (_, row) => <span>{row.start_date ? new Date(row.start_date).toLocaleDateString() : '-'}</span>,
-    },
-    {
-      key: 'end_date',
-      label: 'End Date',
-      render: (_, row) => <span>{row.end_date ? new Date(row.end_date).toLocaleDateString() : '-'}</span>,
-    },
-    {
-      key: 'actions',
-      label: 'Actions',
-      render: (_, row) => (
-        <div className="flex gap-1 flex-wrap">
-          <button 
-            onClick={() => handleEditQuiz(row)}
-            className="px-2 py-1 border border-gray-300 rounded text-xs font-medium hover:bg-gray-50"
-            title="Edit Quiz"
-          >
-            Edit
-          </button>
-          <button 
-            onClick={() => handleDeleteQuiz(row.id)}
-            className="px-2 py-1 border border-red-300 text-red-600 rounded text-xs font-medium hover:bg-red-50"
-            title="Delete Quiz"
-          >
-            Delete
-          </button>
-          {row.is_published && (
-            <>
-              <button 
-                onClick={() => handleManageQuestions(row.id)}
-                className="px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs font-medium"
-                title="Manage Questions"
-              >
-                Manage
-              </button>
-              <button 
-                onClick={() => handleViewResults(row.id)}
-                className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs font-medium"
-                title="View Results"
-              >
-                Results
-              </button>
-            </>
-          )}
-          {!row.is_published && (
-            <button 
-              onClick={() => handleManageQuestions(row.id)}
-              className="px-2 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs font-medium"
-              title="Add Questions"
-            >
-              Questions
-            </button>
-          )}
-        </div>
-      ),
     },
   ];
 
