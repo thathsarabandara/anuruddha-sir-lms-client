@@ -180,6 +180,15 @@ const Quizzes = () => {
       label: 'Actions',
       render: (_, row) => (
         <div className="flex gap-1 flex-wrap">
+          <button
+            onClick={() => _handleCopyQuizId(row.quiz_id)}
+            className={`px-2 py-1 border border-gray-300 rounded text-xs font-medium hover:bg-gray-50 ${
+              _copiedId === row.quiz_id ? 'bg-green-100 text-green-700' : ''
+            }`}
+            title="Copy Quiz ID"
+          >
+            {_copiedId === row.quiz_id ? 'Copied!' : 'Copy ID'}
+          </button>
           <button 
             onClick={() => handleEditQuiz(row)}
             className="px-2 py-1 border border-gray-300 rounded text-xs font-medium hover:bg-gray-50"
