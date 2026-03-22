@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FaTimes, FaCheck } from 'react-icons/fa';
+import { quizAPI } from '../../api/quiz';
 
 const QuizFormModal = ({ isOpen, onClose, onSave, quiz, onNotification }) => {
   const [formData, setFormData] = useState({
@@ -60,17 +61,17 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz, onNotification }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
-
-    // Simulate API delay with dummy data
-    setTimeout(() => {
-      const message = quiz?.id ? 'Quiz updated successfully' : 'Quiz created successfully';
-      if (onNotification) {
-        onNotification(message, 'success');
-      }
-      setLoading(false);
-      onSave();
-      onClose();
-    }, 500);
+    quizAPI.createQuiz(formData)
+      .then((response) => {
+        onSave(response.data);
+        onNotification('Quiz saved successfully!', 'success');
+        onClose();
+      })
+      .catch((error) => {
+        console.error('Error saving quiz:', error);
+        onNotification('Failed to save quiz. Please try again.', 'error');
+      })
+      .finally(() => setLoading(false));
   };
 
   if (!isOpen) return null;
