@@ -36,7 +36,13 @@ const ManageQuestions = () => {
 
       // Fetch questions
       const questionsResponse = await quizAPI.getQuizQuestions(quizId);
-      const questionsData = questionsResponse.data?.data || [];
+      let questionsData = questionsResponse.data?.data || [];
+      
+      // Sort questions by question_order for consistent display
+      questionsData = questionsData.sort((a, b) => 
+        (a.question_order || Number.MAX_VALUE) - (b.question_order || Number.MAX_VALUE)
+      );
+      
       setQuestions(questionsData);
 
       // Fetch question stats
@@ -119,9 +125,10 @@ const ManageQuestions = () => {
     }
   };
 
-  const handleQuestionSaved = () => {
+  const handleQuestionSaved = (formData, quizId) => {
     fetchQuizData();
     setShowQuestionModal(false);
+    quizAPI.createQuestions(quizId, formData)
     setEditingQuestion(null);
     setNotification({
       type: 'success',
@@ -163,7 +170,7 @@ const ManageQuestions = () => {
     // Insert at new position
     newQuestions.splice(dropIndex, 0, draggedQuestion);
     
-    // Update state locally first
+    // Update state locally first (for immediate visual feedback)
     setQuestions(newQuestions);
 
     try {
@@ -174,6 +181,9 @@ const ManageQuestions = () => {
       }));
       
       await quizAPI.updateQuestionOrder(quizId, reorderedData);
+      
+      // Refresh data from backend to ensure consistency
+      await fetchQuizData();
       
       setNotification({
         type: 'success',
