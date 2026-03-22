@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { MdClose, MdAdd, MdDelete } from 'react-icons/md';
 import Notification from '../common/Notification';
-import { getAbsoluteImageUrl } from '../../utils/helpers';
 
 const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotification }) => {
   const getInitialFormData = () => ({
-    question_type: question?.question_type || 'MCQ_SINGLE',
+    question_type: question?.question_type || 'multiple_choice',
     question_text: question?.question_text || '',
-    marks: question?.marks || '1',
+    points: question?.points || '1',
     explanation: question?.explanation || '',
-    difficulty: question?.difficulty || 'MEDIUM',
-    tags: question?.tags || '',
+    difficulty: question?.difficulty || 'medium',
+    category: question?.category || '',
+    question_order: question?.question_order || null,
     image: null,
     existing_image: question?.image || null,
     remove_image: false,
@@ -25,31 +25,20 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    setFormData(getInitialFormData());
-    // Use helper for existing images from server, raw data for new client-side previews
-    if (question?.image && !question.image.startsWith('blob:')) {
-      setImagePreview(getAbsoluteImageUrl(question.image));
-    } else {
-      setImagePreview(question?.image || null);
-    }
-  }, [question?.id]);
-
   const handleSubmit = (e) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
-    
-    // Simulate API delay with dummy data
-    setTimeout(() => {
-      const message = question?.id ? 'Question updated successfully' : 'Question created successfully';
-      if (onNotification) {
-        onNotification(message, 'success');
-      }
-      setIsLoading(false);
-      onSave();
-      onClose();
-    }, 500);
+    onSave(formData, quizId, question?.id)
+      .then(() => {
+        setIsLoading(false);
+        onClose();
+        onNotification('Question saved successfully', 'success');
+      })
+      .catch((err) => {
+        setIsLoading(false);
+        setError(err.message || 'Failed to save question');
+      });
   };
 
   const addOption = () => {
@@ -68,7 +57,7 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
     const newOptions = [...formData.options];
     newOptions[index][field] = value;
     
-    if (field === 'is_correct' && value && formData.question_type === 'MCQ_SINGLE') {
+    if (field === 'is_correct' && value && formData.question_type === 'multiple_choice') {
       newOptions.forEach((opt, i) => {
         if (i !== index) opt.is_correct = false;
       });
@@ -121,15 +110,14 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
   if (!isOpen) return null;
 
   const questionTypes = [
-    { value: 'MCQ_SINGLE', label: 'Single Choice' },
-    { value: 'MCQ_MULTIPLE', label: 'Multiple Choice' },
-    { value: 'TRUE_FALSE', label: 'True / False' },
-    { value: 'SHORT_ANSWER', label: 'Short Answer' },
-    { value: 'LONG_ANSWER', label: 'Long Answer' },
+    { value: 'multiple_choice', label: 'Single Choice' },
+    { value: 'multiple_answer', label: 'Multiple Choice' },
+    { value: 'short_answer', label: 'Short Answer' },
+    { value: 'essay', label: 'Essay' },
   ];
 
-  const difficulties = ['EASY', 'MEDIUM', 'HARD'];
-  const showOptions = ['MCQ_SINGLE', 'MCQ_MULTIPLE', 'TRUE_FALSE'].includes(formData.question_type);
+  const difficulties = ['easy', 'medium', 'hard'];
+  const showOptions = ['multiple_choice', 'multiple_answer'].includes(formData.question_type);
 
   return (
     <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
@@ -168,7 +156,7 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
           
           {/* Question Type & Metadata Row */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
               <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Type</label>
               <select
@@ -183,11 +171,11 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Marks</label>
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Points</label>
               <input
                 type="number"
-                value={formData.marks}
-                onChange={(e) => setFormData({ ...formData, marks: e.target.value })}
+                value={formData.points}
+                onChange={(e) => setFormData({ ...formData, points: e.target.value })}
                 className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
                 min="0"
                 step="0.5"
@@ -207,6 +195,34 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
                 ))}
               </select>
             </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Order</label>
+              <input
+                type="number"
+                value={formData.question_order || ''}
+                onChange={(e) => setFormData({ ...formData, question_order: e.target.value ? parseInt(e.target.value) : null })}
+                className="w-full px-3 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+                min="1"
+                placeholder="Auto"
+              />
+            </div>
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Category</label>
+            <select
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
+            >
+              <option value="">Select Category</option>
+              <option value="environment">පරිසරය (Environment)</option>
+              <option value="sinhala">සිංහල (Sinhala Language)</option>
+              <option value="mathematics">ගණිතය (Mathematics)</option>
+              <option value="all">සියලු වර්ග (All Types)</option>
+            </select>
           </div>
 
           {/* Question Text */}
@@ -277,25 +293,23 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide">
-                  Answers
+                  {formData.question_type === 'multiple_choice' ? 'Answers (Select one correct)' : 'Answers (Select all correct)'}
                 </label>
-                {formData.question_type !== 'TRUE_FALSE' && (
-                  <button
-                    type="button"
-                    onClick={addOption}
-                    className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
-                  >
-                    <MdAdd size={16} /> Add option
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={addOption}
+                  className="flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                >
+                  <MdAdd size={16} /> Add option
+                </button>
               </div>
 
               <div className="space-y-2">
                 {formData.options.map((option, index) => (
                   <div key={index} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors">
                     <input
-                      type={formData.question_type === 'MCQ_SINGLE' ? 'radio' : 'checkbox'}
-                      name={`correct-${formData.question_type === 'MCQ_SINGLE' ? 'group' : index}`}
+                      type={formData.question_type === 'multiple_choice' ? 'radio' : 'checkbox'}
+                      name={`correct-${formData.question_type === 'multiple_choice' ? 'group' : index}`}
                       checked={option.is_correct}
                       onChange={(e) => updateOption(index, 'is_correct', e.target.checked)}
                       className="w-5 h-5 accent-primary-600 cursor-pointer flex-shrink-0"
@@ -308,7 +322,7 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
                       placeholder={`Option ${index + 1}`}
                       required
                     />
-                    {formData.question_type !== 'TRUE_FALSE' && formData.options.length > 2 && (
+                    {formData.options.length > 2 && (
                       <button
                         type="button"
                         onClick={() => removeOption(index)}
@@ -323,29 +337,16 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
             </div>
           )}
 
-          {/* Explanation & Tags */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Tags</label>
-              <input
-                type="text"
-                value={formData.tags}
-                onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                placeholder="e.g., algebra, important"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Explanation</label>
-              <input
-                type="text"
-                value={formData.explanation}
-                onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all"
-                placeholder="Explain the correct answer..."
-              />
-            </div>
+          {/* Explanation */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Explanation</label>
+            <textarea
+              value={formData.explanation}
+              onChange={(e) => setFormData({ ...formData, explanation: e.target.value })}
+              rows="3"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all resize-none"
+              placeholder="Explain the correct answer..."
+            />
           </div>
         </form>
 
