@@ -88,11 +88,45 @@ export const quizAPI = {
    * @param {Object|Array} questionData - Single question or array of questions
    * @returns {Promise} Created question(s)
    */
-  createQuestions: (quizId, questionData) =>
-    axiosInstance.post("/quiz/questions", {
+  createQuestions: (quizId, questionData) => {
+    // Filter out frontend-only fields and convert types
+    const cleanData = { ...questionData };
+    const imageFile = cleanData.image;
+    delete cleanData.image;
+    delete cleanData.existing_image;
+    delete cleanData.remove_image;
+    
+    // Convert points to integer
+    if (cleanData.points !== undefined && cleanData.points !== null) {
+      cleanData.points = parseInt(cleanData.points, 10);
+    }
+    
+    // If there's an image file, use FormData
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append('quiz_id', quizId);
+      
+      // Append all other fields
+      Object.entries(cleanData).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        } else if (value !== null && value !== undefined) {
+          formData.append(key, value);
+        }
+      });
+      
+      // Append the image file
+      formData.append('image', imageFile);
+      
+      return axiosInstance.post("/quiz/questions", formData);
+    }
+    
+    // Normal JSON request without image
+    return axiosInstance.post("/quiz/questions", {
       quiz_id: quizId,
-      ...questionData,
-    }),
+      ...cleanData,
+    });
+  },
 
   /**
    * Get all questions for a quiz
@@ -108,20 +142,57 @@ export const quizAPI = {
    * @param {Object} updateData - Fields to update
    * @returns {Promise} Updated question data
    */
-  updateQuestion: (questionId, updateData) =>
-    axiosInstance.put("/quiz/update/questions", updateData, { params: { question_id: questionId } }),
+  updateQuestion: (questionId, updateData) => {
+    // Handle image file if present
+    const cleanData = { ...updateData };
+    const imageFile = cleanData.image;
+    delete cleanData.image;
+    delete cleanData.existing_image;
+    delete cleanData.remove_image;
+    
+    // Convert points to integer if present
+    if (cleanData.points !== undefined && cleanData.points !== null) {
+      cleanData.points = parseInt(cleanData.points, 10);
+    }
+    
+    // If there's an image file or explicit remove_image flag, use FormData
+    if (imageFile || updateData.remove_image) {
+      const formData = new FormData();
+      
+      // Append all fields
+      Object.entries(cleanData).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        } else if (value !== null && value !== undefined) {
+          formData.append(key, value);
+        }
+      });
+      
+      // Append the image file if present
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+      
+      // Append remove_image flag if true
+      if (updateData.remove_image) {
+        formData.append('remove_image', 'true');
+      }
+      
+      return axiosInstance.put("/quiz/update/questions", formData, { params: { question_id: questionId } });
+    }
+    
+    // Normal JSON request without file operations
+    return axiosInstance.put("/quiz/update/questions", cleanData, { params: { question_id: questionId } });
+  },
 
   /**
    * Update question order (single or batch)
    * @param {string} quizId - Quiz ID
-   * @param {Array} orderData - Array of {question_id, new_order}
+   * @param {Array} orderData - Array of {question_id, question_order}
    * @returns {Promise} Updated questions
    */
   updateQuestionOrder: (quizId, orderData) =>
-    axiosInstance.put("/quiz/questions/order", {
-      quiz_id: quizId,
-      questions: orderData,
-    }),
+    axiosInstance.put("/quiz/questions/order", orderData),
 
   /**
    * Delete a question
