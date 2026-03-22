@@ -12,14 +12,14 @@ export const quizAPI = {
    * @returns {Promise} Created quiz data
    */
   createQuiz: (quizData) =>
-    axiosInstance.post("/quiz", quizData),
+    axiosInstance.post("/quiz/", quizData),
 
   /**
    * Get all quizzes for the current user (teacher)
    * @returns {Promise} List of quizzes
    */
   getAllQuizzes: () =>
-    axiosInstance.get("/quiz"),
+    axiosInstance.get("/quiz/"),
 
   /**
    * Get quizzes for a specific course
@@ -27,7 +27,7 @@ export const quizAPI = {
    * @returns {Promise} List of quizzes for the course
    */
   getQuizzesForCourse: (courseId) =>
-    axiosInstance.get("/quiz", { params: { course_id: courseId } }),
+    axiosInstance.get("/quiz/", { params: { course_id: courseId } }),
 
   /**
    * Get detailed information for a specific quiz
