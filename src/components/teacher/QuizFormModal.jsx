@@ -61,15 +61,22 @@ const QuizFormModal = ({ isOpen, onClose, onSave, quiz, onNotification }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     setLoading(true);
-    quizAPI.createQuiz(formData)
+
+    const apiCall = quiz 
+      ? quizAPI.updateQuiz(quiz.quiz_id, formData)
+      : quizAPI.createQuiz(formData);
+
+    apiCall
       .then((response) => {
         onSave(response.data);
-        onNotification('Quiz saved successfully!', 'success');
+        const message = quiz ? 'Quiz updated successfully!' : 'Quiz created successfully!';
+        onNotification(message, 'success');
         onClose();
       })
       .catch((error) => {
         console.error('Error saving quiz:', error);
-        onNotification('Failed to save quiz. Please try again.', 'error');
+        const message = quiz ? 'Failed to update quiz. Please try again.' : 'Failed to create quiz. Please try again.';
+        onNotification(message, 'error');
       })
       .finally(() => setLoading(false));
   };
