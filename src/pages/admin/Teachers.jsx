@@ -6,6 +6,7 @@ import { BiLoader } from 'react-icons/bi';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import { teacherAPI } from '../../api/teacher';
 
 const AdminTeachers = () => {
@@ -742,57 +743,69 @@ const AdminTeachers = () => {
               <div className="flex gap-3 pt-4 border-t flex-wrap">
                 {selectedTeacher.account_status.is_active === false && selectedTeacher.account_status.is_banned === false && (
                   <>
-                    <button 
+                    <ButtonWithLoader
+                      label="Approve Teacher"
+                      loadingLabel="Approving..."
+                      isLoading={actionLoading}
                       onClick={handleApprove}
-                      disabled={actionLoading}
-                      className="flex-1 btn-primary flex items-center justify-center gap-2"
-                    >
-                      <FaCheck /> Approve Teacher
-                    </button>
-                    <button 
+                      icon={<FaCheck />}
+                      variant="success"
+                      fullWidth
+                    />
+                    <ButtonWithLoader
+                      label="Reject"
+                      loadingLabel="Processing..."
+                      isLoading={actionLoading}
                       onClick={() => setShowRejectModal(true)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaTimes /> Reject
-                    </button>
+                      icon={<FaTimes />}
+                      variant="danger"
+                      fullWidth
+                    />
                   </>
                 )}
                 
                 {selectedTeacher.account_status.is_active === true && selectedTeacher.account_status.is_banned === false && (
                   <>
-                    <button 
+                    <ButtonWithLoader
+                      label="Suspend"
+                      loadingLabel="Suspending..."
+                      isLoading={actionLoading}
                       onClick={() => setShowSuspendModal(true)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaBan /> Suspend
-                    </button>
-                    <button 
+                      icon={<FaBan />}
+                      variant="warning"
+                      fullWidth
+                    />
+                    <ButtonWithLoader
+                      label="Edit Profile"
+                      loadingLabel="Preparing..."
+                      isLoading={actionLoading}
                       onClick={openEditModal}
-                      disabled={actionLoading}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaEdit /> Edit Profile
-                    </button>
-                    <button 
+                      icon={<FaEdit />}
+                      variant="info"
+                      fullWidth
+                    />
+                    <ButtonWithLoader
+                      label="Reset Password"
+                      loadingLabel="Resetting..."
+                      isLoading={actionLoading}
                       onClick={handleResetPassword}
-                      disabled={actionLoading}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaKey /> Reset Password
-                    </button>
+                      icon={<FaKey />}
+                      variant="secondary"
+                      fullWidth
+                    />
                   </>
                 )}
                 
                 {selectedTeacher.account_status.is_banned === true && selectedTeacher.account_status.is_active === false && (
-                  <button 
+                  <ButtonWithLoader
+                    label="Reactivate Teacher"
+                    loadingLabel="Reactivating..."
+                    isLoading={actionLoading}
                     onClick={handleReactivate}
-                    disabled={actionLoading}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                  >
-                    <FaUndo /> Reactivate Teacher
-                  </button>
+                    icon={<FaUndo />}
+                    variant="success"
+                    fullWidth
+                  />
                 )}
 
                 <button onClick={closeModal} className="px-6 btn-outline py-2">
@@ -937,13 +950,14 @@ const AdminTeachers = () => {
               />
             </div>
             <div className="flex gap-3 mt-4">
-              <button
+              <ButtonWithLoader
+                label="Confirm Rejection"
+                loadingLabel="Rejecting..."
+                isLoading={actionLoading}
                 onClick={handleReject}
-                disabled={actionLoading}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 font-medium"
-              >
-                Confirm Rejection
-              </button>
+                variant="danger"
+                fullWidth
+              />
               <button 
                 onClick={() => setShowRejectModal(false)}
                 className="px-4 btn-outline py-2"
@@ -979,13 +993,14 @@ const AdminTeachers = () => {
               />
             </div>
             <div className="flex gap-3 mt-4">
-              <button
+              <ButtonWithLoader
+                label="Confirm Suspension"
+                loadingLabel="Suspending..."
+                isLoading={actionLoading}
                 onClick={handleSuspend}
-                disabled={actionLoading}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white rounded-lg py-2 font-medium"
-              >
-                Confirm Suspension
-              </button>
+                variant="warning"
+                fullWidth
+              />
               <button 
                 onClick={() => setShowSuspendModal(false)}
                 className="px-4 btn-outline py-2"
