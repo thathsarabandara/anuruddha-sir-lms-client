@@ -145,13 +145,14 @@ export const CredentialsForm = ({ title, fields, onSubmit, isLoading, submitText
         ))}
       </div>
 
-      <button
+      <ButtonWithLoader
         type="submit"
-        disabled={isLoading}
-        className="w-full btn-primary py-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
-      >
-        {isLoading ? 'Saving...' : submitText}
-      </button>
+        label={submitText}
+        loadingLabel="Saving..."
+        isLoading={isLoading}
+        variant="success"
+        fullWidth
+      />
     </form>
   );
 };
