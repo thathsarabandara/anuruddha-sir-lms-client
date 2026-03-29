@@ -20,7 +20,16 @@ const AdminTeachers = () => {
   const [modalType, setModalType] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [editFormData, setEditFormData] = useState({});
-  const [actionLoading, setActionLoading] = useState(false);
+  
+  // Individual loading states for each action
+  const [approveLoading, setApproveLoading] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
+  const [suspendLoading, setSuspendLoading] = useState(false);
+  const [reactivateLoading, setReactivateLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -111,7 +120,7 @@ const AdminTeachers = () => {
   };
 
   const handleApprove = async () => {
-    setActionLoading(true);
+    setApproveLoading(true);
     setError('');
     setSuccess('');
     
@@ -128,7 +137,7 @@ const AdminTeachers = () => {
       setError(err.response?.data?.message || 'Failed to approve teacher');
       showNotification(err.response?.data?.message || 'Failed to approve teacher', 'error');
     } finally {
-      setActionLoading(false);
+      setApproveLoading(false);
     }
   };
 
@@ -139,7 +148,7 @@ const AdminTeachers = () => {
       return;
     }
     
-    setActionLoading(true);
+    setRejectLoading(true);
     setError('');
     setSuccess('');
     
@@ -163,7 +172,7 @@ const AdminTeachers = () => {
       setError(err.response?.data?.message || 'Failed to reject teacher');
       showNotification(err.response?.data?.message || 'Failed to reject teacher', 'error');
     } finally {
-      setActionLoading(false);
+      setRejectLoading(false);
     }
   };
 
@@ -174,7 +183,7 @@ const AdminTeachers = () => {
       return;
     }
     
-    setActionLoading(true);
+    setSuspendLoading(true);
     setError('');
     setSuccess('');
     
@@ -198,12 +207,12 @@ const AdminTeachers = () => {
       setError(err.response?.data?.message || 'Failed to suspend teacher');
       showNotification(err.response?.data?.message || 'Failed to suspend teacher', 'error');
     } finally {
-      setActionLoading(false);
+      setSuspendLoading(false);
     }
   };
 
   const handleReactivate = async () => {
-    setActionLoading(true);
+    setReactivateLoading(true);
     setError('');
     setSuccess('');
     
@@ -221,14 +230,14 @@ const AdminTeachers = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reactivate teacher');
     } finally {
-      setActionLoading(false);
+      setReactivateLoading(false);
     }
   };
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     
-    setActionLoading(true);
+    setEditLoading(true);
     setError('');
     setSuccess('');
     
@@ -257,12 +266,12 @@ const AdminTeachers = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update teacher profile');
     } finally {
-      setActionLoading(false);
+      setEditLoading(false);
     }
   };
 
   const handleResetPassword = async () => {
-    setActionLoading(true);
+    setResetPasswordLoading(true);
     setError('');
     setSuccess('');
     
@@ -278,7 +287,7 @@ const AdminTeachers = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reset password');
     } finally {
-      setActionLoading(false);
+      setResetPasswordLoading(false);
     }
   };
 
@@ -307,7 +316,7 @@ const AdminTeachers = () => {
       return;
     }
     
-    setActionLoading(true);
+    setCreateLoading(true);
     setError('');
     setSuccess('');
     
@@ -346,7 +355,7 @@ const AdminTeachers = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create teacher');
     } finally {
-      setActionLoading(false);
+      setCreateLoading(false);
     }
   };
 
@@ -579,7 +588,7 @@ const AdminTeachers = () => {
                     setSelectedTeacher(teacher);
                     handleResetPassword();
                   }}
-                  disabled={actionLoading}
+                  disabled={resetPasswordLoading}
                   className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
                   title="Reset password"
                 >
@@ -604,7 +613,7 @@ const AdminTeachers = () => {
                       setSelectedTeacher(teacher);
                       handleReactivate();
                     }}
-                    disabled={actionLoading}
+                    disabled={reactivateLoading}
                     className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
                   >
                     <FaCheck /> Activate
@@ -618,7 +627,7 @@ const AdminTeachers = () => {
                         setSelectedTeacher(teacher);
                         handleApprove();
                       }}
-                      disabled={actionLoading}
+                      disabled={approveLoading}
                       className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
                     >
                       <FaCheck /> Approve
@@ -746,7 +755,7 @@ const AdminTeachers = () => {
                     <ButtonWithLoader
                       label="Approve Teacher"
                       loadingLabel="Approving..."
-                      isLoading={actionLoading}
+                      isLoading={approveLoading}
                       onClick={handleApprove}
                       icon={<FaCheck />}
                       variant="success"
@@ -755,7 +764,7 @@ const AdminTeachers = () => {
                     <ButtonWithLoader
                       label="Reject"
                       loadingLabel="Processing..."
-                      isLoading={actionLoading}
+                      isLoading={rejectLoading}
                       onClick={() => setShowRejectModal(true)}
                       icon={<FaTimes />}
                       variant="danger"
@@ -769,7 +778,7 @@ const AdminTeachers = () => {
                     <ButtonWithLoader
                       label="Suspend"
                       loadingLabel="Suspending..."
-                      isLoading={actionLoading}
+                      isLoading={suspendLoading}
                       onClick={() => setShowSuspendModal(true)}
                       icon={<FaBan />}
                       variant="warning"
@@ -778,7 +787,7 @@ const AdminTeachers = () => {
                     <ButtonWithLoader
                       label="Edit Profile"
                       loadingLabel="Preparing..."
-                      isLoading={actionLoading}
+                      isLoading={editLoading}
                       onClick={openEditModal}
                       icon={<FaEdit />}
                       variant="info"
@@ -787,7 +796,7 @@ const AdminTeachers = () => {
                     <ButtonWithLoader
                       label="Reset Password"
                       loadingLabel="Resetting..."
-                      isLoading={actionLoading}
+                      isLoading={resetPasswordLoading}
                       onClick={handleResetPassword}
                       icon={<FaKey />}
                       variant="secondary"
@@ -800,7 +809,7 @@ const AdminTeachers = () => {
                   <ButtonWithLoader
                     label="Reactivate Teacher"
                     loadingLabel="Reactivating..."
-                    isLoading={actionLoading}
+                    isLoading={reactivateLoading}
                     onClick={handleReactivate}
                     icon={<FaUndo />}
                     variant="success"
@@ -914,7 +923,7 @@ const AdminTeachers = () => {
                 </div>
               </div>
               <div className="flex space-x-3 pt-4">
-                <button type="submit" disabled={actionLoading} className="flex-1 btn-primary py-3">
+                <button type="submit" disabled={editLoading} className="flex-1 btn-primary py-3">
                   <FaSave className="inline mr-2" /> Save Changes
                 </button>
                 <button type="button" onClick={() => setShowEditModal(false)} className="px-6 btn-outline py-3">
@@ -953,7 +962,7 @@ const AdminTeachers = () => {
               <ButtonWithLoader
                 label="Confirm Rejection"
                 loadingLabel="Rejecting..."
-                isLoading={actionLoading}
+                isLoading={rejectLoading}
                 onClick={handleReject}
                 variant="danger"
                 fullWidth
@@ -996,7 +1005,7 @@ const AdminTeachers = () => {
               <ButtonWithLoader
                 label="Confirm Suspension"
                 loadingLabel="Suspending..."
-                isLoading={actionLoading}
+                isLoading={suspendLoading}
                 onClick={handleSuspend}
                 variant="warning"
                 fullWidth
@@ -1202,11 +1211,11 @@ const AdminTeachers = () => {
               <div className="flex gap-3 pt-6">
                 <button
                   type="submit"
-                  disabled={actionLoading}
+                  disabled={createLoading}
                   className="flex-1 btn-primary py-3 flex items-center justify-center gap-2"
                 >
-                  {actionLoading ? <BiLoader className="animate-spin" /> : <FaSave />}
-                  {actionLoading ? 'Creating...' : 'Create Teacher'}
+                  {createLoading ? <BiLoader className="animate-spin" /> : <FaSave />}
+                  {createLoading ? 'Creating...' : 'Create Teacher'}
                 </button>
                 <button
                   type="button"
