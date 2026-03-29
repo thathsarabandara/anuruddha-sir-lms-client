@@ -6,6 +6,7 @@ import QuizFormModal from '../../components/teacher/QuizFormModal';
 import TeacherDashboardStats from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import { quizAPI } from '../../api/quiz';
 
 const Quizzes = () => {
