@@ -11,6 +11,7 @@ import {
   FaCalendarAlt,
 } from 'react-icons/fa';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 const dummyAvailableQuizzes = [
   { id: 1, title: 'Basic Math Quiz', quiz_type: 'PRACTICE', duration: 30, total_marks: 100, attempts_used: 0, max_attempts: 3 },
@@ -24,6 +25,7 @@ const AvailableQuizzes = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [quizTypeFilter, setQuizTypeFilter] = useState('all');
+  const [startingQuizId, setStartingQuizId] = useState(null);
   const [stats, setStats] = useState({
     totalAvailable: 0,
     totalAttempts: 0,
@@ -74,7 +76,8 @@ const AvailableQuizzes = () => {
   };
 
   const handleStartQuiz = (quizId) => {
-    navigate(`/student/quiz/${quizId}/take`);
+    setStartingQuizId(quizId);
+    setTimeout(() => navigate(`/student/quiz/${quizId}/take`), 300);
   };
 
   const getQuizTypeColor = (type) => {
@@ -318,20 +321,39 @@ const AvailableQuizzes = () => {
                   )}
 
                   {/* Action Button */}
-                  <button
-                    onClick={() => handleStartQuiz(quiz.id)}
-                    disabled={isQuizExpired(quiz) || isQuizUpcoming(quiz) || quiz.attempts_used >= quiz.max_attempts}
-                    className={`w-full py-2 rounded-lg font-semibold flex items-center justify-center gap-2 transition-all duration-300 ${
-                      isQuizExpired(quiz) || isQuizUpcoming(quiz) || quiz.attempts_used >= quiz.max_attempts
-                        ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                        : 'bg-blue-500 text-white hover:bg-blue-600 active:scale-95'
-                    }`}
-                  >
-                    {quiz.attempts_used >= quiz.max_attempts ? 'All Attempts Used' : 'Start Quiz'}
-                    {!(isQuizExpired(quiz) || isQuizUpcoming(quiz) || quiz.attempts_used >= quiz.max_attempts) && (
-                      <FaArrowRight className="text-sm" />
-                    )}
-                  </button>
+                  {quiz.attempts_used >= quiz.max_attempts ? (
+                    <button
+                      disabled
+                      className="w-full py-2 rounded-lg font-semibold bg-slate-200 text-slate-400 cursor-not-allowed"
+                    >
+                      All Attempts Used
+                    </button>
+                  ) : isQuizExpired(quiz) ? (
+                    <button
+                      disabled
+                      className="w-full py-2 rounded-lg font-semibold bg-slate-200 text-slate-400 cursor-not-allowed"
+                    >
+                      Quiz Expired
+                    </button>
+                  ) : isQuizUpcoming(quiz) ? (
+                    <button
+                      disabled
+                      className="w-full py-2 rounded-lg font-semibold bg-slate-200 text-slate-400 cursor-not-allowed"
+                    >
+                      Coming Soon
+                    </button>
+                  ) : (
+                    <ButtonWithLoader
+                      label="Start Quiz"
+                      loadingLabel="Loading..."
+                      isLoading={startingQuizId === quiz.id}
+                      onClick={() => handleStartQuiz(quiz.id)}
+                      variant="primary"
+                      fullWidth
+                      size="sm"
+                      icon={<FaArrowRight className="text-sm" />}
+                    />
+                  )}
                 </div>
               </div>
             ))}
