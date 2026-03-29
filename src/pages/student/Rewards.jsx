@@ -4,12 +4,14 @@ import { FaBook, FaCheck, FaFilePdf, FaGem, FaGraduationCap, FaTrophy, FaVideo, 
 import DataTable from '../../components/common/DataTable';
 import StatCard from '../../components/common/StatCard';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 const StudentRewards = () => {
   const [selectedTab, setSelectedTab] = useState('earnings');
   const [searchTerm, setSearchTerm] = useState('');
   const [redeemSearchTerm, setRedeemSearchTerm] = useState('');
   const [redeemTypeFilter, setRedeemTypeFilter] = useState('all');
+  const [redeemingId, setRedeemingId] = useState(null);
 
   const rewardBalance = useMemo(() => ({
     coins: 1250,
@@ -341,31 +343,46 @@ const StudentRewards = () => {
       key: 'action',
       label: 'Action',
       width: '30%',
-      render: (_, row) => (
-        <button
-          className={`py-2 px-4 rounded-lg font-medium transition-colors ${
-            row.available && (
-              (row.type === 'coins' && rewardBalance.coins >= row.cost) ||
-              (row.type === 'gems' && rewardBalance.gems >= row.cost)
-            )
-              ? 'bg-primary-600 hover:bg-primary-700 text-white'
-              : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-          }`}
-          disabled={
-            !row.available || (
-              (row.type === 'coins' && rewardBalance.coins < row.cost) ||
-              (row.type === 'gems' && rewardBalance.gems < row.cost)
-            )
-          }
-        >
-          {!row.available ? 'Coming Soon' : 
-           (row.type === 'coins' && rewardBalance.coins >= row.cost) ||
-           (row.type === 'gems' && rewardBalance.gems >= row.cost)
-            ? 'Redeem Now' : 'Insufficient'}
-        </button>
-      ),
+      render: (_, row) => {
+        const canRedeem = row.available && (
+          (row.type === 'coins' && rewardBalance.coins >= row.cost) ||
+          (row.type === 'gems' && rewardBalance.gems >= row.cost)
+        );
+        
+        if (!row.available) {
+          return (
+            <button disabled className="bg-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
+              Coming Soon
+            </button>
+          );
+        }
+
+        if (!canRedeem) {
+          return (
+            <button disabled className="bg-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
+              Insufficient
+            </button>
+          );
+        }
+
+        return (
+          <ButtonWithLoader
+            label="Redeem Now"
+            loadingLabel="Processing..."
+            isLoading={redeemingId === row.id}
+            onClick={() => {
+              setRedeemingId(row.id);
+              setTimeout(() => {
+                setRedeemingId(null);
+              }, 1000);
+            }}
+            variant="primary"
+            size="sm"
+          />
+        );
+      },
     },
-  ], [rewardBalance.coins, rewardBalance.gems]);
+  ], [rewardBalance.coins, rewardBalance.gems, redeemingId]);
 
   // Filter redeem items by search and type
   const filteredRedeemItems = useMemo(() => {
