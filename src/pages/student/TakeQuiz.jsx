@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FaClock, FaCheck, FaExclamationTriangle, FaSave, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 const dummyQuizData = {
   quiz: {
@@ -210,10 +211,26 @@ const TakeQuiz = () => {
 
         <div className="flex items-center justify-between">
           <button onClick={() => currentQuestionIndex > 0 && setCurrentQuestionIndex(currentQuestionIndex - 1)} disabled={currentQuestionIndex === 0} className="flex items-center gap-2 px-6 py-2 bg-gray-200 rounded-lg hover:bg-gray-300 disabled:opacity-50"><FaArrowLeft /> Previous</button>
-          <button onClick={() => saveAnswersToServer()} className="flex items-center gap-2 px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"><FaSave /> {autoSaving ? 'Saving...' : 'Save'}</button>
+          <ButtonWithLoader 
+            label="Save"
+            loadingLabel="Saving..."
+            isLoading={autoSaving}
+            onClick={() => saveAnswersToServer()}
+            icon={<FaSave />}
+            variant="success"
+          />
           <div className="space-x-2">
             {currentQuestionIndex < questions.length - 1 && (<button onClick={() => setCurrentQuestionIndex(currentQuestionIndex + 1)} className="inline-flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Next <FaArrowRight /></button>)}
-            {currentQuestionIndex === questions.length - 1 && (<button onClick={() => handleSubmit()} disabled={submitting} className="inline-flex items-center gap-2 px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"><FaCheck /> {submitting ? 'Submitting...' : 'Submit'}</button>)}
+            {currentQuestionIndex === questions.length - 1 && (
+              <ButtonWithLoader 
+                label="Submit"
+                loadingLabel="Submitting..."
+                isLoading={submitting}
+                onClick={() => handleSubmit()}
+                icon={<FaCheck />}
+                variant="secondary"
+              />
+            )}
           </div>
         </div>
       </div>
