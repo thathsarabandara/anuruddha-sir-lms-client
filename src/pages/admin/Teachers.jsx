@@ -51,7 +51,7 @@ const AdminTeachers = () => {
     first_name: '',
     last_name: '',
     email: '',
-    contact_number: '',
+    phone: '',
     qualifications: '',
     subject_expertise: '',
     years_of_experience: '',
@@ -98,7 +98,7 @@ const AdminTeachers = () => {
         first_name: teacher.first_name,
         last_name: teacher.last_name,
         email: teacher.email,
-        contact_number: teacher.contact_number,
+        phone: teacher.phone,
         qualifications: teacher.qualifications,
         subject_expertise: teacher.subject_expertise,
         years_of_experience: teacher.years_of_experience,
@@ -242,17 +242,23 @@ const AdminTeachers = () => {
     setSuccess('');
     
     try {
-      await teacherAPI.editTeacherDetails(selectedTeacher.id, {
-        first_name: editFormData.first_name,
-        last_name: editFormData.last_name,
-        phone: editFormData.contact_number,
-        date_of_birth: editFormData.date_of_birth,
-        subject_expertise: editFormData.subject_expertise,
-        years_of_experience: editFormData.years_of_experience,
-        qualifications: editFormData.qualifications,
-        professional_bio: editFormData.professional_bio,
-        address: editFormData.address,
-      });
+      // Create FormData to handle file upload
+      const formData = new FormData();
+      formData.append('first_name', editFormData.first_name);
+      formData.append('last_name', editFormData.last_name);
+      formData.append('phone', editFormData.phone);
+      formData.append('subject_expertise', editFormData.subject_expertise);
+      formData.append('years_of_experience', editFormData.years_of_experience);
+      formData.append('qualifications', editFormData.qualifications);
+      formData.append('professional_bio', editFormData.professional_bio);
+      formData.append('address', editFormData.address);
+      
+      // Add profile picture only if a new one was selected
+      if (editFormData.profile_picture) {
+        formData.append('profile_picture', editFormData.profile_picture);
+      }
+      
+      await teacherAPI.editTeacherDetails(selectedTeacher.id, formData);
       
       // Update local state
       setTeachers(teachers.map(t => 
@@ -296,7 +302,7 @@ const AdminTeachers = () => {
       first_name: selectedTeacher.first_name || '',
       last_name: selectedTeacher.last_name || '',
       email: selectedTeacher.email || '',
-      contact_number: selectedTeacher.contact_number || '',
+      phone: selectedTeacher.phone || '',
       qualifications: selectedTeacher.qualifications || '',
       subject_expertise: selectedTeacher.subject_expertise || '',
       years_of_experience: selectedTeacher.years_of_experience || '',
@@ -321,18 +327,27 @@ const AdminTeachers = () => {
     setSuccess('');
     
     try {
-      const response = await teacherAPI.createTeacher({
-        first_name: createFormData.first_name,
-        last_name: createFormData.last_name,
-        email: createFormData.email,
-        phone: createFormData.contact_number,
-        date_of_birth: createFormData.date_of_birth || undefined,
-        subject_expertise: createFormData.subject_expertise,
-        years_of_experience: createFormData.years_of_experience,
-        qualifications: createFormData.qualifications,
-        professional_bio: createFormData.professional_bio,
-        address: createFormData.address,
-      });
+      // Create FormData to handle file upload
+      const formData = new FormData();
+      formData.append('first_name', createFormData.first_name);
+      formData.append('last_name', createFormData.last_name);
+      formData.append('email', createFormData.email);
+      formData.append('phone', createFormData.phone);
+      if (createFormData.date_of_birth) {
+        formData.append('date_of_birth', createFormData.date_of_birth);
+      }
+      formData.append('subject_expertise', createFormData.subject_expertise);
+      formData.append('years_of_experience', createFormData.years_of_experience);
+      formData.append('qualifications', createFormData.qualifications);
+      formData.append('professional_bio', createFormData.professional_bio);
+      formData.append('address', createFormData.address);
+      
+      // Add profile picture if provided
+      if (createFormData.profile_picture) {
+        formData.append('profile_picture', createFormData.profile_picture);
+      }
+      
+      const response = await teacherAPI.createTeacher(formData);
       
       // Add new teacher to list
       setTeachers([...teachers, response.data]);
@@ -719,7 +734,7 @@ const AdminTeachers = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Phone Number</label>
-                    <p className="text-gray-900 font-medium">{selectedTeacher.contact_number || 'N/A'}</p>
+                    <p className="text-gray-900 font-medium">{selectedTeacher.phone || 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Years of Experience</label>
@@ -816,10 +831,6 @@ const AdminTeachers = () => {
                     fullWidth
                   />
                 )}
-
-                <button onClick={closeModal} className="px-6 btn-outline py-2">
-                  Close
-                </button>
               </div>
             </div>
           </div>
