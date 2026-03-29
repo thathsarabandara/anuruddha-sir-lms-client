@@ -6,6 +6,7 @@ import { studentAPI } from '../../api/student';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 const AdminStudents = () => {
   const [students, setStudents] = useState([]);
@@ -720,65 +721,79 @@ const AdminStudents = () => {
               <div className="flex gap-3 pt-4 border-t">
                 { selectedStudent.account_status.is_active === false && selectedStudent.account_status.is_banned === false && (
                   <>
-                    <button 
+                    <ButtonWithLoader 
+                      label="Approve Student"
+                      loadingLabel="Approving..."
+                      isLoading={actionLoading}
                       onClick={() => handleApprove(selectedStudent.id)}
-                      disabled={actionLoading}
-                      className="flex-1 btn-primary flex items-center justify-center gap-2"
-                    >
-                      <FaCheck /> Approve Student
-                    </button>
-                    <button 
+                      icon={<FaCheck />}
+                      variant="success"
+                      fullWidth
+                    />
+                    <ButtonWithLoader 
+                      label="Reject"
+                      loadingLabel="Processing..."
+                      isLoading={actionLoading}
                       onClick={() => setShowRejectModal(true)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaTimes /> Reject
-                    </button>
+                      icon={<FaTimes />}
+                      variant="danger"
+                      fullWidth
+                    />
                   </>
                 )}
                 
                 {selectedStudent.account_status.is_active === true && selectedStudent.account_status.is_banned === false && (
                   <>
-                    <button 
+                    <ButtonWithLoader 
+                      label="Suspend Student"
+                      loadingLabel="Suspending..."
+                      isLoading={actionLoading}
                       onClick={() => setShowSuspendModal(true)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaBan /> Suspend Student
-                    </button>
-                    <button 
+                      icon={<FaBan />}
+                      variant="warning"
+                      fullWidth
+                    />
+                    <ButtonWithLoader 
+                      label="Edit Details"
+                      loadingLabel="Preparing..."
+                      isLoading={actionLoading}
                       onClick={openEditModal}
-                      disabled={actionLoading}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaEdit /> Edit Details
-                    </button>
-                    <button 
+                      icon={<FaEdit />}
+                      variant="info"
+                      fullWidth
+                    />
+                    <ButtonWithLoader 
+                      label="Reset Password"
+                      loadingLabel="Resetting..."
+                      isLoading={actionLoading}
                       onClick={() => handleResetPassword(selectedStudent.id)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaKey /> Reset Password
-                    </button>
+                      icon={<FaKey />}
+                      variant="secondary"
+                      fullWidth
+                    />
                   </>
                 )}
                 
                 {(selectedStudent.account_status.is_active === true && selectedStudent.account_status.is_banned === true) && (
                   <>
-                    <button 
+                    <ButtonWithLoader 
+                      label="Activate Student"
+                      loadingLabel="Activating..."
+                      isLoading={actionLoading}
                       onClick={() => handleActivate(selectedStudent.id)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaUndo /> Activate Student
-                    </button>
-                    <button 
+                      icon={<FaUndo />}
+                      variant="success"
+                      fullWidth
+                    />
+                    <ButtonWithLoader 
+                      label="Edit Details"
+                      loadingLabel="Preparing..."
+                      isLoading={actionLoading}
                       onClick={openEditModal}
-                      disabled={actionLoading}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaEdit /> Edit Details
-                    </button>
+                      icon={<FaEdit />}
+                      variant="info"
+                      fullWidth
+                    />
                   </>
                 )}
               </div>
@@ -805,13 +820,15 @@ const AdminStudents = () => {
               Ban will be permanent. You can activate the student later if needed.
             </p>
             <div className="flex gap-3 mt-4">
-              <button
+              <ButtonWithLoader
+                label="Confirm Reject"
+                loadingLabel="Rejecting..."
+                isLoading={actionLoading}
                 onClick={handleReject}
-                disabled={actionLoading || !reason.trim()}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg disabled:opacity-50"
-              >
-                {actionLoading ? 'Processing...' : 'Confirm Reject'}
-              </button>
+                disabled={!reason.trim()}
+                variant="danger"
+                fullWidth
+              />
               <button
                 onClick={() => {
                   setShowRejectModal(false);
@@ -842,13 +859,15 @@ const AdminStudents = () => {
               placeholder="Enter suspension reason..."
             />
             <div className="flex gap-3 mt-4">
-              <button
+              <ButtonWithLoader
+                label="Confirm Suspend"
+                loadingLabel="Suspending..."
+                isLoading={actionLoading}
                 onClick={handleSuspend}
-                disabled={actionLoading || !suspendReason.trim()}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg disabled:opacity-50"
-              >
-                {actionLoading ? 'Processing...' : 'Confirm Suspend'}
-              </button>
+                disabled={!suspendReason.trim()}
+                variant="warning"
+                fullWidth
+              />
               <button
                 onClick={() => {
                   setShowSuspendModal(false);
@@ -1038,13 +1057,14 @@ const AdminStudents = () => {
               </div>
               </div>
               <div className="flex gap-3 pt-4 border-t">
-                <button
+                <ButtonWithLoader
                   type="submit"
-                  disabled={actionLoading}
-                  className="flex-1 btn-primary disabled:opacity-50"
-                >
-                  {actionLoading ? 'Creating...' : 'Create Student'}
-                </button>
+                  label="Create Student"
+                  loadingLabel="Creating..."
+                  isLoading={actionLoading}
+                  variant="success"
+                  fullWidth
+                />
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
@@ -1214,13 +1234,14 @@ const AdminStudents = () => {
                 </div>
               </div>
               <div className="flex gap-3 pt-4 border-t">
-                <button
+                <ButtonWithLoader
                   type="submit"
-                  disabled={actionLoading}
-                  className="flex-1 btn-primary disabled:opacity-50"
-                >
-                  {actionLoading ? 'Updating...' : 'Update Student'}
-                </button>
+                  label="Update Student"
+                  loadingLabel="Updating..."
+                  isLoading={actionLoading}
+                  variant="success"
+                  fullWidth
+                />
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
