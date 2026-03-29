@@ -18,7 +18,16 @@ const AdminStudents = () => {
   
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  
+  // Individual loading states for each action
+  const [approveLoading, setApproveLoading] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
+  const [suspendLoading, setSuspendLoading] = useState(false);
+  const [activateLoading, setActivateLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -90,7 +99,7 @@ const AdminStudents = () => {
   };
 
   const handleApprove = async () => {
-    setActionLoading(true);
+    setApproveLoading(true);
     setError('');
     setSuccess('');
     
@@ -110,7 +119,7 @@ const AdminStudents = () => {
       setError(err.response?.data?.message || 'Failed to approve student');
       showNotification(err.response?.data?.message || 'Failed to approve student', 'error');
     } finally {
-      setActionLoading(false);
+      setApproveLoading(false);
     }
   };
 
@@ -121,7 +130,7 @@ const AdminStudents = () => {
       return;
     }
     
-    setActionLoading(true);
+    setRejectLoading(true);
     setError('');
     setSuccess('');
     
@@ -146,7 +155,7 @@ const AdminStudents = () => {
       setError(err.response?.data?.message || 'Failed to reject student');
       showNotification(err.response?.data?.message || 'Failed to reject student', 'error');
     } finally {
-      setActionLoading(false);
+      setRejectLoading(false);
     }
   };
 
@@ -157,7 +166,7 @@ const AdminStudents = () => {
       return;
     }
     
-    setActionLoading(true);
+    setSuspendLoading(true);
     setError('');
     setSuccess('');
     
@@ -182,12 +191,12 @@ const AdminStudents = () => {
       setError(err.response?.data?.message || 'Failed to suspend student');
       showNotification(err.response?.data?.message || 'Failed to suspend student', 'error');
     } finally {
-      setActionLoading(false);
+      setSuspendLoading(false);
     }
   };
 
   const handleActivate = async () => {
-    setActionLoading(true);
+    setActivateLoading(true);
     setError('');
     setSuccess('');
     
@@ -206,7 +215,7 @@ const AdminStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to activate student');
     } finally {
-      setActionLoading(false);
+      setActivateLoading(false);
     }
   };
 
@@ -219,7 +228,7 @@ const AdminStudents = () => {
       return;
     }
     
-    setActionLoading(true);
+    setCreateLoading(true);
     setError('');
     setSuccess('');
     
@@ -258,14 +267,14 @@ const AdminStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create student');
     } finally {
-      setActionLoading(false);
+      setCreateLoading(false);
     }
   };
 
   const handleEditStudent = async (e) => {
     e.preventDefault();
     
-    setActionLoading(true);
+    setEditLoading(true);
     setError('');
     setSuccess('');
     
@@ -296,12 +305,12 @@ const AdminStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update student');
     } finally {
-      setActionLoading(false);
+      setEditLoading(false);
     }
   };
 
   const handleResetPassword = async () => {
-    setActionLoading(true);
+    setResetPasswordLoading(true);
     setError('');
     setSuccess('');
     
@@ -317,7 +326,7 @@ const AdminStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reset password');
     } finally {
-      setActionLoading(false);
+      setResetPasswordLoading(false);
     }
   };
 
@@ -544,9 +553,10 @@ const AdminStudents = () => {
                 <button
                   onClick={() => {
                     setSelectedStudent(student);
+                    setResetPasswordLoading(false);
                     handleResetPassword();
                   }}
-                  disabled={actionLoading}
+                  disabled={resetPasswordLoading}
                   className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
                   title="Reset password"
                 >
@@ -724,7 +734,7 @@ const AdminStudents = () => {
                     <ButtonWithLoader 
                       label="Approve Student"
                       loadingLabel="Approving..."
-                      isLoading={actionLoading}
+                      isLoading={approveLoading}
                       onClick={() => handleApprove(selectedStudent.id)}
                       icon={<FaCheck />}
                       variant="success"
@@ -733,7 +743,7 @@ const AdminStudents = () => {
                     <ButtonWithLoader 
                       label="Reject"
                       loadingLabel="Processing..."
-                      isLoading={actionLoading}
+                      isLoading={rejectLoading}
                       onClick={() => setShowRejectModal(true)}
                       icon={<FaTimes />}
                       variant="danger"
@@ -747,7 +757,7 @@ const AdminStudents = () => {
                     <ButtonWithLoader 
                       label="Suspend Student"
                       loadingLabel="Suspending..."
-                      isLoading={actionLoading}
+                      isLoading={suspendLoading}
                       onClick={() => setShowSuspendModal(true)}
                       icon={<FaBan />}
                       variant="warning"
@@ -756,7 +766,7 @@ const AdminStudents = () => {
                     <ButtonWithLoader 
                       label="Edit Details"
                       loadingLabel="Preparing..."
-                      isLoading={actionLoading}
+                      isLoading={editLoading}
                       onClick={openEditModal}
                       icon={<FaEdit />}
                       variant="info"
@@ -765,7 +775,7 @@ const AdminStudents = () => {
                     <ButtonWithLoader 
                       label="Reset Password"
                       loadingLabel="Resetting..."
-                      isLoading={actionLoading}
+                      isLoading={resetPasswordLoading}
                       onClick={() => handleResetPassword(selectedStudent.id)}
                       icon={<FaKey />}
                       variant="secondary"
@@ -779,7 +789,7 @@ const AdminStudents = () => {
                     <ButtonWithLoader 
                       label="Activate Student"
                       loadingLabel="Activating..."
-                      isLoading={actionLoading}
+                      isLoading={activateLoading}
                       onClick={() => handleActivate(selectedStudent.id)}
                       icon={<FaUndo />}
                       variant="success"
@@ -788,7 +798,7 @@ const AdminStudents = () => {
                     <ButtonWithLoader 
                       label="Edit Details"
                       loadingLabel="Preparing..."
-                      isLoading={actionLoading}
+                      isLoading={editLoading}
                       onClick={openEditModal}
                       icon={<FaEdit />}
                       variant="info"
@@ -823,7 +833,7 @@ const AdminStudents = () => {
               <ButtonWithLoader
                 label="Confirm Reject"
                 loadingLabel="Rejecting..."
-                isLoading={actionLoading}
+                isLoading={rejectLoading}
                 onClick={handleReject}
                 disabled={!reason.trim()}
                 variant="danger"
@@ -834,7 +844,7 @@ const AdminStudents = () => {
                   setShowRejectModal(false);
                   setreason('');
                 }}
-                disabled={actionLoading}
+                disabled={rejectLoading}
                 className="flex-1 btn-outline"
               >
                 Cancel
@@ -862,7 +872,7 @@ const AdminStudents = () => {
               <ButtonWithLoader
                 label="Confirm Suspend"
                 loadingLabel="Suspending..."
-                isLoading={actionLoading}
+                isLoading={suspendLoading}
                 onClick={handleSuspend}
                 disabled={!suspendReason.trim()}
                 variant="warning"
@@ -873,7 +883,7 @@ const AdminStudents = () => {
                   setShowSuspendModal(false);
                   setSuspendReason('');
                 }}
-                disabled={actionLoading}
+                disabled={suspendLoading}
                 className="flex-1 btn-outline"
               >
                 Cancel
@@ -1061,14 +1071,14 @@ const AdminStudents = () => {
                   type="submit"
                   label="Create Student"
                   loadingLabel="Creating..."
-                  isLoading={actionLoading}
+                  isLoading={createLoading}
                   variant="success"
                   fullWidth
                 />
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  disabled={actionLoading}
+                  disabled={createLoading}
                   className="flex-1 btn-outline"
                 >
                   Cancel
@@ -1238,14 +1248,14 @@ const AdminStudents = () => {
                   type="submit"
                   label="Update Student"
                   loadingLabel="Updating..."
-                  isLoading={actionLoading}
+                  isLoading={editLoading}
                   variant="success"
                   fullWidth
                 />
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  disabled={actionLoading}
+                  disabled={editLoading}
                   className="flex-1 btn-outline"
                 >
                   Cancel
