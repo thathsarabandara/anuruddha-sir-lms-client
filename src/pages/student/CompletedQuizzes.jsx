@@ -14,6 +14,7 @@ import {
   FaCalendarAlt,
 } from 'react-icons/fa';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 const dummyCompletedQuizzes = [
   {
@@ -43,6 +44,8 @@ const CompletedQuizzes = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [quizTypeFilter, setQuizTypeFilter] = useState('all');
+  const [viewingResultsId, setViewingResultsId] = useState(null);
+  const [retakingQuizId, setRetakingQuizId] = useState(null);
   const [stats, setStats] = useState({
     totalCompleted: 0,
     averageScore: 0,
@@ -107,11 +110,13 @@ const CompletedQuizzes = () => {
   };
 
   const handleViewResults = (quizId, attemptId) => {
-    navigate(`/student/quiz/${quizId}/results/${attemptId}`);
+    setViewingResultsId(quizId);
+    setTimeout(() => navigate(`/student/quiz/${quizId}/results/${attemptId}`), 300);
   };
 
   const handleRetakeQuiz = (quizId) => {
-    navigate(`/student/quiz/${quizId}/take`);
+    setRetakingQuizId(quizId);
+    setTimeout(() => navigate(`/student/quiz/${quizId}/take`), 300);
   };
 
   const getQuizTypeColor = (type) => {
@@ -378,20 +383,26 @@ const CompletedQuizzes = () => {
 
                     {/* Action Buttons */}
                     <div className="flex flex-col gap-2 min-w-fit">
-                      <button
+                      <ButtonWithLoader
+                        label="View Results"
+                        loadingLabel="Loading..."
+                        isLoading={viewingResultsId === quiz.id}
                         onClick={() => handleViewResults(quiz.id, quiz.latest_attempt?.id)}
                         disabled={!quiz.latest_attempt}
-                        className="px-4 py-2 bg-blue-500 text-white rounded-lg font-semibold hover:bg-blue-600 transition-colors duration-300 flex items-center justify-center gap-2 disabled:bg-slate-300 disabled:cursor-not-allowed"
-                      >
-                        <FaEye className="text-sm" /> View Results
-                      </button>
+                        variant="primary"
+                        size="sm"
+                        icon={<FaEye className="text-sm" />}
+                      />
                       {quiz.total_attempts < quiz.max_attempts && (
-                        <button
+                        <ButtonWithLoader
+                          label="Retake"
+                          loadingLabel="Loading..."
+                          isLoading={retakingQuizId === quiz.id}
                           onClick={() => handleRetakeQuiz(quiz.id)}
-                          className="px-4 py-2 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition-colors duration-300 flex items-center justify-center gap-2"
-                        >
-                          <FaRotateRight className="text-sm" /> Retake
-                        </button>
+                          variant="success"
+                          size="sm"
+                          icon={<FaRotateRight className="text-sm" />}
+                        />
                       )}
                     </div>
                   </div>
