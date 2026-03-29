@@ -233,18 +233,27 @@ const AdminStudents = () => {
     setSuccess('');
     
     try {
-      const response = await studentAPI.createStudent({
-        first_name: createFormData.first_name,
-        last_name: createFormData.last_name,
-        email: createFormData.email,
-        phone: createFormData.phone,
-        date_of_birth: createFormData.date_of_birth || undefined,
-        grade_level: createFormData.grade_level,
-        school: createFormData.school,
-        address: createFormData.address,
-        parent_name: createFormData.parent_name,
-        parent_contact: createFormData.parent_contact,
-      });
+      // Create FormData to handle file upload
+      const formData = new FormData();
+      formData.append('first_name', createFormData.first_name);
+      formData.append('last_name', createFormData.last_name);
+      formData.append('email', createFormData.email);
+      formData.append('phone', createFormData.phone);
+      if (createFormData.date_of_birth) {
+        formData.append('date_of_birth', createFormData.date_of_birth);
+      }
+      formData.append('grade_level', createFormData.grade_level);
+      formData.append('school', createFormData.school);
+      formData.append('address', createFormData.address);
+      formData.append('parent_name', createFormData.parent_name);
+      formData.append('parent_contact', createFormData.parent_contact);
+      
+      // Add profile picture if provided
+      if (createFormData.profile_picture) {
+        formData.append('profile_picture', createFormData.profile_picture);
+      }
+      
+      const response = await studentAPI.createStudent(formData);
       
       // Add new student to list
       setStudents([...students, response.data]);
@@ -279,17 +288,24 @@ const AdminStudents = () => {
     setSuccess('');
     
     try {
-      await studentAPI.editStudentDetails(selectedStudent.id, {
-        first_name: editFormData.first_name,
-        last_name: editFormData.last_name,
-        phone: editFormData.phone,
-        date_of_birth: editFormData.date_of_birth,
-        grade_level: editFormData.grade_level,
-        school: editFormData.school,
-        address: editFormData.address,
-        parent_name: editFormData.parent_name,
-        parent_contact: editFormData.parent_contact,
-      });
+      // Create FormData to handle file upload
+      const formData = new FormData();
+      formData.append('first_name', editFormData.first_name);
+      formData.append('last_name', editFormData.last_name);
+      formData.append('phone', editFormData.phone);
+      formData.append('date_of_birth', editFormData.date_of_birth);
+      formData.append('grade_level', editFormData.grade_level);
+      formData.append('school', editFormData.school);
+      formData.append('address', editFormData.address);
+      formData.append('parent_name', editFormData.parent_name);
+      formData.append('parent_contact', editFormData.parent_contact);
+      
+      // Add profile picture only if a new one was selected
+      if (editFormData.profile_picture) {
+        formData.append('profile_picture', editFormData.profile_picture);
+      }
+      
+      await studentAPI.editStudentDetails(selectedStudent.id, formData);
       
       // Update in students list
       const updatedStudent = {
