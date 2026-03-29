@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { FaCheckCircle, FaTimesCircle, FaSpinner, FaExclamationTriangle } from 'react-icons/fa';
+import ButtonWithLoader from './common/ButtonWithLoader';
 
 /**
  * Integration Status Card
@@ -59,29 +60,35 @@ export const IntegrationStatusCard = ({
       {/* Action buttons */}
       <div className="flex gap-2">
         {!isConnected ? (
-          <button
+          <ButtonWithLoader
+            label="Connect"
+            loadingLabel="Connecting..."
+            isLoading={isLoading}
             onClick={onConnect}
-            disabled={isLoading}
-            className="flex-1 btn-primary text-sm py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {isLoading ? 'Connecting...' : 'Connect'}
-          </button>
+            variant="primary"
+            className="flex-1 text-sm"
+            fullWidth
+          />
         ) : (
           <>
-            <button
+            <ButtonWithLoader
+              label="Test Connection"
+              loadingLabel="Testing..."
+              isLoading={isLoading}
               onClick={onTest}
-              disabled={isLoading}
-              className="flex-1 btn-secondary text-sm py-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? 'Testing...' : 'Test Connection'}
-            </button>
-            <button
+              variant="secondary"
+              className="flex-1 text-sm"
+              fullWidth
+            />
+            <ButtonWithLoader
+              label="Disconnect"
+              loadingLabel="Disconnecting..."
+              isLoading={isLoading}
               onClick={onDisconnect}
-              disabled={isLoading}
-              className="flex-1 px-4 py-2 bg-red-100 text-red-700 border-2 border-red-300 rounded-lg hover:bg-red-200 text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              Disconnect
-            </button>
+              variant="danger"
+              className="flex-1 text-sm"
+              fullWidth
+            />
           </>
         )}
       </div>
