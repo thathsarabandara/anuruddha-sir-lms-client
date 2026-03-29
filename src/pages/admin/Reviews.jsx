@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
-import { FaCheckCircle, FaTimes, FaFilter, FaRefresh } from 'react-icons/fa';
+import { FaCheckCircle, FaTimes, FaFilter, FaRefresh, FaSync } from 'react-icons/fa';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import ReviewsList from '../../components/common/ReviewsList';
 
 
 const AdminReviewModeration = () => {
   const [notification, setNotification] = useState(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const showNotification = (message, type = 'info', duration = 5000) => {
     setNotification({ message, type, duration });
@@ -15,8 +17,18 @@ const AdminReviewModeration = () => {
   const [courseFilter, setCourseFilter] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // TODO: Add API call to refresh reviews
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setRefreshKey(prev => prev + 1);
+      showNotification('Reviews refreshed successfully', 'success');
+    } catch (error) {
+      showNotification('Failed to refresh reviews: ' + error.message, 'error');
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   return (
@@ -110,12 +122,14 @@ const AdminReviewModeration = () => {
               />
             </div>
 
-            <button
+            <ButtonWithLoader
+              label="Refresh"
+              loadingLabel="Refreshing..."
+              isLoading={refreshing}
               onClick={handleRefresh}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2 font-medium"
-            >
-              <FaRefresh /> Refresh
-            </button>
+              icon={<FaSync />}
+              variant="primary"
+            />
           </div>
         </div>
 
