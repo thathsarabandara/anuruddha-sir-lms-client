@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaLock, FaEye, FaEyeSlash, FaGraduationCap, FaCheckCircle, FaTimes, FaCheck } from 'react-icons/fa';
 import { authAPI } from '../../api';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import { ROUTES } from '../../utils/constants';
 
 const ResetPassword = () => {
@@ -453,24 +454,15 @@ const ResetPassword = () => {
             )}
           </div>
 
-          <button
+          <ButtonWithLoader
             type="submit"
-            disabled={loading}
-            className="w-full text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:scale-[1.01] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none mt-6"
+            label="Reset Password"
+            loadingLabel="Resetting Password..."
+            isLoading={loading}
+            fullWidth
             style={{ background: gradientStyles[currentGradient] }}
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                Resetting Password...
-              </span>
-            ) : (
-              'Reset Password'
-            )}
-          </button>
+            className="text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:scale-[1.01] disabled:transform-none mt-6"
+          />
         </form>
       </div>
     </div>
