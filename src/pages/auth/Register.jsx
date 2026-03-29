@@ -134,12 +134,12 @@ const Register = () => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setFieldErrors(prev => ({ ...prev, profilePicture: 'File size must be less than 5MB' }));
+        setFieldErrors(prev => ({ ...prev, profile_picture: 'File size must be less than 5MB' }));
         return;
       }
       
       if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
-        setFieldErrors(prev => ({ ...prev, profilePicture: 'Only image files are allowed' }));
+        setFieldErrors(prev => ({ ...prev, profile_picture: 'Only image files are allowed' }));
         return;
       }
 
@@ -150,7 +150,7 @@ const Register = () => {
           profile_picture: file,
           profilePicturePreview: reader.result,
         }));
-        setFieldErrors(prev => ({ ...prev, profilePicture: '' }));
+        setFieldErrors(prev => ({ ...prev, profile_picture: '' }));
       };
       reader.readAsDataURL(file);
     }
@@ -331,8 +331,8 @@ const Register = () => {
       errors.confirmPassword = 'Passwords do not match';
     }
 
-    if (!formData.profilePicture) {
-      errors.profilePicture = 'Profile picture is required';
+    if (!formData.profile_picture) {
+      errors.profile_picture = 'Profile picture is required';
     }
 
     if (formData.role === 'teacher') {
@@ -530,10 +530,10 @@ const Register = () => {
                         </label>
                       </div>
                     </div>
-                    {fieldErrors.profilePicture && (
+                    {fieldErrors.profile_picture && (
                       <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
                         <FaTimes className="flex-shrink-0" />
-                        {fieldErrors.profilePicture}
+                        {fieldErrors.profile_picture}
                       </p>
                     )}
                   </div>
