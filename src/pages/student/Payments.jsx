@@ -3,10 +3,13 @@ import { FaCheck, FaClock, FaCreditCard, FaExclamationTriangle, FaGraduationCap,
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 const StudentPayments = () => {
   const [selectedTab, setSelectedTab] = useState('history');
   const [searchTerm, setSearchTerm] = useState('');
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [payingId, setPayingId] = useState(null);
 
   const paymentsMetricsConfig = [
     {
@@ -256,9 +259,17 @@ const StudentPayments = () => {
               key: 'actions',
               label: 'Actions',
               render: (_, payment) => (
-                <button onClick={() => console.log('Download receipt:', payment.invoiceNo)} className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs transition whitespace-nowrap">
-                  Download
-                </button>
+                <ButtonWithLoader
+                  label="Download"
+                  loadingLabel="Downloading..."
+                  isLoading={downloadingId === payment.id}
+                  onClick={() => {
+                    setDownloadingId(payment.id);
+                    setTimeout(() => setDownloadingId(null), 1000);
+                  }}
+                  variant="primary"
+                  size="sm"
+                />
               ),
             },
           ]}
@@ -320,9 +331,17 @@ const StudentPayments = () => {
                     </div>
                   </div>
                 </div>
-                <button className="btn-primary px-6">
-                  Pay Now
-                </button>
+                <ButtonWithLoader
+                  label="Pay Now"
+                  loadingLabel="Processing..."
+                  isLoading={payingId === payment.id}
+                  onClick={() => {
+                    setPayingId(payment.id);
+                    setTimeout(() => setPayingId(null), 1000);
+                  }}
+                  variant="primary"
+                  size="md"
+                />
               </div>
             </div>
           ))}
