@@ -15,6 +15,7 @@ import {
 import Notification from '../../components/common/Notification';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 const paymentsMetricsConfig = [
   {
@@ -313,20 +314,19 @@ const PaymentDetailsModal = ({ payment, onClose, onAction, actionLoading, onShow
                   )}
 
                   <div className="grid grid-cols-2 gap-3">
-                    <button
+                    <ButtonWithLoader
+                      label="Approve"
+                      loadingLabel="Approving..."
+                      isLoading={actionLoading}
                       onClick={handleApprove}
-                      disabled={actionLoading}
-                      className="flex items-center justify-center space-x-2 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white rounded-lg py-3 font-medium transition"
-                    >
-                      {actionLoading ? (
-                        <FaSpinner className="animate-spin" />
-                      ) : (
-                        <>
-                          <FaCheck /> Approve
-                        </>
-                      )}
-                    </button>
-                    <button
+                      icon={<FaCheck />}
+                      variant="success"
+                      fullWidth
+                    />
+                    <ButtonWithLoader
+                      label="Reject"
+                      loadingLabel="Rejecting..."
+                      isLoading={actionLoading}
                       onClick={() => {
                         const reason = prompt('Enter rejection reason:');
                         if (reason) {
@@ -334,17 +334,10 @@ const PaymentDetailsModal = ({ payment, onClose, onAction, actionLoading, onShow
                           handleReject();
                         }
                       }}
-                      disabled={actionLoading}
-                      className="flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-lg py-3 font-medium transition"
-                    >
-                      {actionLoading ? (
-                        <FaSpinner className="animate-spin" />
-                      ) : (
-                        <>
-                          <FaTimes /> Reject
-                        </>
-                      )}
-                    </button>
+                      icon={<FaTimes />}
+                      variant="danger"
+                      fullWidth
+                    />
                   </div>
                 </>
               ) : null}
