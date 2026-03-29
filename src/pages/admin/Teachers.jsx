@@ -849,6 +849,44 @@ const AdminTeachers = () => {
             </div>
 
             <form onSubmit={handleUpdateProfile} className="space-y-4">
+              {/* Profile Picture Upload */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Profile Picture</label>
+                <div className="flex items-center gap-4">
+                  {editFormData.profile_picture_preview ? (
+                    <img 
+                      src={editFormData.profile_picture_preview} 
+                      alt="Preview"
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
+                  ) : selectedTeacher.profile_picture ? (
+                    <img 
+                      src={selectedTeacher.profile_picture} 
+                      alt="Current"
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
+                      <FaGraduationCap className="text-2xl text-gray-400" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setEditFormData({...editFormData, profile_picture: file, profile_picture_preview: URL.createObjectURL(file)});
+                        }
+                      }}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Leave empty to keep current picture</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
