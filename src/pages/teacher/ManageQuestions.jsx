@@ -125,15 +125,37 @@ const ManageQuestions = () => {
     }
   };
 
-  const handleQuestionSaved = (formData, quizId) => {
-    fetchQuizData();
-    setShowQuestionModal(false);
-    quizAPI.createQuestions(quizId, formData)
-    setEditingQuestion(null);
-    setNotification({
-      type: 'success',
-      message: 'Question saved successfully',
-    });
+  const handleQuestionSaved = async (formData, quizId) => {
+    try {
+      // Check if we're editing or creating
+      if (editingQuestion) {
+        // Update existing question
+        await quizAPI.updateQuestion(editingQuestion.question_id, formData);
+        setNotification({
+          type: 'success',
+          message: 'Question updated successfully',
+        });
+      } else {
+        // Create new question
+        await quizAPI.createQuestions(quizId, formData);
+        setNotification({
+          type: 'success',
+          message: 'Question created successfully',
+        });
+      }
+      
+      // Refresh questions list
+      fetchQuizData();
+      setShowQuestionModal(false);
+      setEditingQuestion(null);
+    } catch (err) {
+      console.error('Error saving question:', err);
+      setNotification({
+        type: 'error',
+        message: err.message || 'Failed to save question',
+      });
+      throw err;
+    }
   };
 
   // Drag and Drop Handlers
