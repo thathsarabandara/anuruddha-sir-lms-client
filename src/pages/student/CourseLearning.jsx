@@ -22,6 +22,7 @@ import VideoPlayer from '../../components/VideoPlayer';
 import PDFViewer from '../../components/PDFViewer';
 import SectionProgress from '../../components/SectionProgress';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 // Dummy Course Data
 const getDummyCourseData = () => ({
@@ -257,6 +258,8 @@ const StudentCourseLearning = () => {
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
   const [showPDFViewer, setShowPDFViewer] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [downloadingId, setDownloadingId] = useState(null);
+  const [markingCompleteId, setMarkingCompleteId] = useState(null);
 
   const showNotification = (message, type = 'info', duration = 5000) => {
     setNotification({ message, type, duration });
@@ -787,27 +790,43 @@ const StudentCourseLearning = () => {
                   {/* Actions */}
                   <div className="flex flex-wrap gap-3">
                     {!completedLessons.has(currentLesson.id) && (
-                      <button
-                        onClick={() => markLessonComplete(currentLesson)}
-                        className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
-                      >
-                        <FaCheck size={14} /> Mark Complete
-                      </button>
+                      <ButtonWithLoader
+                        label="Mark Complete"
+                        loadingLabel="Marking..."
+                        isLoading={markingCompleteId === currentLesson.id}
+                        onClick={() => {
+                          setMarkingCompleteId(currentLesson.id);
+                          setTimeout(() => {
+                            markLessonComplete(currentLesson);
+                            setMarkingCompleteId(null);
+                          }, 500);
+                        }}
+                        variant="success"
+                        size="md"
+                        icon={<FaCheck size={14} />}
+                      />
                     )}
                     {currentLesson.documentUrl && (
-                      <button
+                      <ButtonWithLoader
+                        label="Download"
+                        loadingLabel="Downloading..."
+                        isLoading={downloadingId === currentLesson.id}
                         onClick={() => {
-                          const link = document.createElement('a');
-                          link.href = currentLesson.documentUrl;
-                          link.download = currentLesson.title || 'document';
-                          document.body.appendChild(link);
-                          link.click();
-                          document.body.removeChild(link);
+                          setDownloadingId(currentLesson.id);
+                          setTimeout(() => {
+                            const link = document.createElement('a');
+                            link.href = currentLesson.documentUrl;
+                            link.download = currentLesson.title || 'document';
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            setDownloadingId(null);
+                          }, 300);
                         }}
-                        className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
-                      >
-                        <FaDownload size={14} /> Download
-                      </button>
+                        variant="primary"
+                        size="md"
+                        icon={<FaDownload size={14} />}
+                      />
                     )}
                     {currentLesson.quiz_id && (
                       <button
