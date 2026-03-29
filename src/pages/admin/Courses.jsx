@@ -3,6 +3,7 @@ import { FaBook, FaCalendar, FaCheck, FaCheckCircle, FaTimes, FaEye, FaTrash, Fa
 import { CgSandClock } from 'react-icons/cg';
 import Notification from '../../components/common/Notification';
 import StatCard from '../../components/common/StatCard';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import CourseCard from '../../components/common/CourseCard';
 
 const AdminCourses = () => {
@@ -384,22 +385,24 @@ const AdminCourses = () => {
               <div className="flex flex-col space-y-3 pt-4">
                 {!selectedCourse.is_approved ? (
                   <>
-                    <button
+                    <ButtonWithLoader
+                      label="Approve Course"
+                      loadingLabel="Approving..."
+                      isLoading={actionLoading}
                       onClick={() => handleApproveCourse(selectedCourse.id)}
-                      disabled={actionLoading}
-                      className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-lg py-3 font-medium flex items-center justify-center"
-                    >
-                      <FaCheck className="mr-2" />
-                      Approve Course
-                    </button>
-                    <button
+                      icon={<FaCheck />}
+                      variant="success"
+                      fullWidth
+                    />
+                    <ButtonWithLoader
+                      label="Reject Course"
+                      loadingLabel="Rejecting..."
+                      isLoading={actionLoading}
                       onClick={() => handleRejectCourse(selectedCourse.id)}
-                      disabled={actionLoading}
-                      className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white rounded-lg py-3 font-medium flex items-center justify-center"
-                    >
-                      <FaTimes className="mr-2" />
-                      Reject Course
-                    </button>
+                      icon={<FaTimes />}
+                      variant="danger"
+                      fullWidth
+                    />
                   </>
                 ) : (
                   <>
@@ -413,37 +416,35 @@ const AdminCourses = () => {
                       >
                         Set Commission
                       </button>
-                      <button
+                <button
                         onClick={() => handleToggleEnrollments(selectedCourse.id, selectedCourse.enrollments_enabled)}
                         disabled={actionLoading}
                         className={`flex-1 rounded-lg py-3 font-medium ${
                           selectedCourse.enrollments_enabled
                             ? 'bg-red-600 hover:bg-red-700 text-white'
                             : 'bg-green-600 hover:bg-green-700 text-white'
-                        }`}
+                        } disabled:opacity-50`}
                       >
                         {selectedCourse.enrollments_enabled ? 'Disable Enrollments' : 'Enable Enrollments'}
                       </button>
                     </div>
-                    <button
+                    <ButtonWithLoader
+                      label={selectedCourse.is_featured ? 'Unfeature Course' : 'Feature Course'}
+                      loadingLabel={selectedCourse.is_featured ? 'Unfeaturng...' : 'Featuring...'}
+                      isLoading={actionLoading}
                       onClick={() => handleFeatureCourse(selectedCourse.id, selectedCourse.is_featured)}
-                      disabled={actionLoading}
-                      className={`w-full rounded-lg py-3 font-medium ${
-                        selectedCourse.is_featured
-                          ? 'bg-gray-600 hover:bg-gray-700 text-white'
-                          : 'bg-yellow-600 hover:bg-yellow-700 text-white'
-                      }`}
-                    >
-                      {selectedCourse.is_featured ? 'Unfeature Course' : 'Feature Course'}
-                    </button>
-                    <button
+                      variant={selectedCourse.is_featured ? 'secondary' : 'warning'}
+                      fullWidth
+                    />
+                    <ButtonWithLoader
+                      label="Delete Course"
+                      loadingLabel="Deleting..."
+                      isLoading={actionLoading}
                       onClick={() => handleDeleteCourse(selectedCourse.id)}
-                      disabled={actionLoading}
-                      className="w-full bg-gray-600 hover:bg-gray-700 disabled:opacity-50 text-white rounded-lg py-3 font-medium flex items-center justify-center"
-                    >
-                      <FaTrash className="mr-2" />
-                      Delete Course
-                    </button>
+                      icon={<FaTrash />}
+                      variant="danger"
+                      fullWidth
+                    />
                   </>
                 )}
                 <button
@@ -480,13 +481,14 @@ const AdminCourses = () => {
                 <p className="text-xs text-gray-500 mt-1">Enter a value between 0 and 100</p>
               </div>
               <div className="flex gap-3">
-                <button
+                <ButtonWithLoader
                   type="submit"
-                  disabled={actionLoading}
-                  className="flex-1 btn-primary py-2 disabled:opacity-50"
-                >
-                  {actionLoading ? 'Saving...' : 'Save'}
-                </button>
+                  label="Save"
+                  loadingLabel="Saving..."
+                  isLoading={actionLoading}
+                  variant="success"
+                  fullWidth
+                />
                 <button
                   type="button"
                   onClick={() => {
