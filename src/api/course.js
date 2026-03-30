@@ -338,6 +338,21 @@ export const courseAPI = {
     axiosInstance.get(`/courses/${courseId}/analytics`),
 
   /**
+   * Get course statistics (sections, lessons, students, rating)
+   * @param {string} courseId - Course ID
+   * @returns {Promise} Course statistics data
+   */
+  getCourseStats: (courseId) =>
+    axiosInstance.get(`/courses/${courseId}/stats`),
+
+  /**
+   * Get teacher dashboard statistics
+   * @returns {Promise} Dashboard statistics (total courses, active courses, students, revenue)
+   */
+  getTeacherDashboardStats: () =>
+    axiosInstance.get(`/users/teacher-dashboard/stats`),
+
+  /**
    * Get student progress analytics
    * @param {string} courseId - Course ID
    * @returns {Promise} Student progress data
