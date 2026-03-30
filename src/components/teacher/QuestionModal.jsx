@@ -11,7 +11,7 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
     difficulty: question?.difficulty || 'medium',
     category: question?.category || '',
     question_order: question?.question_order || null,
-    image: null,
+    image: question?.image_url ? null : null,
     existing_image: question?.image || null,
     remove_image: false,
     options: question?.options?.length > 0 ? question.options : [
@@ -21,7 +21,7 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
   });
 
   const [formData, setFormData] = useState(getInitialFormData);
-  const [imagePreview, setImagePreview] = useState(question?.image || null);
+  const [imagePreview, setImagePreview] =useState(question.image_url || null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -243,15 +243,18 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
             <label className="block text-xs font-semibold text-gray-700 uppercase tracking-wide mb-2">Question Image (Optional)</label>
             <div className="space-y-3">
               {imagePreview ? (
-                <div className="relative rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50">
+                <div className="relative rounded-lg overflow-hidden border-2 border-gray-200 bg-gray-50 group">
                   <img 
                     src={imagePreview} 
                     alt="Question preview" 
                     className="w-full h-48 object-contain p-2"
+                    onError={(e) => {
+                      e.target.alt = 'Image failed to load';
+                    }}
                   />
-                  <div className="absolute top-2 right-2 flex gap-2">
-                    <label className="px-3 py-1.5 bg-blue-500 text-white text-xs font-medium rounded-lg hover:bg-blue-600 cursor-pointer transition-colors">
-                      Change
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <label className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 cursor-pointer transition-colors shadow-lg">
+                      Change Image
                       <input
                         type="file"
                         accept="image/*"
@@ -262,9 +265,9 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
                     <button
                       type="button"
                       onClick={handleRemoveImage}
-                      className="px-3 py-1.5 bg-red-500 text-white text-xs font-medium rounded-lg hover:bg-red-600 transition-colors"
+                      className="px-4 py-2 bg-red-500 text-white text-sm font-medium rounded-lg hover:bg-red-600 transition-colors shadow-lg"
                     >
-                      Remove
+                      Remove Image
                     </button>
                   </div>
                 </div>
