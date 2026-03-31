@@ -1,45 +1,38 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaBook, FaUsers, FaDollarSign, FaVideo, FaCheckCircle, FaClock, FaChartLine } from 'react-icons/fa';
+import { FaPlus, FaBook, FaUsers, FaDollarSign, FaCheckCircle } from 'react-icons/fa';
 import { BiLoader } from 'react-icons/bi';
 import StatCard from '../../components/common/StatCard';
 import CourseCard from '../../components/common/CourseCard';
 import CreateCourseForm from '../../components/teacher/CreateCourseForm';
 import Notification from '../../components/common/Notification';
+import { courseAPI } from '../../api/course';
+import {
+  COURSE_SUBJECT_OPTIONS,
+  COURSE_GRADE_LEVEL_OPTIONS,
+  COURSE_TYPE_OPTIONS,
+} from '../../utils/courseOptions';
+
+const getErrorMessage = (err, fallback = 'Something went wrong') =>
+  err?.response?.data?.message || err?.response?.data?.error || err?.message || fallback;
 
 const TeacherCourses = () => {
   const navigate = useNavigate();
-  // Dummy data
-  const dummyCourses = [
-    { id: 1, title: 'Advanced Python', description: 'Learn advanced Python', subject_id: 1, status: 'PUBLISHED', students: 45, revenue: 2250, price: 49.99 },
-    { id: 2, title: 'Web Development 101', description: 'Introduction to web dev', subject_id: 2, status: 'PUBLISHED', students: 32, revenue: 1280, price: 39.99 },
-    { id: 3, title: 'Mobile Apps with Flutter', description: 'Flutter development', subject_id: 3, status: 'DRAFT', students: 0, revenue: 0, price: 59.99 },
-  ];
 
-  const dummySubjects = [
-    { id: 1, name: 'Programming' },
-    { id: 2, name: 'Web Development' },
-    { id: 3, name: 'Mobile Apps' },
-  ];
-
-  const dummyGradeLevels = [
-    { id: 1, name: '9-10' },
-    { id: 2, name: '10-12' },
-  ];
-
-  const dummyCategories = [
-    { id: 1, name: 'Technology' },
-    { id: 2, name: 'Business' },
-  ];
-
-  const [courses, setCourses] = useState(dummyCourses);
-  const [loading, _setLoading] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState(null);
-  const [subjects, _setSubjects] = useState(dummySubjects);
-  const [gradeLevels, _setGradeLevels] = useState(dummyGradeLevels);
-  const [categories, _setCategories] = useState(dummyCategories);
+  const subjects = COURSE_SUBJECT_OPTIONS;
+  const gradeLevels = COURSE_GRADE_LEVEL_OPTIONS;
+  const courseTypes = COURSE_TYPE_OPTIONS;
+  const [courseStats, setCourseStats] = useState({
+    total_courses: 0,
+    active_courses: 0,
+    total_students: 0,
+    total_revenue: 0,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notification, setNotification] = useState(null);
   
@@ -50,18 +43,63 @@ const TeacherCourses = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    subject_id: '',
-    grade_level_id: '',
-    category_id: '',
+    subject: '',
+    grade_level: '',
+    course_type: 'monthly',
     price_type: 'FREE',
     price: 0,
     status: 'DRAFT',
     visibility: 'PUBLIC',
   });
 
-  useEffect(() => {
-    // Dummy data already loaded
+  const mapCourse = (course) => ({
+    ...course,
+    id: course?.course_id || course?.id,
+    subject: course?.subject,
+    grade_level: course?.grade_level?.name || course?.grade_level_name || course?.grade_level,
+  });
+
+  const loadCourses = useCallback(async () => {
+    const coursesResponse = await courseAPI.getCourses({ page: 1, limit: 100 });
+    const rows = coursesResponse?.data?.data || [];
+    setCourses(Array.isArray(rows) ? rows.map(mapCourse) : []);
   }, []);
+
+  const loadStats = useCallback(async () => {
+    try {
+      const statsResponse = await courseAPI.getTeacherDashboardStats();
+      const stats = statsResponse?.data?.data || {};
+      setCourseStats({
+        total_courses: stats?.total_courses || 0,
+        active_courses: stats?.active_courses || 0,
+        total_students: stats?.total_students || 0,
+        total_revenue: stats?.total_revenue || 0,
+      });
+    } catch {
+      setCourseStats({
+        total_courses: 0,
+        active_courses: 0,
+        total_students: 0,
+        total_revenue: 0,
+      });
+    }
+  }, []);
+
+  const loadPageData = useCallback(async () => {
+    try {
+      setLoading(true);
+      await loadCourses();
+      await loadStats();
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to load courses'), 'error');
+    } finally {
+      setLoading(false);
+    }
+  }, [loadCourses, loadStats]);
+
+  useEffect(() => {
+    loadPageData();
+  }, [loadPageData]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -71,7 +109,7 @@ const TeacherCourses = () => {
     });
   };
 
-  const handleCreateCourse = (e) => {
+  const handleCreateCourse = async (e) => {
     e.preventDefault();
     
     if (!formData.title || !formData.description) {
@@ -79,16 +117,40 @@ const TeacherCourses = () => {
       return;
     }
 
-    setIsSubmitting(true);
-    // Simulate creation
-    setTimeout(() => {
-      const newCourse = { ...formData, id: Math.random() };
-      setCourses([...courses, newCourse]);
+    try {
+      setIsSubmitting(true);
+      const createPayload = {
+        title: formData.title,
+        description: formData.description,
+        subject: formData.subject || undefined,
+        grade_level: formData.grade_level || undefined,
+        course_type: formData.course_type || undefined,
+        is_paid: formData.price_type === 'PAID',
+        price: formData.price_type === 'PAID' ? Number(formData.price || 0) : 0,
+        visibility: String(formData.visibility || 'PUBLIC').toLowerCase(),
+      };
+
+      const createdResponse = await courseAPI.createCourse(createPayload);
+      const createdCourse = createdResponse?.data?.data;
+      const createdId = createdCourse?.course_id || createdCourse?.id;
+
+      if (createdId && String(formData.status).toUpperCase() === 'PUBLISHED') {
+        await courseAPI.publishCourse(createdId);
+      }
+      if (createdId && String(formData.visibility).toUpperCase() === 'PRIVATE') {
+        await courseAPI.setCoursePrivate(createdId);
+      }
+
+      await loadCourses();
+      await loadStats();
       showNotification('Course created successfully', 'success');
       setShowCreateModal(false);
       resetForm();
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to create course'), 'error');
+    } finally {
       setIsSubmitting(false);
-    }, 300);
+    }
   };
 
   const confirmDelete = (courseId) => {
@@ -96,45 +158,36 @@ const TeacherCourses = () => {
     setShowDeleteModal(true);
   };
 
-  const handleDeleteCourse = () => {
+  const handleDeleteCourse = async () => {
     if (!courseToDelete) return;
 
-    setIsSubmitting(true);
-    // Simulate deletion
-    setTimeout(() => {
+    try {
+      setIsSubmitting(true);
+      await courseAPI.deleteCourse(courseToDelete);
+      await loadCourses();
+      await loadStats();
       showNotification('Course deleted successfully', 'success');
-      setCourses(courses.filter(c => c.id !== courseToDelete));
-      setIsSubmitting(false);
       setShowDeleteModal(false);
       setCourseToDelete(null);
-    }, 300);
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to delete course'), 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
     setFormData({
       title: '',
       description: '',
-      subject_id: '',
-      grade_level_id: '',
-      category_id: '',
+      subject: '',
+      grade_level: '',
+      course_type: 'monthly',
       price_type: 'FREE',
       price: 0,
       status: 'DRAFT',
       visibility: 'PUBLIC',
     });
-  };
-
-  // Calculate statistics
-  const courseStats = {
-    total_courses: courses.length,
-    active_courses: courses.filter(c => c.status === 'PUBLISHED').length,
-    total_students: courses.reduce((sum, c) => sum + (c.total_enrollments || c.students || 0), 0),
-    total_revenue: courses.reduce((sum, c) => {
-      if (c.price_type === 'PAID') {
-        return sum + (parseFloat(c.price) * (c.total_enrollments || c.students || 0));
-      }
-      return sum;
-    }, 0),
   };
 
   // Stats metrics configuration
@@ -246,7 +299,7 @@ const TeacherCourses = () => {
             <CreateCourseForm
               subjects={subjects}
               gradeLevels={gradeLevels}
-              categories={categories}
+              courseTypes={courseTypes}
               formData={formData}
               handleInputChange={handleInputChange}
               handleCreateCourse={handleCreateCourse}
