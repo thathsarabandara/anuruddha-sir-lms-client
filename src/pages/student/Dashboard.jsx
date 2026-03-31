@@ -341,7 +341,6 @@ const StudentDashboard = () => {
       totalReviews: 156,
       totalEnrollments: 2340,
       price: 29.99,
-      durationHours: 40,
       recommendationReason: 'similar_to_completed',
       isEnrolled: false
     },
@@ -350,7 +349,6 @@ const StudentDashboard = () => {
       title: 'React Advanced Patterns',
       difficulty: 'advanced',
       instructorName: 'Mike Johnson',
-      rating: 4.8,
       totalReviews: 248,
       totalEnrollments: 3120,
       price: 39.99,
@@ -359,7 +357,6 @@ const StudentDashboard = () => {
       isEnrolled: false
     },
     {
-      courseId: 'rc3',
       title: 'Database Design & SQL',
       difficulty: 'intermediate',
       instructorName: 'Sarah Lee',
@@ -368,7 +365,6 @@ const StudentDashboard = () => {
       totalEnrollments: 1890,
       price: 34.99,
       durationHours: 45,
-      recommendationReason: 'similar_to_completed',
       isEnrolled: false
     },
     {
@@ -896,9 +892,6 @@ const StudentDashboard = () => {
             {recommendedCourses.map((course) => (
               <div key={course.courseId} className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all group">
                 <div className="flex items-start justify-between mb-3">
-                  <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-xs font-bold rounded-full">
-                    {course.difficulty}
-                  </span>
                   <FaBolt className="text-amber-500" />
                 </div>
 
