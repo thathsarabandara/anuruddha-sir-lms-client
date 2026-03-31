@@ -1,9 +1,14 @@
-import { useState, useMemo, useCallback, useEffect } from 'react';
-import { FaSearch, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaBook, FaBookOpen, FaSpinner } from 'react-icons/fa';
-import CourseCard from '../../components/common/CourseCard';
+import { useState, useMemo, useCallback } from 'react';
+import { FaSearch, FaFilter, FaTimes, FaBook, FaBookOpen } from 'react-icons/fa';
 import { MdOutlineWorkspacePremium } from 'react-icons/md';
 import { GrCompliance } from 'react-icons/gr';
 import Notification from '../../components/common/Notification';
+import DataTable from '../../components/common/DataTable';
+import {
+  COURSE_SUBJECT_OPTIONS,
+  COURSE_GRADE_LEVEL_OPTIONS,
+  COURSE_TYPE_OPTIONS,
+} from '../../utils/courseOptions';
 
 const StudentCourses = () => {
   // Dummy data
@@ -21,23 +26,30 @@ const StudentCourses = () => {
     { id: 1, title: 'HTML & CSS Basics', certificate: true, teacher_name: 'Tom Wilson' },
   ];
 
-  const dummyGradeLevels = [{ id: 1, name: '10-12' }, { id: 2, name: '8-9' }];
-  const dummySubjects = [{ id: 1, name: 'Programming' }, { id: 2, name: 'Web Dev' }];
-  const dummyCategories = [{ id: 1, name: 'Technology' }, { id: 2, name: 'Business' }];
+  const dummyGradeLevels = COURSE_GRADE_LEVEL_OPTIONS.map((grade) => ({
+    id: grade.value,
+    name: grade.label,
+  }));
+  const dummySubjects = COURSE_SUBJECT_OPTIONS.map((subject) => ({
+    id: subject.value,
+    name: subject.label,
+  }));
+  const dummyCourseTypes = COURSE_TYPE_OPTIONS.map((type) => ({
+    id: type.value,
+    name: type.label,
+  }));
 
   const [activeTab, setActiveTab] = useState('enrolled');
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
   const [showFilters, setShowFilters] = useState(true);
-  const itemsPerPage = 9;
-  const [newCourses, setNewCourses] = useState(dummyNewCourses);
-  const [enrolledCourses, setEnrolledCourses] = useState(dummyEnrolledCourses);
-  const [completedCourses, setCompletedCourses] = useState(dummyCompletedCourses);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [gradeLevels, setGradeLevels] = useState(dummyGradeLevels);
-  const [subjects, setSubjects] = useState(dummySubjects);
-  const [categories, setCategories] = useState(dummyCategories);
+  const newCourses = dummyNewCourses;
+  const enrolledCourses = dummyEnrolledCourses;
+  const completedCourses = dummyCompletedCourses;
+  const loading = false;
+  const error = null;
+  const gradeLevels = dummyGradeLevels;
+  const subjects = dummySubjects;
+  const courseTypes = dummyCourseTypes;
   const [filters, setFilters] = useState({
     grades: [],
     subjects: [],
@@ -47,14 +59,6 @@ const StudentCourses = () => {
   });
 
   const [notification, setNotification] = useState(null);
-
-  const showNotification = (message, type = 'info', duration = 5000) => {
-    setNotification({ message, type, duration });
-  };
-
-  useEffect(() => {
-    // Dummy data already loaded
-  }, []);
 
   // Filter Application Function
   const applyFilters = useCallback((coursesToFilter) => {
@@ -80,31 +84,98 @@ const StudentCourses = () => {
   const filteredEnrolledCourses = useMemo(() => applyFilters(enrolledCourses), [applyFilters, enrolledCourses]);
   const filteredCompletedCourses = useMemo(() => applyFilters(completedCourses), [applyFilters, completedCourses]);
 
-  // Pagination Logic
-  const getDisplayCourses = useCallback((courses) => {
-    const startIdx = (currentPage - 1) * itemsPerPage;
-    const endIdx = startIdx + itemsPerPage;
-    return courses.slice(startIdx, endIdx);
-  }, [currentPage]);
-
-  const getTotalPages = (courses) => Math.ceil(courses.length / itemsPerPage);
-
-  const currentDisplayCourses = useMemo(() => {
-    if (activeTab === 'new') return getDisplayCourses(filteredNewCourses);
-    if (activeTab === 'enrolled') return getDisplayCourses(filteredEnrolledCourses);
-    return getDisplayCourses(filteredCompletedCourses);
-  }, [activeTab, filteredNewCourses, filteredEnrolledCourses, filteredCompletedCourses, getDisplayCourses]);
-
-  const totalPages = getTotalPages(
-    activeTab === 'new' ? filteredNewCourses :
-    activeTab === 'enrolled' ? filteredEnrolledCourses :
-    filteredCompletedCourses
-  );
-
   const currentFilteredCount = 
     activeTab === 'new' ? filteredNewCourses.length :
     activeTab === 'enrolled' ? filteredEnrolledCourses.length :
     filteredCompletedCourses.length;
+
+  const currentFilteredCourses =
+    activeTab === 'new'
+      ? filteredNewCourses
+      : activeTab === 'enrolled'
+      ? filteredEnrolledCourses
+      : filteredCompletedCourses;
+
+  const tableColumns = useMemo(() => {
+    if (activeTab === 'new') {
+      return [
+        { key: 'title', label: 'Course Title' },
+        { key: 'teacher_name', label: 'Teacher' },
+        { key: 'subject', label: 'Subject', render: (value) => value || 'N/A' },
+        {
+          key: 'price',
+          label: 'Price',
+          render: (value) => (value ? `Rs. ${Number(value).toLocaleString()}` : 'Free'),
+        },
+        {
+          key: 'rating',
+          label: 'Rating',
+          render: (value) => (value ? `${value} Stars` : 'N/A'),
+        },
+        {
+          key: 'students',
+          label: 'Students',
+          render: (value) => (value ? Number(value).toLocaleString() : '0'),
+        },
+      ];
+    }
+
+    if (activeTab === 'enrolled') {
+      return [
+        { key: 'title', label: 'Course Title' },
+        { key: 'teacher_name', label: 'Teacher' },
+        { key: 'subject', label: 'Subject', render: (value) => value || 'N/A' },
+        {
+          key: 'progress',
+          label: 'Progress',
+          render: (value) => (
+            <div className="min-w-28">
+              <p className="text-xs text-slate-600 mb-1">{value || 0}%</p>
+              <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-green-500 to-green-600"
+                  style={{ width: `${value || 0}%` }}
+                />
+              </div>
+            </div>
+          ),
+        },
+      ];
+    }
+
+    return [
+      { key: 'title', label: 'Course Title' },
+      { key: 'teacher_name', label: 'Teacher' },
+      { key: 'subject', label: 'Subject', render: (value) => value || 'N/A' },
+      {
+        key: 'certificate',
+        label: 'Certificate',
+        render: (value) => (
+          <span
+            className={`px-2 py-1 text-xs font-semibold rounded-full ${
+              value ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
+            }`}
+          >
+            {value ? 'Available' : 'Not Available'}
+          </span>
+        ),
+      },
+    ];
+  }, [activeTab]);
+
+  const tableConfig = useMemo(
+    () => ({
+      itemsPerPage: 9,
+      hideSearch: true,
+      emptyMessage:
+        activeTab === 'new'
+          ? 'No courses match your filters'
+          : activeTab === 'enrolled'
+          ? 'No enrolled courses. Start learning today!'
+          : 'No completed courses yet. Keep learning!',
+    }),
+    [activeTab]
+  );
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => {
@@ -116,7 +187,6 @@ const StudentCourses = () => {
       }
       return updated;
     });
-    setCurrentPage(1);
   };
 
   const handleResetFilters = () => {
@@ -128,7 +198,6 @@ const StudentCourses = () => {
       rating: 0
     });
     setSearchQuery('');
-    setCurrentPage(1);
   };
 
   if (loading) {
@@ -225,10 +294,7 @@ const StudentCourses = () => {
               type="text"
               placeholder="Search courses by title, subject, or description..."
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-white"
             />
           </div>
@@ -239,7 +305,6 @@ const StudentCourses = () => {
           <button
             onClick={() => {
               setActiveTab('new');
-              setCurrentPage(1);
             }}
             className={`flex-1 px-4 py-3 font-semibold rounded-lg transition-all ${
               activeTab === 'new'
@@ -252,7 +317,6 @@ const StudentCourses = () => {
           <button
             onClick={() => {
               setActiveTab('enrolled');
-              setCurrentPage(1);
             }}
             className={`flex-1 px-4 py-3 font-semibold rounded-lg transition-all ${
               activeTab === 'enrolled'
@@ -265,7 +329,6 @@ const StudentCourses = () => {
           <button
             onClick={() => {
               setActiveTab('completed');
-              setCurrentPage(1);
             }}
             className={`flex-1 px-4 py-3 font-semibold rounded-lg transition-all ${
               activeTab === 'completed'
@@ -286,8 +349,13 @@ const StudentCourses = () => {
             <FaFilter className="text-blue-600" />
             {showFilters ? 'Hide Filters' : 'Show Filters'}
           </button>
-          {(filters.grades.length > 0 || filters.subjects.length > 0 || filters.types.length > 0 || 
-            filters.priceRange[0] > 0 || filters.priceRange[1] < 15000 || filters.rating > 0 || searchQuery) && (
+          {(filters.grades.length > 0 ||
+            filters.subjects.length > 0 ||
+            filters.types.length > 0 ||
+            filters.priceRange[0] > 0 ||
+            filters.priceRange[1] < 15000 ||
+            filters.rating > 0 ||
+            searchQuery) && (
             <button
               onClick={handleResetFilters}
               className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all font-semibold"
@@ -299,7 +367,7 @@ const StudentCourses = () => {
 
         {/* Filter Section */}
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-8 p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
             {/* Grade Filter */}
             <div>
               <h6 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
@@ -348,26 +416,26 @@ const StudentCourses = () => {
               </div>
             </div>
 
-            {/* Category Filter */}
+            {/* Price Range Filter */}
             <div>
               <h6 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
-                Category
+                 Course Type
               </h6>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {categories.length > 0 ? (
-                  categories.map(category => (
-                    <label key={category.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
+                {courseTypes.length > 0 ? (
+                  courseTypes.map((type) => (
+                    <label key={type.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
                       <input
                         type="checkbox"
-                        checked={filters.types.includes(category.name)}
-                        onChange={() => handleFilterChange('types', category.name)}
+                        checked={filters.types.includes(type.id)}
+                        onChange={() => handleFilterChange('types', type.id)}
                         className="w-4 h-4 text-blue-600 rounded"
                       />
-                      <span className="text-slate-700">{category.name}</span>
+                      <span className="text-slate-700">{type.name}</span>
                     </label>
                   ))
                 ) : (
-                  <p className="text-slate-500 text-sm">Loading categories...</p>
+                  <p className="text-slate-500 text-sm">Loading course types...</p>
                 )}
               </div>
             </div>
@@ -440,191 +508,35 @@ const StudentCourses = () => {
           </div>
         )}
 
-        {/* New Courses Tab */}
-        {activeTab === 'new' && (
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <MdOutlineWorkspacePremium /> New Courses Available
-            </h2>
-            {currentFilteredCount > 0 ? (
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2">
+            {activeTab === 'new' && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  {currentDisplayCourses.map((course) => (
-                    <CourseCard
-                      key={course.id}
-                      course={course}
-                      userType="student"
-                      courseStatus="new"
-                    />
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-4 mt-8">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                    >
-                      <FaChevronLeft />
-                    </button>
-                    <div className="flex gap-2">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 rounded-lg font-bold transition-all ${
-                            currentPage === page
-                              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
-                              : 'bg-white border border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                    >
-                      <FaChevronRight />
-                    </button>
-                  </div>
-                )}
+                <MdOutlineWorkspacePremium /> New Courses Available
               </>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                <p className="text-slate-600 text-lg">No courses match your filters</p>
-              </div>
             )}
-          </div>
-        )}
-
-        {/* Enrolled Courses Tab */}
-        {activeTab === 'enrolled' && (
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <FaBookOpen /> Currently Enrolled Courses
-            </h2>
-            {currentFilteredCount > 0 ? (
+            {activeTab === 'enrolled' && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  {currentDisplayCourses.map((course) => (
-                    <CourseCard
-                      key={course.id}
-                      course={course}
-                      userType="student"
-                      courseStatus="enrolled"
-                    />
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-4 mt-8">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                    >
-                      <FaChevronLeft />
-                    </button>
-                    <div className="flex gap-2">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 rounded-lg font-bold transition-all ${
-                            currentPage === page
-                              ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                              : 'bg-white border border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                    >
-                      <FaChevronRight />
-                    </button>
-                  </div>
-                )}
+                <FaBookOpen /> Currently Enrolled Courses
               </>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                <p className="text-slate-600 text-lg">No enrolled courses. Start learning today!</p>
-              </div>
             )}
-          </div>
-        )}
-
-        {/* Completed Courses Tab */}
-        {activeTab === 'completed' && (
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <GrCompliance /> Completed Courses
-            </h2>
-            {filteredCompletedCourses.length > 0 ? (
+            {activeTab === 'completed' && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  {currentDisplayCourses.map((course) => (
-                    <CourseCard
-                      key={course.id}
-                      course={course}
-                      userType="student"
-                      courseStatus="completed"
-                    />
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-4 mt-8">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                    >
-                      <FaChevronLeft />
-                    </button>
-                    <div className="flex gap-2">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 rounded-lg font-bold transition-all ${
-                            currentPage === page
-                              ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white'
-                              : 'bg-white border border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                    >
-                      <FaChevronRight />
-                    </button>
-                  </div>
-                )}
+                <GrCompliance /> Completed Courses
               </>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                <p className="text-slate-600 text-lg">No completed courses yet. Keep learning!</p>
-              </div>
             )}
+          </h2>
+          <p className="text-slate-600 mb-6">Showing {currentFilteredCount} course(s)</p>
+
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6">
+            <DataTable
+              data={currentFilteredCourses}
+              columns={tableColumns}
+              config={tableConfig}
+              loading={loading}
+            />
           </div>
-        )}
+        </div>
       </div>
     </div>
   );
