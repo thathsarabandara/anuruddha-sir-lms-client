@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { FaBell, FaUser, FaCog, FaSignOutAlt, FaShoppingCart } from 'react-icons/fa';
 import { FaGem } from 'react-icons/fa';
 import { logout } from '../../app/slices/authSlice';
-import { ROUTES } from '../../utils/constants';
+import { ROUTES, ROLES } from '../../utils/constants';
 import gsap from 'gsap';
 import { CiMenuBurger } from 'react-icons/ci';
 
@@ -56,6 +56,7 @@ const DashboardTopBar = ({ onMenuToggle }) => {
   const profileImageUrl = user?.profile_picture
     ? `${user.profile_picture}`
     : null;
+  const isStudent = user?.role === ROLES.STUDENT;
 
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
@@ -100,12 +101,14 @@ const DashboardTopBar = ({ onMenuToggle }) => {
 
           {/* Right Side - Cart, Gems, Notifications & Profile */}
           <div className="flex items-center gap-6">
-                        {/* Gems Display */}
-            <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200 hover:border-amber-300 transition-all">
-              <FaGem className="text-lg text-amber-500 animate-pulse" />
-              <span className="font-bold text-amber-900">560</span>
-              <span className="text-xs text-amber-700 ml-1">Gems</span>
-            </div>
+                        {/* Gems Display (students only) */}
+                        {isStudent && (
+                          <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200 hover:border-amber-300 transition-all">
+                            <FaGem className="text-lg text-amber-500 animate-pulse" />
+                            <span className="font-bold text-amber-900">560</span>
+                            <span className="text-xs text-amber-700 ml-1">Gems</span>
+                          </div>
+                        )}
 
             {/* Notification Bell */}
             <button
@@ -122,17 +125,19 @@ const DashboardTopBar = ({ onMenuToggle }) => {
                 </span>
               )}
             </button>
-            {/* Shopping Cart Icon */}
-            <button
-              onClick={() => navigate('/student/cart')}
-              className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors group"
-              title="Shopping Cart"
-            >
-              <FaShoppingCart className="text-xl text-gray-600 group-hover:text-primary-600" />
-              <span className="absolute top-0 right-0 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                2
-              </span>
-            </button>
+            {/* Shopping Cart Icon (students only) */}
+            {isStudent && (
+              <button
+                onClick={() => navigate(ROUTES.STUDENT_CART)}
+                className="relative p-2 hover:bg-gray-100 rounded-lg transition-colors group"
+                title="Shopping Cart"
+              >
+                <FaShoppingCart className="text-xl text-gray-600 group-hover:text-primary-600" />
+                <span className="absolute top-0 right-0 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                  2
+                </span>
+              </button>
+            )}
 
             {/* Profile Dropdown */}
             <div className="relative" ref={dropdownRef}>
