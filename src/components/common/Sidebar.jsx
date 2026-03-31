@@ -51,10 +51,8 @@ const Sidebar = ({ isOpen = true, onClose = () => {} }) => {
         return [
           { name: 'Dashboard', path: ROUTES.TEACHER_DASHBOARD, icon: FaChartBar },
           { name: 'Courses', path: ROUTES.TEACHER_COURSES, icon: FaBook },
-          { name: 'Live Classes', path: ROUTES.TEACHER_LIVE_CLASSES, icon: FaVideo },
           { name: 'Students', path: ROUTES.TEACHER_STUDENTS, icon: FaUsers },
           { name: 'Quizzes', path: ROUTES.TEACHER_QUIZZES, icon: FaFilePdf },
-          { name: 'Recordings', path: ROUTES.TEACHER_RECORDINGS, icon: FaVideo },
           { name: 'Revenue', path: ROUTES.TEACHER_REVENUE, icon: FaCreditCard },
           { name: 'Rewards', path: ROUTES.TEACHER_REWARDS, icon: FaGem },
           { name: 'Announcements', path: ROUTES.TEACHER_ANNOUNCEMENTS, icon: TfiAnnouncement },
