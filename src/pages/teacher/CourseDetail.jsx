@@ -1,20 +1,62 @@
  
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { BiLoader } from 'react-icons/bi';
-import { FaEdit, FaStar, FaCheck, FaTimes, FaUser, FaEye, FaBook, FaGamepad, FaStar as FaRating, FaUsers } from 'react-icons/fa';
+import { FaEdit, FaStar, FaCheck, FaTimes, FaUser, FaEye, FaBook, FaGamepad, FaStar as FaRating, FaUsers, FaGripVertical } from 'react-icons/fa';
 import QuizSearchModal from '../../components/teacher/QuizSearchModal';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
 import PDFViewer from '../../components/PDFViewer';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
+import { courseAPI } from '../../api/course';
+import { quizAPI } from '../../api/quiz';
+import {
+  COURSE_SUBJECT_OPTIONS,
+  COURSE_GRADE_LEVEL_OPTIONS,
+  COURSE_TYPE_OPTIONS,
+} from '../../utils/courseOptions';
+
+const getErrorMessage = (err, fallback = 'Something went wrong') =>
+  err?.response?.data?.message || err?.response?.data?.error || err?.message || fallback;
 
 const CourseDetail = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const mode = searchParams.get('mode') || 'view';
+  const getDefaultLessonForm = () => ({
+    title: '',
+    description: '',
+    lesson_type: 'video',
+    content_url: '',
+    duration_minutes: '',
+    order: '',
+    video_url: '',
+    external_link: '',
+    text_content: '',
+    zoom_meeting_link: '',
+    zoom_meeting_id: '',
+    zoom_passcode: '',
+    scheduled_date: '',
+    scheduled_time: '',
+    quiz_id: ''
+  });
+
+  const lessonTypeOptions = [
+    { value: 'video', label: 'Video' },
+    { value: 'zoom', label: 'Zoom' },
+    { value: 'text', label: 'Text' },
+    { value: 'pdf', label: 'PDF' },
+    { value: 'quiz', label: 'Quiz' },
+  ];
+
+  const formatLessonType = (lessonType) => {
+    if (!lessonType) return 'video';
+    const matched = lessonTypeOptions.find((option) => option.value === String(lessonType).toLowerCase());
+    return matched ? matched.label : String(lessonType);
+  };
+
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
   const [course, setCourse] = useState(null);
@@ -24,13 +66,13 @@ const CourseDetail = () => {
   const showNotification = (message, type = 'info', duration = 5000) => {
     setNotification({ message, type, duration });
   };
-  const [categories, setCategories] = useState([]);
-  const [subjects, setSubjects] = useState([]);
-  const [gradeLevels, setGradeLevels] = useState([]);
+  const subjects = COURSE_SUBJECT_OPTIONS;
+  const gradeLevels = COURSE_GRADE_LEVEL_OPTIONS;
+  const courseTypes = COURSE_TYPE_OPTIONS;
   const [enrolledStudents, setEnrolledStudents] = useState([]);
   const [showStudentProfileModal, setShowStudentProfileModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [loadingStudents, _setLoadingStudents] = useState(false);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSectionModal, setShowSectionModal] = useState(false);
   const [showLessonModal, setShowLessonModal] = useState(false);
@@ -40,14 +82,17 @@ const CourseDetail = () => {
   const [selectedVideo, setSelectedVideo] = useState(null);
   const [deleteConfirmData, setDeleteConfirmData] = useState({ type: null, id: null, name: '' });
   const [editingSection, setEditingSection] = useState(null);
-  const [, setSelectedSection] = useState(null);
+  const [editingLesson, setEditingLesson] = useState(null);
+  const [selectedSection, setSelectedSection] = useState(null);
+  const [draggedLesson, setDraggedLesson] = useState(null);
+  const [dragOverLesson, setDragOverLesson] = useState(null);
   const [uploadProgress, _setUploadProgress] = useState(0);
   const [courseForm, setCourseForm] = useState({
     title: '',
     description: '',
     subject: '',
     grade_level: '',
-    category: '',
+    course_type: 'monthly',
     price: '',
     status: 'DRAFT',
     visibility: 'PUBLIC',
@@ -60,25 +105,9 @@ const CourseDetail = () => {
     description: '',
     order: 1
   });
-  const [lessonForm, setLessonForm] = useState({
-    title: '',
-    description: '',
-    lesson_type: 'VIDEO',
-    content_url: '',
-    duration_minutes: '',
-    order: 1,
-    video_url: '',
-    external_link: '',
-    text_content: '',
-    zoom_meeting_link: '',
-    zoom_meeting_id: '',
-    zoom_passcode: '',
-    scheduled_date: '',
-    scheduled_time: '',
-    quiz_id: ''
-  });
+  const [lessonForm, setLessonForm] = useState(getDefaultLessonForm());
   const [uploadingFile, _setUploadingFile] = useState(false);
-  const [isSubmitting, _setIsSubmitting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [quizVerification, setQuizVerification] = useState({
     isLoading: false,
     isValid: false,
@@ -88,62 +117,12 @@ const CourseDetail = () => {
   const [selectedPDF, setSelectedPDF] = useState(null);
   const [showPDFViewerModal, setShowPDFViewerModal] = useState(false);
 
-  // Dummy data for enrolled students
-  const dummyEnrolledStudents = [
-    {
-      id: 1,
-      name: 'Alice Johnson',
-      email: 'alice@example.com',
-      payment_method: 'CARD',
-      payment_status: 'PAID',
-      enrolled_date: '2024-03-01',
-      progress: 75,
-    },
-    {
-      id: 2,
-      name: 'Bob Smith',
-      email: 'bob@example.com',
-      payment_method: 'BANK_TRANSFER',
-      payment_status: 'PAID',
-      enrolled_date: '2024-03-05',
-      progress: 60,
-    },
-    {
-      id: 3,
-      name: 'Carol Davis',
-      email: 'carol@example.com',
-      payment_method: 'FREE',
-      payment_status: 'PENDING',
-      enrolled_date: '2024-03-10',
-      progress: 45,
-    },
-    {
-      id: 4,
-      name: 'David Wilson',
-      email: 'david@example.com',
-      payment_method: 'CARD',
-      payment_status: 'PAID',
-      enrolled_date: '2024-03-12',
-      progress: 90,
-    },
-    {
-      id: 5,
-      name: 'Emma Brown',
-      email: 'emma@example.com',
-      payment_method: 'CASH',
-      payment_status: 'COMPLETED',
-      enrolled_date: '2024-03-15',
-      progress: 100,
-    },
-  ];
-
-  // Course stats for StatCard
-  const courseStats = {
-    total_sections: 8,
-    total_lessons: 24,
-    students_enrolled: 145,
-    average_rating: 4.8,
-  };
+  const [courseStats, setCourseStats] = useState({
+    total_sections: 0,
+    total_lessons: 0,
+    students_enrolled: 0,
+    average_rating: 0,
+  });
 
   const courseStatsConfig = [
     {
@@ -230,7 +209,7 @@ const CourseDetail = () => {
     {
       key: 'enrolled_date',
       label: 'Enrolled Date',
-      render: (_, row) => <span className="text-sm text-gray-500">{new Date(row.enrolled_date).toLocaleDateString()}</span>,
+      render: (_, row) => <span className="text-sm text-gray-500">{new Date(row.enrolled_at || row.enrolled_date || row.created_at).toLocaleDateString()}</span>,
     },
     {
       key: 'progress',
@@ -265,95 +244,170 @@ const CourseDetail = () => {
     },
   ];
 
-  useEffect(() => {
-    // Load dummy data asynchronously to avoid cascading renders
-    const timer = setTimeout(() => {
-      setCategories([
-        { id: 1, name: 'Programming' },
-        { id: 2, name: 'Web Development' },
-      ]);
-      setSubjects([
-        { id: 1, name: 'Python' },
-        { id: 2, name: 'JavaScript' },
-      ]);
-      setGradeLevels([
-        { id: 1, name: '10-12' },
-        { id: 2, name: '8-9' },
+  const loadCourseData = useCallback(async () => {
+    try {
+      setLoading(true);
+      setLoadingStudents(true);
+
+      const [detailsRes, contentRes, statsRes, enrollmentsRes] = await Promise.all([
+        courseAPI.getCourseDetails(courseId),
+        courseAPI.getCourseContent(courseId),
+        courseAPI.getCourseStats(courseId).catch(() => null),
+        courseAPI.getCourseEnrollments(courseId, { page: 1, limit: 200 }).catch(() => null),
       ]);
 
-      const dummyCourse = {
-        id: courseId,
-        title: 'Advanced Python Programming',
-        description: 'Learn advanced Python concepts',
-        subject: { id: 1, name: 'Python' },
-        grade_level: { id: 1, name: '10-12' },
-        category: { id: 1, name: 'Programming' },
-        price: 49.99,
-        status: 'PUBLISHED',
-        visibility: 'PUBLIC',
-        language: 'SINHALA',
-        access_type: 'NORMAL',
-        sections: [
-          { id: 1, title: 'Module 1: Basics', description: 'Python basics', lessons: [
-            { id: 1, title: 'Introduction', lesson_type: 'VIDEO', video_url: 'https://example.com/video.mp4' }
-          ]},
-        ],
-      };
+      const details = detailsRes?.data?.data || {};
+      const contentData = contentRes?.data?.data || {};
+      const statsData = statsRes?.data?.data || {};
+      const enrollmentRows = enrollmentsRes?.data?.data || [];
+      setCourse(details);
+      setSections(contentData?.sections || []);
+      setEnrolledStudents(Array.isArray(enrollmentRows) ? enrollmentRows : []);
 
-      setCourse(dummyCourse);
       setCourseForm({
-        title: dummyCourse.title,
-        description: dummyCourse.description,
-        subject: dummyCourse.subject?.id || '',
-        grade_level: dummyCourse.grade_level?.id || '',
-        category: dummyCourse.category?.id || '',
-        price: dummyCourse.price,
-        status: dummyCourse.status,
-        visibility: dummyCourse.visibility,
-        language: dummyCourse.language || 'SINHALA',
-        access_type: dummyCourse.access_type || 'NORMAL',
-        generate_certificates: false
+        title: details?.title || '',
+        description: details?.description || '',
+        subject: details?.subject || '',
+        grade_level: details?.grade_level || details?.grade_level_name || '',
+        course_type: details?.course_type || 'monthly',
+        price: details?.price || '',
+        status: details?.status || 'DRAFT',
+        visibility: details?.visibility || 'PUBLIC',
+        language: details?.language || 'SINHALA',
+        access_type: details?.access_type || 'NORMAL',
+        generate_certificates: Boolean(details?.generate_certificates),
       });
-      setSections(dummyCourse.sections);
-      setEnrolledStudents([
-        { id: 1, name: 'Alex Johnson', email: 'alex@example.com', enrolled_date: '2024-01-15', progress: 45 },
-        { id: 2, name: 'Maria Garcia', email: 'maria@example.com', enrolled_date: '2024-01-16', progress: 60 },
-      ]);
+
+      setCourseStats({
+        total_sections: statsData?.total_sections || contentData?.sections?.length || 0,
+        total_lessons: statsData?.total_lessons || contentData?.sections?.reduce((sum, section) => sum + (section?.lessons?.length || 0), 0) || 0,
+        students_enrolled: statsData?.students_enrolled || details?.total_enrollments || 0,
+        average_rating: statsData?.average_rating || details?.average_rating || 0,
+      });
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to load course data'), 'error');
+    } finally {
       setLoading(false);
-    }, 0);
-    return () => clearTimeout(timer);
+      setLoadingStudents(false);
+    }
   }, [courseId]);
+
+  useEffect(() => {
+    loadCourseData();
+  }, [loadCourseData]);
+
+  const refreshCourseContent = async () => {
+    const response = await courseAPI.getCourseContent(courseId);
+    const contentData = response?.data?.data;
+    const nextSections = contentData?.sections || [];
+    setSections(nextSections);
+    setCourseStats((prev) => ({
+      ...prev,
+      total_sections: nextSections.length,
+      total_lessons: nextSections.reduce((sum, section) => sum + (section?.lessons?.length || 0), 0),
+    }));
+  };
 
   const handleUpdateCourse = async (e) => {
     e.preventDefault();
-    showNotification('Course updated successfully', 'success');
-    setShowEditModal(false);
+    try {
+      setIsSubmitting(true);
+
+      const existingStatus = String(course?.status || 'DRAFT').toUpperCase();
+      const nextStatus = String(courseForm.status || existingStatus).toUpperCase();
+      const existingVisibility = String(course?.visibility || 'PUBLIC').toUpperCase();
+      const nextVisibility = String(courseForm.visibility || existingVisibility).toUpperCase();
+
+      await courseAPI.updateCourse(courseId, {
+        title: courseForm.title,
+        description: courseForm.description,
+        subject: courseForm.subject || undefined,
+        grade_level: courseForm.grade_level || undefined,
+        course_type: courseForm.course_type || undefined,
+        price: courseForm.price || 0,
+        language: courseForm.language,
+        access_type: courseForm.access_type,
+      });
+
+      if (existingStatus !== nextStatus) {
+        if (nextStatus === 'PUBLISHED') {
+          await courseAPI.publishCourse(courseId);
+        } else if (nextStatus === 'DRAFT') {
+          await courseAPI.unpublishCourse(courseId);
+        } else if (nextStatus === 'ARCHIVED') {
+          await courseAPI.archiveCourse(courseId);
+        }
+      }
+
+      if (existingVisibility !== nextVisibility) {
+        if (nextVisibility === 'PRIVATE') {
+          await courseAPI.setCoursePrivate(courseId);
+        } else if (nextVisibility === 'PUBLIC') {
+          await courseAPI.setCoursePublic(courseId);
+        }
+      }
+
+      await loadCourseData();
+      showNotification('Course updated successfully', 'success');
+      setShowEditModal(false);
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to update course'), 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleUploadThumbnail = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    showNotification('Thumbnail uploaded successfully', 'success');
+    showNotification('Thumbnail upload endpoint is not available yet', 'warning');
   };
 
   const handleDeleteThumbnail = async () => {
     if (!window.confirm('Are you sure you want to delete the current thumbnail?')) return;
-    showNotification('Thumbnail deleted successfully', 'success');
+    showNotification('Thumbnail delete endpoint is not available yet', 'warning');
   };
 
   const handleCreateSection = async (e) => {
     e.preventDefault();
-    showNotification('Section created successfully', 'success');
-    setShowSectionModal(false);
-    setSectionForm({ title: '', description: '', order: 1 });
+    try {
+      setIsSubmitting(true);
+      await courseAPI.createSection(courseId, {
+        title: sectionForm.title,
+        description: sectionForm.description,
+        section_order: sectionForm.order || undefined,
+      });
+      await refreshCourseContent();
+      showNotification('Section created successfully', 'success');
+      setShowSectionModal(false);
+      setSectionForm({ title: '', description: '', order: 1 });
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to create section'), 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleUpdateSection = async (e) => {
     e.preventDefault();
-    showNotification('Section updated successfully', 'success');
-    setShowSectionModal(false);
-    setEditingSection(null);
-    setSectionForm({ title: '', description: '', order: 1 });
+    try {
+      setIsSubmitting(true);
+      const sectionId = editingSection?.section_id || editingSection?.id;
+      await courseAPI.updateSection(courseId, sectionId, {
+        title: sectionForm.title,
+        description: sectionForm.description,
+        section_order: sectionForm.order || undefined,
+      });
+      await refreshCourseContent();
+      showNotification('Section updated successfully', 'success');
+      setShowSectionModal(false);
+      setEditingSection(null);
+      setSectionForm({ title: '', description: '', order: 1 });
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to update section'), 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDeleteSection = (sectionId, sectionTitle) => {
@@ -383,22 +437,46 @@ const CourseDetail = () => {
       error: null
     });
 
-    // Simulate verification
-    setTimeout(() => {
+    try {
+      const response = await quizAPI.getQuizDetails(quizId.trim());
+      const quizData = response?.data?.data;
+      if (!quizData) {
+        throw new Error('Quiz not found');
+      }
       setQuizVerification({
         isLoading: false,
         isValid: true,
-        quizData: { id: quizId, title: 'Quiz ' + quizId, questions: 10 },
+        quizData,
         error: null
       });
       showNotification('Quiz verified successfully!', 'success');
-    }, 500);
+    } catch (err) {
+      setQuizVerification({
+        isLoading: false,
+        isValid: false,
+        quizData: null,
+        error: getErrorMessage(err, 'Quiz verification failed'),
+      });
+    }
   };
 
   const confirmDelete = async () => {
-    showNotification(`${deleteConfirmData.type} deleted successfully`, 'success');
-    setShowDeleteConfirmModal(false);
-    setDeleteConfirmData({ type: null, id: null, name: '' });
+    try {
+      setIsSubmitting(true);
+      if (deleteConfirmData.type === 'section') {
+        await courseAPI.deleteSection(courseId, deleteConfirmData.id);
+      } else {
+        await courseAPI.deleteLesson(courseId, deleteConfirmData.id);
+      }
+      await refreshCourseContent();
+      showNotification(`${deleteConfirmData.type} deleted successfully`, 'success');
+      setShowDeleteConfirmModal(false);
+      setDeleteConfirmData({ type: null, id: null, name: '' });
+    } catch (err) {
+      showNotification(getErrorMessage(err, `Failed to delete ${deleteConfirmData.type}`), 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if(showPDFViewerModal && selectedPDF) {
@@ -409,29 +487,49 @@ const CourseDetail = () => {
 
   const handleCreateLesson = async (e) => {
     e.preventDefault();
-    showNotification('Lesson created successfully', 'success');
-    setShowLessonModal(false);
-    setLessonForm({
-      title: '',
-      description: '',
-      lesson_type: 'VIDEO',
-      content_url: '',
-      duration_minutes: '',
-      order: 1,
-      video_url: '',
-      external_link: '',
-      text_content: '',
-      zoom_meeting_link: '',
-      zoom_meeting_id: '',
-      zoom_passcode: '',
-      scheduled_date: '',
-      scheduled_time: '',
-      quiz_id: ''
-    });
+    const sectionId = selectedSection?.section_id || selectedSection?.id;
+    if (!sectionId && !editingLesson) {
+      showNotification('Section not selected for lesson', 'error');
+      return;
+    }
+
+    const payload = {
+      title: lessonForm.title,
+      description: lessonForm.description,
+      lesson_type: lessonForm.lesson_type,
+      duration_minutes: lessonForm.duration_minutes || undefined,
+      lesson_order: lessonForm.order || undefined,
+    };
+
+    try {
+      setIsSubmitting(true);
+      if (editingLesson) {
+        await courseAPI.updateLesson(
+          courseId,
+          editingLesson.lesson_id || editingLesson.id,
+          payload
+        );
+        showNotification('Lesson updated successfully', 'success');
+      } else {
+        await courseAPI.createLesson(courseId, sectionId, payload);
+        showNotification('Lesson created successfully', 'success');
+      }
+
+      await refreshCourseContent();
+      setShowLessonModal(false);
+      setEditingLesson(null);
+      setSelectedSection(null);
+      setLessonForm(getDefaultLessonForm());
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to save lesson'), 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleUploadLessonFile = async (lessonId, file, fileType) => {
-    showNotification(`${fileType} uploaded successfully`, 'success');
+    if (!file || !lessonId) return;
+    showNotification(`${fileType} upload endpoint is not available yet`, 'warning');
   };
 
   const handleDeleteLesson = (lessonId, lessonTitle) => {
@@ -448,14 +546,84 @@ const CourseDetail = () => {
     setSectionForm({
       title: section.title,
       description: section.description,
-      order: section.order
+      order: section.section_order || section.order || 1
     });
     setShowSectionModal(true);
   };
 
   const openCreateLesson = (section) => {
     setSelectedSection(section);
+    setEditingLesson(null);
+    setLessonForm({
+      ...getDefaultLessonForm(),
+      order: (section.lessons?.length || 0) + 1,
+    });
     setShowLessonModal(true);
+  };
+
+  const openEditLesson = (section, lesson) => {
+    setSelectedSection(section);
+    setEditingLesson(lesson);
+    setLessonForm({
+      ...getDefaultLessonForm(),
+      title: lesson.title || '',
+      description: lesson.description || '',
+      lesson_type: (lesson.lesson_type || 'video').toLowerCase(),
+      duration_minutes: lesson.duration_minutes || '',
+      order: lesson.lesson_order || '',
+    });
+    setShowLessonModal(true);
+  };
+
+  const handleLessonDragStart = (sectionId, lessonIndex) => {
+    setDraggedLesson({ sectionId, lessonIndex });
+  };
+
+  const handleLessonDragOver = (sectionId, lessonIndex, event) => {
+    event.preventDefault();
+    setDragOverLesson({ sectionId, lessonIndex });
+  };
+
+  const handleLessonDrop = async (section, dropIndex, event) => {
+    event.preventDefault();
+    if (!draggedLesson) return;
+
+    const sectionId = section.section_id || section.id;
+    if (draggedLesson.sectionId !== sectionId || draggedLesson.lessonIndex === dropIndex) {
+      setDraggedLesson(null);
+      setDragOverLesson(null);
+      return;
+    }
+
+    const lessons = [...(section.lessons || [])];
+    const [movedLesson] = lessons.splice(draggedLesson.lessonIndex, 1);
+    lessons.splice(dropIndex, 0, movedLesson);
+
+    setSections((prevSections) =>
+      prevSections.map((item) => {
+        const currentSectionId = item.section_id || item.id;
+        return currentSectionId === sectionId ? { ...item, lessons } : item;
+      })
+    );
+
+    try {
+      await courseAPI.reorderLessons(
+        courseId,
+        sectionId,
+        lessons.map((lesson, idx) => ({
+          lesson_id: lesson.lesson_id || lesson.id,
+          lesson_order: idx + 1,
+        }))
+      );
+      await refreshCourseContent();
+      showNotification('Lesson order updated', 'success');
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to reorder lessons'), 'error');
+      await refreshCourseContent();
+    } finally {
+      setDraggedLesson(null);
+      setDragOverLesson(null);
+    }
   };
 
   if (loading) {
@@ -656,20 +824,20 @@ const CourseDetail = () => {
                 <p className="text-gray-600 mb-4">{course?.description}</p>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500">Category:</span>
-                    <span className="ml-2 font-medium">{course?.category?.name}</span>
-                  </div>
-                  <div>
                     <span className="text-gray-500">Subject:</span>
-                    <span className="ml-2 font-medium">{course?.subject?.name}</span>
+                    <span className="ml-2 font-medium">{course?.subject}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">Grade Level:</span>
-                    <span className="ml-2 font-medium">{course?.grade_level?.name}</span>
+                    <span className="ml-2 font-medium">{course?.grade_level}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">Price:</span>
                     <span className="ml-2 font-medium">Rs. {course?.price}</span>
+                  </div>
+                  <div>
+                    <span className="text-gray-500">Course Type:</span>
+                    <span className="ml-2 font-medium">{course?.course_type}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">Status:</span>
@@ -699,7 +867,7 @@ const CourseDetail = () => {
           <div className="card">
             <h2 className="text-xl font-semibold mb-4">Enrolled Students</h2>
             <DataTable
-              data={dummyEnrolledStudents}
+              data={enrolledStudents}
               columns={studentColumns}
               config={{
                 itemsPerPage: 10,
@@ -730,8 +898,10 @@ const CourseDetail = () => {
 
           {/* Sections List */}
           <div className="space-y-4">
-            {sections.map((section, idx) => (
-              <div key={section.id} className="bg-white rounded-lg shadow">
+            {sections.map((section, idx) => {
+              const sectionId = section.section_id || section.id;
+              return (
+              <div key={sectionId} className="bg-white rounded-lg shadow">
                 <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <span className="text-gray-500 font-medium">Section {idx + 1}</span>
@@ -751,7 +921,7 @@ const CourseDetail = () => {
                       Edit
                     </button>
                     <button
-                      onClick={() => handleDeleteSection(section.id, section.title)}
+                      onClick={() => handleDeleteSection(sectionId, section.title)}
                       className="px-3 py-1 text-sm bg-red-600 text-white rounded hover:bg-red-700"
                     >
                       Delete
@@ -763,48 +933,74 @@ const CourseDetail = () => {
                 <div className="p-4">
                   {section.lessons && section.lessons.length > 0 ? (
                     <div className="space-y-4">
-                      {section.lessons.map((lesson, lessonIdx) => (
-                        <div key={lesson.id} className="bg-gray-50 rounded-lg border border-gray-200 overflow-hidden">
+                      {section.lessons.map((lesson, lessonIdx) => {
+                        const lessonId = lesson.lesson_id || lesson.id;
+                        const isDragged =
+                          draggedLesson?.sectionId === sectionId &&
+                          draggedLesson?.lessonIndex === lessonIdx;
+                        const isDragOver =
+                          dragOverLesson?.sectionId === sectionId &&
+                          dragOverLesson?.lessonIndex === lessonIdx;
+                        return (
+                        <div
+                          key={lessonId}
+                          className={`bg-gray-50 rounded-lg border overflow-hidden transition-all ${
+                            isDragOver ? 'border-blue-400 bg-blue-50' : 'border-gray-200'
+                          } ${isDragged ? 'opacity-60' : ''}`}
+                          draggable
+                          onDragStart={() => handleLessonDragStart(sectionId, lessonIdx)}
+                          onDragOver={(event) => handleLessonDragOver(sectionId, lessonIdx, event)}
+                          onDrop={(event) => handleLessonDrop(section, lessonIdx, event)}
+                        >
                           <div className="flex items-center justify-between p-4 bg-gray-100">
                             <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <span className="text-gray-400" title="Drag to reorder">
+                                <FaGripVertical />
+                              </span>
                               <span className="text-gray-500 font-medium">{lessonIdx + 1}.</span>
                               <div className="flex-1 min-w-0">
                                 <div className="font-semibold text-gray-900 truncate">{lesson.title}</div>
                                 <div className="text-xs text-gray-600">
-                                  {lesson.lesson_type} • {lesson.duration_minutes || 0} mins
+                                  {formatLessonType(lesson.lesson_type)} • {lesson.duration_minutes || 0} mins
                                 </div>
                               </div>
                             </div>
                             <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                              {lesson.lesson_type === 'TEXT' && lesson.text_content && (
+                              {String(lesson.lesson_type).toLowerCase() === 'text' && lesson.text_content && (
                                 <button className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700">
                                   View
                                 </button>
                               )}
-                              {lesson.lesson_type === 'VIDEO' && !lesson.video_file && (
+                              {String(lesson.lesson_type).toLowerCase() === 'video' && !lesson.video_file && (
                                 <label className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 cursor-pointer whitespace-nowrap">
                                   Upload Video
                                   <input
                                     type="file"
                                     accept="video/*"
                                     className="hidden"
-                                    onChange={(e) => handleUploadLessonFile(lesson.id, e.target.files[0], 'VIDEO')}
+                                    onChange={(e) => handleUploadLessonFile(lessonId, e.target.files[0], 'VIDEO')}
                                   />
                                 </label>
                               )}
-                              {lesson.lesson_type === 'PDF' && !lesson.pdf_file && (
+                              {String(lesson.lesson_type).toLowerCase() === 'pdf' && !lesson.pdf_file && (
                                 <label className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 cursor-pointer whitespace-nowrap">
                                   Upload PDF
                                   <input
                                     type="file"
                                     accept="application/pdf"
                                     className="hidden"
-                                    onChange={(e) => handleUploadLessonFile(lesson.id, e.target.files[0], 'PDF')}
+                                    onChange={(e) => handleUploadLessonFile(lessonId, e.target.files[0], 'PDF')}
                                   />
                                 </label>
                               )}
                               <button
-                                onClick={() => handleDeleteLesson(lesson.id, lesson.title)}
+                                onClick={() => openEditLesson(section, lesson)}
+                                className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteLesson(lessonId, lesson.title)}
                                 className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 whitespace-nowrap"
                               >
                                 Delete
@@ -823,7 +1019,7 @@ const CourseDetail = () => {
                                 <button
                                   onClick={() => {
                                     setSelectedVideo({
-                                      id: lesson.id,
+                                      id: lessonId,
                                       title: lesson.title,
                                       url: lesson.video_file.startsWith('http') ? lesson.video_file : `http://localhost:8000${lesson.video_file}`
                                     });
@@ -840,7 +1036,7 @@ const CourseDetail = () => {
                                   type="file"
                                   accept="video/*"
                                   className="hidden"
-                                  onChange={(e) => handleUploadLessonFile(lesson.id, e.target.files[0], 'VIDEO')}
+                                  onChange={(e) => handleUploadLessonFile(lessonId, e.target.files[0], 'VIDEO')}
                                 />
                               </label>
                             </div>
@@ -855,7 +1051,7 @@ const CourseDetail = () => {
                                 </div>
                                 <button onClick={() => {
                                   setSelectedPDF({
-                                    id: lesson.id,
+                                    id: lessonId,
                                     title: lesson.title,
                                     url: lesson.pdf_file.startsWith('http') ? lesson.pdf_file : `http://localhost:8000${lesson.pdf_file}`
                                   });
@@ -879,13 +1075,13 @@ const CourseDetail = () => {
                                   type="file"
                                   accept="application/pdf"
                                   className="hidden"
-                                  onChange={(e) => handleUploadLessonFile(lesson.id, e.target.files[0], 'PDF')}
+                                  onChange={(e) => handleUploadLessonFile(lessonId, e.target.files[0], 'PDF')}
                                 />
                               </label>
                             </div>
                           )}
                           
-                          {lesson.lesson_type === 'TEXT' && lesson.text_content && (
+                          {String(lesson.lesson_type).toLowerCase() === 'text' && lesson.text_content && (
                             <div className="p-4 bg-white border-t border-gray-200">
                               <div className="text-xs font-semibold text-gray-700 mb-2">Text Content</div>
                               <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 max-h-32 overflow-y-auto text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
@@ -894,14 +1090,14 @@ const CourseDetail = () => {
                             </div>
                           )}
                         </div>
-                      ))}
+                      )})}
                     </div>
                   ) : (
                     <p className="text-gray-500 text-center py-4">No lessons yet. Add your first lesson!</p>
                   )}
                 </div>
               </div>
-            ))}
+            )})}
 
             {sections.length === 0 && (
               <div className="bg-white rounded-lg shadow p-8 text-center">
@@ -1072,20 +1268,6 @@ const CourseDetail = () => {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                    <select
-                      value={courseForm.category}
-                      onChange={(e) => setCourseForm({ ...courseForm, category: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">Select Category</option>
-                      {Array.isArray(categories) && categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.name}</option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
                     <select
                       value={courseForm.subject}
@@ -1094,7 +1276,9 @@ const CourseDetail = () => {
                     >
                       <option value="">Select Subject</option>
                       {Array.isArray(subjects) && subjects.map((sub) => (
-                        <option key={sub.id} value={sub.id}>{sub.name}</option>
+                        <option key={sub.value || sub.id} value={sub.value || sub.id}>
+                          {sub.label || sub.name}
+                        </option>
                       ))}
                     </select>
                   </div>
@@ -1110,7 +1294,7 @@ const CourseDetail = () => {
                     >
                       <option value="">Select Grade</option>
                       {Array.isArray(gradeLevels) && gradeLevels.map((grade) => (
-                        <option key={grade.id} value={grade.id}>{grade.name}</option>
+                        <option key={grade.value || grade.id} value={grade.value || grade.id}>{grade.label || grade.name}</option>
                       ))}
                     </select>
                   </div>
@@ -1313,7 +1497,7 @@ const CourseDetail = () => {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg max-w-lg w-full">
             <div className="p-6">
-              <h2 className="text-2xl font-bold mb-4">Create Lesson</h2>
+              <h2 className="text-2xl font-bold mb-4">{editingLesson ? 'Edit Lesson' : 'Create Lesson'}</h2>
               <form onSubmit={handleCreateLesson} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
@@ -1343,17 +1527,14 @@ const CourseDetail = () => {
                     onChange={(e) => setLessonForm({ ...lessonForm, lesson_type: e.target.value })}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   >
-                    <option value="VIDEO">Video</option>
-                    <option value="PDF">PDF Document</option>
-                    <option value="LINK">External Link</option>
-                    <option value="TEXT">Text Content</option>
-                    <option value="ZOOM_CLASS">Zoom Class</option>
-                    <option value="QUIZ">Quiz</option>
+                    {lessonTypeOptions.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </div>
 
                 {/* Video Upload - shown when VIDEO is selected */}
-                {lessonForm.lesson_type === 'VIDEO' && (
+                {lessonForm.lesson_type === 'video' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Video URL (Optional)</label>
                     <input
@@ -1368,7 +1549,7 @@ const CourseDetail = () => {
                 )}
 
                 {/* PDF - shown when PDF is selected */}
-                {lessonForm.lesson_type === 'PDF' && (
+                {lessonForm.lesson_type === 'pdf' && (
                   <div>
                     <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
                       After creating this lesson, you can upload the PDF file from the content view.
@@ -1376,23 +1557,8 @@ const CourseDetail = () => {
                   </div>
                 )}
 
-                {/* External Link - shown when LINK is selected */}
-                {lessonForm.lesson_type === 'LINK' && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">External Link URL</label>
-                    <input
-                      type="url"
-                      value={lessonForm.external_link}
-                      onChange={(e) => setLessonForm({ ...lessonForm, external_link: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                      placeholder="https://example.com"
-                      required
-                    />
-                  </div>
-                )}
-
                 {/* Text Content - shown when TEXT is selected */}
-                {lessonForm.lesson_type === 'TEXT' && (
+                {lessonForm.lesson_type === 'text' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Text Content</label>
                     <textarea
@@ -1409,7 +1575,7 @@ const CourseDetail = () => {
                 )}
 
                 {/* Zoom Class - shown when ZOOM_CLASS is selected */}
-                {lessonForm.lesson_type === 'ZOOM_CLASS' && (
+                {lessonForm.lesson_type === 'zoom' && (
                   <>
                     <div className="grid grid-cols-2 gap-4">
                       <div>
@@ -1470,7 +1636,7 @@ const CourseDetail = () => {
                 )}
 
                 {/* Quiz - shown when QUIZ is selected */}
-                {lessonForm.lesson_type === 'QUIZ' && (
+                {lessonForm.lesson_type === 'quiz' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Quiz Code/ID</label>
                     <div className="flex gap-2">
@@ -1520,7 +1686,7 @@ const CourseDetail = () => {
                               <p><strong>Questions:</strong> {quizVerification.quizData.total_questions}</p>
                               <p><strong>Duration:</strong> {quizVerification.quizData.time_limit_minutes} minutes</p>
                               <p><strong>Total Marks:</strong> {quizVerification.quizData.total_marks}</p>
-                              <p><strong>Teacher:</strong> {quizVerification.quizData.teacher.name}</p>
+                              <p><strong>Teacher:</strong> {quizVerification.quizData.teacher?.name || 'N/A'}</p>
                             </div>
                           </div>
                         </div>
@@ -1544,7 +1710,7 @@ const CourseDetail = () => {
                 )}
 
                 {/* Duration - shown for all types except QUIZ */}
-                {lessonForm.lesson_type !== 'QUIZ' && (
+                {lessonForm.lesson_type !== 'quiz' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
                     <input
@@ -1575,20 +1741,14 @@ const CourseDetail = () => {
                     onClick={() => {
                       setShowLessonModal(false);
                       setSelectedSection(null);
+                      setEditingLesson(null);
                       setQuizVerification({
                         isLoading: false,
                         isValid: false,
                         quizData: null,
                         error: null
                       });
-                      setLessonForm({
-                        title: '',
-                        description: '',
-                        lesson_type: 'VIDEO',
-                        content_url: '',
-                        duration_minutes: '',
-                        order: 1
-                      });
+                      setLessonForm(getDefaultLessonForm());
                     }}
                     className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200"
                   >
@@ -1596,9 +1756,9 @@ const CourseDetail = () => {
                   </button>
                   <button
                     type="submit"
-                    disabled={isSubmitting || (lessonForm.lesson_type === 'QUIZ' && !quizVerification.isValid)}
+                    disabled={isSubmitting || (lessonForm.lesson_type === 'quiz' && !quizVerification.isValid)}
                     className={`px-4 py-2 rounded-lg text-white flex items-center gap-2 ${
-                      isSubmitting || (lessonForm.lesson_type === 'QUIZ' && !quizVerification.isValid)
+                      isSubmitting || (lessonForm.lesson_type === 'quiz' && !quizVerification.isValid)
                         ? 'bg-gray-400 cursor-not-allowed'
                         : 'bg-blue-600 hover:bg-blue-700'
                     }`}
@@ -1606,10 +1766,10 @@ const CourseDetail = () => {
                     {isSubmitting ? (
                       <>
                         <BiLoader className="inline-block animate-spin" />
-                        <span>Creating...</span>
+                        <span>{editingLesson ? 'Updating...' : 'Creating...'}</span>
                       </>
                     ) : (
-                      'Create Lesson'
+                      editingLesson ? 'Update Lesson' : 'Create Lesson'
                     )}
                   </button>
                 </div>
@@ -1739,6 +1899,21 @@ const CourseDetail = () => {
               <div className="border-t pt-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h4>
                 <div className="grid grid-cols-1 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Course Type</label>
+                    <select
+                      value={courseForm.course_type}
+                      onChange={(e) => setCourseForm({ ...courseForm, course_type: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      {Array.isArray(courseTypes) && courseTypes.map((type) => (
+                        <option key={type.value || type.id} value={type.value || type.id}>
+                          {type.label || type.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <span className="text-xs text-gray-500 uppercase tracking-wide">Email</span>
                     <p className="font-semibold text-gray-900 mt-1">{selectedStudent.user?.email || selectedStudent.email || 'N/A'}</p>
