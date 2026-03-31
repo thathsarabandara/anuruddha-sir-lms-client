@@ -8,7 +8,7 @@ export const CreateCourseForm = ({
   resetForm,
   subjects = [],
   gradeLevels = [],
-  categories = [],
+  courseTypes = [],
   isSubmitting = false,
 }) => {
   return (
@@ -46,19 +46,21 @@ export const CreateCourseForm = ({
             />
           </div>
 
-          {/* Subject, Grade, Category */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          {/* Subject and Grade */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Subject</label>
               <select
-                name="subject_id"
-                value={formData.subject_id}
+                name="subject"
+                value={formData.subject}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select Subject</option>
                 {subjects.map(subject => (
-                  <option key={subject.id} value={subject.id}>{subject.name}</option>
+                  <option key={subject.value || subject.id} value={subject.value || subject.id}>
+                    {subject.label || subject.name}
+                  </option>
                 ))}
               </select>
             </div>
@@ -66,36 +68,37 @@ export const CreateCourseForm = ({
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Grade Level</label>
               <select
-                name="grade_level_id"
-                value={formData.grade_level_id}
+                name="grade_level"
+                value={formData.grade_level}
                 onChange={handleInputChange}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select Grade</option>
                 {gradeLevels.map(grade => (
-                  <option key={grade.id} value={grade.id}>{grade.name}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">Category</label>
-              <select
-                name="category_id"
-                value={formData.category_id}
-                onChange={handleInputChange}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select Category</option>
-                {categories.map(category => (
-                  <option key={category.id} value={category.id}>{category.name}</option>
+                  <option key={grade.value || grade.id} value={grade.value || grade.id}>{grade.label || grade.name}</option>
                 ))}
               </select>
             </div>
           </div>
 
-          {/* Price Type and Price */}
+          {/* Course Type, Price Type and Price */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Course Type</label>
+              <select
+                name="course_type"
+                value={formData.course_type}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                {courseTypes.map((type) => (
+                  <option key={type.value || type.id} value={type.value || type.id}>
+                    {type.label || type.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">Price Type</label>
               <select
