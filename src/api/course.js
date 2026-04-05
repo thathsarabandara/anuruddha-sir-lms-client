@@ -198,6 +198,13 @@ export const courseAPI = {
 			{ params: { course_id: courseId, lesson_id: lessonId } }
 		),
 
+	uncompleteLesson: (courseId, lessonId) =>
+		axiosInstance.post(
+			`${COURSE_BASE}/lessons/uncomplete`,
+			{},
+			{ params: { course_id: courseId, lesson_id: lessonId } }
+		),
+
 	// ---------------------------------------------------------------------------
 	// Content Management (Video, Zoom, Text, PDF, Quiz)
 	// ---------------------------------------------------------------------------
