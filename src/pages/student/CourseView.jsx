@@ -17,6 +17,9 @@ import {
 import Notification from '../../components/common/Notification';
 import { courseAPI } from '../../api/course';
 import { useCart } from '../../hooks/useCart';
+import { ROUTES } from '../../utils/constants';
+import { getToken } from '../../utils/helpers';
+import { COURSE_SUBJECT_OPTIONS} from '../../utils/courseOptions';
 
 const formatMoney = (amount) => {
   const value = Number(amount || 0);
@@ -32,6 +35,12 @@ const formatDuration = (hours) => {
   if (!hours && hours !== 0) return 'Self-paced';
   if (hours === 0) return 'Self-paced';
   return `${hours}h`;
+};
+
+const toSubjectLabel = (subjectKey) => {
+  if (!subjectKey) return 'General';
+  const found = COURSE_SUBJECT_OPTIONS.find(option => option.value === subjectKey);
+  return found ? found.label : subjectKey;
 };
 
 const toCourse = (row) => {
@@ -102,6 +111,7 @@ const CourseView = () => {
   const [enrollmentKey, setEnrollmentKey] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notification, setNotification] = useState(null);
+  const isAuthenticated = Boolean(getToken('access_token'));
 
   const showNotification = (message, type = 'info', duration = 5000) => {
     setNotification({ message, type, duration });
@@ -133,10 +143,9 @@ const CourseView = () => {
         setIsLoading(true);
         setPageError('');
 
-        const [detailsRes, contentRes, myCoursesRes] = await Promise.allSettled([
+        const [detailsRes, contentRes] = await Promise.allSettled([
           courseAPI.getCourseDetails(courseId),
           courseAPI.getCourseContent(courseId),
-          courseAPI.getMyCourses({ page: 1, limit: 200 }),
         ]);
 
         if (detailsRes.status !== 'fulfilled') {
@@ -152,8 +161,9 @@ const CourseView = () => {
           setSections(toSections(previewRes?.data?.data));
         }
 
-        if (myCoursesRes.status === 'fulfilled') {
-          const rows = Array.isArray(myCoursesRes.value?.data?.data) ? myCoursesRes.value.data.data : [];
+        if (isAuthenticated) {
+          const myCoursesRes = await courseAPI.getMyCourses({ page: 1, limit: 200 });
+          const rows = Array.isArray(myCoursesRes?.data?.data) ? myCoursesRes.data.data : [];
           const enrolled = rows.some((row) => String(row.course_id || row.id) === String(courseId));
           setIsEnrolled(enrolled);
         }
@@ -169,9 +179,14 @@ const CourseView = () => {
     };
 
     fetchCoursePage();
-  }, [courseId]);
+  }, [courseId, isAuthenticated]);
 
   const enrollWithKey = async () => {
+    if (!isAuthenticated) {
+      navigate(ROUTES.LOGIN);
+      return;
+    }
+
     if (!enrollmentKey.trim()) {
       showNotification('Please enter an enrollment key', 'warning');
       return;
@@ -197,6 +212,11 @@ const CourseView = () => {
   const addToCartAndGo = async (target = '/student/cart') => {
     if (!course) return;
 
+    if (!isAuthenticated) {
+      navigate(ROUTES.LOGIN);
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       const result = await addToCart({ course_id: course.id });
@@ -212,6 +232,11 @@ const CourseView = () => {
   };
 
   const handlePrimaryAction = async () => {
+    if (!isAuthenticated) {
+      navigate(ROUTES.LOGIN);
+      return;
+    }
+
     if (isEnrolled) {
       navigate(`/student/course/${courseId}/learn`);
       return;
@@ -274,10 +299,18 @@ const CourseView = () => {
           />
         </div>
       )}
-      <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 text-white p-8 lg:p-12">
-        <div className="max-w-7xl mx-auto">
+      <div className="relative bg-gradient-to-r from-slate-900 via-blue-900 to-slate-900 text-white p-8 lg:p-12 overflow-hidden">
+        {course.thumbnailUrl && (
+          <img
+            src={course.thumbnailUrl}
+            alt={course.title}
+            className="absolute inset-0 w-full h-full object-cover"
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-blue-900/80 to-slate-900/85" />
+        <div className="relative z-10 max-w-7xl mx-auto">
           <button
-            onClick={() => navigate('/student/courses/discover')}
+            onClick={() => navigate(isAuthenticated ? '/student/courses/discover' : '/courses')}
             className="flex items-center gap-2 mb-6 hover:opacity-90 transition-opacity"
           >
             <FaArrowLeft /> Back to Courses
@@ -313,7 +346,7 @@ const CourseView = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <FaBook />
-                  <span>{course.subject} | Grade {course.gradeLevel}</span>
+                  <span>{toSubjectLabel(course.subject)} | Grade {course.gradeLevel}</span>
                 </div>
               </div>
 
@@ -411,29 +444,35 @@ const CourseView = () => {
                       {section.description && <p className="text-sm text-slate-600 mt-1">{section.description}</p>}
                     </div>
 
-                    <div className="divide-y divide-slate-100">
-                      {section.lessons.map((lesson, lessonIndex) => (
-                        <div key={lesson.id} className="px-6 py-3 flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <p className="font-medium text-slate-900 truncate">
-                              {lessonIndex + 1}. {lesson.title}
-                            </p>
-                            {lesson.description && (
-                              <p className="text-xs text-slate-500 mt-0.5 truncate">{lesson.description}</p>
-                            )}
-                          </div>
+                    {isAuthenticated ? (
+                      <div className="divide-y divide-slate-100">
+                        {section.lessons.map((lesson, lessonIndex) => (
+                          <div key={lesson.id} className="px-6 py-3 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="font-medium text-slate-900 truncate">
+                                {lessonIndex + 1}. {lesson.title}
+                              </p>
+                              {lesson.description && (
+                                <p className="text-xs text-slate-500 mt-0.5 truncate">{lesson.description}</p>
+                              )}
+                            </div>
 
-                          <div className="flex items-center gap-3 text-xs text-slate-600 shrink-0">
-                            <span className="px-2 py-1 rounded-full bg-slate-100 border border-slate-200 uppercase">
-                              {lesson.type}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <FaClock /> {lesson.durationMinutes}m
-                            </span>
+                            <div className="flex items-center gap-3 text-xs text-slate-600 shrink-0">
+                              <span className="px-2 py-1 rounded-full bg-slate-100 border border-slate-200 uppercase">
+                                {lesson.type}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <FaClock /> {lesson.durationMinutes}m
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="px-6 py-4 text-sm text-slate-600 bg-white">
+                        {section.lessons.length} lesson(s) in this section. Sign in as student to view lesson details.
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -452,14 +491,6 @@ const CourseView = () => {
               <h3 className="text-lg font-bold text-slate-900 mb-4">Course Details</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Status</span>
-                  <span className="font-medium uppercase text-slate-900">{course.status}</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500">Visibility</span>
-                  <span className="font-medium uppercase text-slate-900">{course.visibility}</span>
-                </div>
-                <div className="flex items-center justify-between">
                   <span className="text-slate-500">Total Sections</span>
                   <span className="font-semibold text-slate-900">{sections.length}</span>
                 </div>
@@ -474,33 +505,10 @@ const CourseView = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Price</span>
                   <span className="font-semibold text-slate-900 flex items-center gap-1">
-                    <FaDollarSign /> {course.isPaid ? formatMoney(course.price) : 'Free'}
+                    {course.isPaid ? formatMoney(course.price) : 'Free'}
                   </span>
                 </div>
               </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h3 className="text-lg font-bold text-slate-900 mb-3">Enrollment Key Access</h3>
-              <p className="text-sm text-slate-600 mb-4">
-                If you received an enrollment key from your teacher, paste it above and click
-                <span className="font-semibold"> Enroll With Key</span>.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  const trimmed = enrollmentKey.trim();
-                  if (!trimmed) {
-                    showNotification('Enter the enrollment key first', 'warning');
-                    return;
-                  }
-                  enrollWithKey();
-                }}
-                disabled={isSubmitting}
-                className="w-full py-2.5 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <FaKey /> Quick Enroll With Key
-              </button>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-6">
@@ -531,17 +539,7 @@ const CourseView = () => {
         </div>
       </div>
 
-      {course.thumbnailUrl && (
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 pb-12">
-          <div className="bg-white rounded-xl border border-slate-200 p-4">
-            <img
-              src={course.thumbnailUrl}
-              alt={course.title}
-              className="w-full max-h-[360px] object-cover rounded-lg"
-            />
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };
