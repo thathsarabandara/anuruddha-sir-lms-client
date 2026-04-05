@@ -6,6 +6,8 @@ import {
   FaVideo, FaGraduationCap
 } from 'react-icons/fa';
 import { COURSE_TYPE_OPTIONS, COURSE_SUBJECT_OPTIONS, COURSE_GRADE_LEVEL_OPTIONS } from '../../utils/courseOptions';
+import { ROUTES } from '../../utils/constants';
+import { getToken } from '../../utils/helpers';
 
 /**
  * Reusable CourseCard Component
@@ -66,7 +68,24 @@ const CourseCard = ({
     }
 
     if (courseIdentifier) {
-      navigate(`/student/course/${courseIdentifier}`);
+      const detailPath = userType === 'public'
+        ? `/courses/${courseIdentifier}`
+        : `/student/course/${courseIdentifier}`;
+      navigate(detailPath);
+    }
+  };
+
+  const handlePublicAddToCart = () => {
+    const accessToken = getToken('access_token');
+    if (!accessToken) {
+      navigate(ROUTES.LOGIN);
+      return;
+    }
+
+    if (onAddToCart) {
+      onAddToCart(course);
+    } else if (onNotification) {
+      onNotification('Please sign in as student to continue checkout.', 'info');
     }
   };
 
@@ -517,6 +536,27 @@ const CourseCard = ({
                   {course.priceText || formatPrice(course.price, course.price_type)}
                 </span>
               </div>
+            </div>
+
+            <div className="h-px bg-gray-100 mb-4"></div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handleOpenCourseDetails}
+                disabled={loading}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                <FaEye className="text-sm" />
+                View
+              </button>
+              <button
+                onClick={handlePublicAddToCart}
+                disabled={loading}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                <FaShoppingCart className="text-sm" />
+                Add to Cart
+              </button>
             </div>
           </>
         )}
