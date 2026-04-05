@@ -256,7 +256,6 @@ const StudentCourseLearning = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [allLessons, setAllLessons] = useState([]);
   const [currentLessonIndex, setCurrentLessonIndex] = useState(0);
-  const [showPDFViewer, setShowPDFViewer] = useState(false);
   const [notification, setNotification] = useState(null);
   const [downloadingId, setDownloadingId] = useState(null);
   const [markingCompleteId, setMarkingCompleteId] = useState(null);
@@ -390,7 +389,6 @@ const StudentCourseLearning = () => {
     setCurrentLesson(lesson);
     const index = allLessons.findIndex(l => l.id === lesson.id);
     setCurrentLessonIndex(index);
-    setShowPDFViewer(false);
 
     // Mark as completed after a brief delay for non-video content
     if (!completedLessons.has(lesson.id) && lesson.type !== 'VIDEO') {
@@ -710,29 +708,20 @@ const StudentCourseLearning = () => {
                       isCompleted={completedLessons.has(currentLesson.id)}
                     />
                   ) : currentLesson.type === 'PDF' && currentLesson.documentUrl ? (
-                    showPDFViewer ? (
-                      <PDFViewer
-                        pdfUrl={currentLesson.documentUrl}
-                        title={currentLesson.title}
-                        onComplete={() => {
-                          if (!completedLessons.has(currentLesson.id)) {
-                            markLessonComplete(currentLesson);
-                          }
-                        }}
-                        isCompleted={completedLessons.has(currentLesson.id)}
-                        fileName={currentLesson.title}
-                        onClose={() => setShowPDFViewer(false)}
-                      />
-                    ) : (
-                      <div className="aspect-video flex items-center justify-center bg-slate-900">
-                        <button
-                          onClick={() => setShowPDFViewer(true)}
-                          className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold transition-colors"
-                        >
-                          Open PDF
-                        </button>
-                      </div>
-                    )
+                    <PDFViewer
+                      pdfUrl={currentLesson.documentUrl}
+                      title={currentLesson.title}
+                      contentId={currentLesson.id}
+                      onComplete={() => {
+                        if (!completedLessons.has(currentLesson.id)) {
+                          markLessonComplete(currentLesson);
+                        }
+                      }}
+                      isCompleted={completedLessons.has(currentLesson.id)}
+                      fileName={currentLesson.title}
+                      disableDownload={false}
+                      disablePrint={false}
+                    />
                   ) : currentLesson.type === 'TEXT' ? (
                     <TextViewer
                       key={currentLesson.id}
