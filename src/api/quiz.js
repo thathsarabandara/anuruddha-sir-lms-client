@@ -212,8 +212,8 @@ export const quizAPI = {
    * @returns {Promise} Created attempt with attempt_id
    */
   startQuizAttempt: (quizId) =>
-    axiosInstance.post("/quiz/attempts", {
-      quiz_id: quizId,
+    axiosInstance.post("/quiz/attempts", null, {
+      params: { quiz_id: quizId },
     }),
 
   /**
@@ -223,7 +223,9 @@ export const quizAPI = {
    * @returns {Promise} Saved answer confirmation
    */
   saveAnswer: (attemptId, answerData) =>
-    axiosInstance.post(`/quiz/submit/answers/${attemptId}`, answerData),
+    axiosInstance.post("/quiz/submit/answers", answerData, {
+      params: { attempt_id: attemptId },
+    }),
 
   /**
    * Submit a quiz attempt
@@ -247,6 +249,14 @@ export const quizAPI = {
    */
   getQuizResults: (quizId) =>
     axiosInstance.get(`/quiz/${quizId}/results`),
+
+  /**
+   * Get detailed data for a specific quiz attempt
+   * @param {string} attemptId - Attempt ID
+   * @returns {Promise} Attempt, quiz, question answers, and statistics
+   */
+  getAttemptDetails: (attemptId) =>
+    axiosInstance.get(`/quiz/attempts/${attemptId}`),
 
   // ──────────────────────────────────────────────────────────────────────────
   // Grading Endpoints
