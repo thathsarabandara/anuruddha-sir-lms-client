@@ -3,23 +3,64 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaClock, FaCheck, FaExclamationTriangle, FaSave, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import Notification from '../../components/common/Notification';
 import ButtonWithLoader from '../../components/common/ButtonWithLoader';
+import { quizAPI } from '../../api/quiz';
 
-const dummyQuizData = {
-  quiz: {
-    id: 1,
-    title: 'Sample Quiz',
-    description: 'Test your knowledge',
-    time_limit: 30,
-    total_marks: 100,
-    passing_score: 60,
-  },
-  attempt: { id: 'attempt-001', student_id: 1, quiz_id: 1 },
-  questions: [
-    { id: 1, question_text: 'What is 2+2?', question_type: 'MCQ_SINGLE', marks: 10, options: [{ id: 1, option_text: '4' }, { id: 2, option_text: '5' }] },
-    { id: 2, question_text: 'True or False: JS is a language', question_type: 'TRUE_FALSE', marks: 10, options: [{ id: 3, option_text: 'True' }, { id: 4, option_text: 'False' }] },
-  ],
-  existing_answers: {},
-  time_remaining: 1800,
+const QUESTION_TYPES = {
+  SINGLE: 'multiple_choice',
+  MULTIPLE: 'multiple_answer',
+  SHORT: 'short_answer',
+  LONG: 'essay',
+};
+
+const normalizeQuestionType = (rawType) => {
+  if (!rawType) return '';
+  const type = String(rawType).toLowerCase();
+
+  if (type === 'mcq_single' || type === 'true_false') return QUESTION_TYPES.SINGLE;
+  if (type === 'mcq_multiple') return QUESTION_TYPES.MULTIPLE;
+  if (type === 'long_answer') return QUESTION_TYPES.LONG;
+  if (type === 'short_answer') return QUESTION_TYPES.SHORT;
+
+  return type;
+};
+
+const serializeAnswer = (value) => {
+  if (Array.isArray(value)) {
+    return [...value].map(String).sort().join(',');
+  }
+  if (value === null || value === undefined) return '';
+  return String(value).trim();
+};
+
+const buildAnswerPayload = (question, value) => {
+  const questionId = question?.question_id || question?.id;
+  if (!questionId) return null;
+
+  const questionType = normalizeQuestionType(question?.question_type);
+  if (questionType === QUESTION_TYPES.MULTIPLE) {
+    const normalized = Array.isArray(value) ? value : [];
+    if (normalized.length === 0) return null;
+    return {
+      question_id: questionId,
+      answer: normalized.map(String).join(','),
+    };
+  }
+
+  if (questionType === QUESTION_TYPES.SINGLE) {
+    if (value === null || value === undefined || value === '') return null;
+    return {
+      question_id: questionId,
+      answer: String(value),
+    };
+  }
+
+  const textValue = serializeAnswer(value);
+  if (!textValue) return null;
+
+  return {
+    question_id: questionId,
+    answer: textValue,
+  };
 };
 
 const TakeQuiz = () => {
@@ -40,84 +81,182 @@ const TakeQuiz = () => {
   const timerRef = useRef(null);
   const autoSaveTimerRef = useRef(null);
   const lastSaveRef = useRef({});
+  const dirtyAnswersRef = useRef(new Set());
+  const autoSubmittedRef = useRef(false);
 
   const showNotification = (message, type = 'info', duration = 5000) => {
     setNotification({ message, type, duration });
   };
 
-  const startQuizAttempt = useCallback(() => {
+  const startQuizAttempt = useCallback(async () => {
     setLoading(true);
-    setTimeout(() => {
-      const attemptData = dummyQuizData;
-      setQuiz(attemptData.quiz);
-      setAttempt(attemptData.attempt);
-      setQuestions(attemptData.questions || []);
-      setTimeRemaining(attemptData.time_remaining || attemptData.quiz.time_limit * 60);
-      if (attemptData.existing_answers) {
-        setAnswers(attemptData.existing_answers);
-        lastSaveRef.current = attemptData.existing_answers;
+
+    try {
+      const [quizResponse, attemptResponse] = await Promise.all([
+        quizAPI.getQuizDetails(quizId),
+        quizAPI.startQuizAttempt(quizId),
+      ]);
+
+      const quizData = quizResponse?.data?.data || {};
+      const attemptData = attemptResponse?.data?.data || {};
+      const quizQuestions = Array.isArray(attemptData?.questions) ? attemptData.questions : [];
+
+      setQuiz({
+        id: quizData.quiz_id || quizData.id || quizId,
+        title: quizData.title || 'Quiz',
+        description: quizData.description || '',
+        duration_minutes: Number(quizData.duration_minutes || quizData.time_limit_minutes || 0),
+        passing_score: Number(quizData.passing_score || 0),
+      });
+      setAttempt(attemptData);
+      setQuestions(quizQuestions);
+
+      const expiresAt = attemptData?.expires_at ? new Date(attemptData.expires_at).getTime() : null;
+      const durationSeconds = Number(quizData.duration_minutes || quizData.time_limit_minutes || 0) * 60;
+      const now = Date.now();
+      const computedRemaining = expiresAt
+        ? Math.max(0, Math.floor((expiresAt - now) / 1000))
+        : Math.max(0, durationSeconds);
+
+      setTimeRemaining(computedRemaining);
+
+      const initialAnswers = {};
+      quizQuestions.forEach((question) => {
+        const questionId = question?.question_id || question?.id;
+        if (!questionId) return;
+        const type = normalizeQuestionType(question?.question_type);
+        initialAnswers[questionId] = type === QUESTION_TYPES.MULTIPLE ? [] : '';
+      });
+
+      setAnswers(initialAnswers);
+      lastSaveRef.current = Object.fromEntries(
+        Object.entries(initialAnswers).map(([key, value]) => [key, serializeAnswer(value)])
+      );
+
+      if (quizQuestions.length === 0) {
+        showNotification('This quiz has no questions yet.', 'warning');
       }
+    } catch (error) {
+      showNotification(error?.message || 'Failed to start quiz attempt', 'error');
+      setQuiz(null);
+    } finally {
       setLoading(false);
-    }, 500);
-  }, []);
+    }
+  }, [quizId]);
 
-  const saveAnswersToServer = useCallback(() => {
-    if (!attempt) return;
-    const hasNewAnswers = Object.keys(answers).some(key => answers[key] !== lastSaveRef.current[key]);
-    if (!hasNewAnswers) return;
+  const saveSingleAnswer = useCallback(async (questionId) => {
+    if (!attempt?.attempt_id) return false;
+
+    const question = questions.find((q) => (q.question_id || q.id) === questionId);
+    if (!question) return false;
+
+    const value = answers[questionId];
+    const payload = buildAnswerPayload(question, value);
+    if (!payload) {
+      dirtyAnswersRef.current.delete(questionId);
+      return false;
+    }
+
+    await quizAPI.saveAnswer(attempt.attempt_id, payload);
+
+    const serialized = serializeAnswer(value);
+    lastSaveRef.current[questionId] = serialized;
+    dirtyAnswersRef.current.delete(questionId);
+    return true;
+  }, [attempt, answers, questions]);
+
+  const saveAnswersToServer = useCallback(async (showSavedToast = true) => {
+    if (!attempt?.attempt_id) return;
+
+    const dirtyIds = [...dirtyAnswersRef.current];
+    if (dirtyIds.length === 0) {
+      if (showSavedToast) showNotification('No new answers to save.', 'info', 2500);
+      return;
+    }
+
     setAutoSaving(true);
-    setTimeout(() => {
-      lastSaveRef.current = { ...answers };
-      setAutoSaving(false);
-    }, 300);
-  }, [attempt, answers]);
 
-  const handleSubmit = useCallback((autoSubmit = false) => {
+    try {
+      for (const questionId of dirtyIds) {
+        await saveSingleAnswer(questionId);
+      }
+
+      if (showSavedToast) {
+        showNotification('Answers saved successfully.', 'success', 2500);
+      }
+    } catch (error) {
+      showNotification(error?.message || 'Failed to save answers', 'error');
+    } finally {
+      setAutoSaving(false);
+    }
+  }, [attempt, saveSingleAnswer]);
+
+  const handleSubmit = useCallback(async (autoSubmit = false) => {
+    if (!attempt?.attempt_id || submitting) return;
+
     if (!autoSubmit) {
       const confirmed = confirm('Are you sure you want to submit your quiz?');
       if (!confirmed) return;
     }
+
     setSubmitting(true);
-    setTimeout(() => {
-      showNotification('Quiz submitted successfully!', 'success');
+
+    try {
+      await saveAnswersToServer(false);
+      await quizAPI.submitQuiz(attempt.attempt_id);
+
+      showNotification(
+        autoSubmit ? 'Time is up. Quiz submitted automatically.' : 'Quiz submitted successfully!',
+        'success'
+      );
+      autoSubmittedRef.current = true;
+
+      navigate(`/student/quiz/${quizId}/results/${attempt.attempt_id}`);
+    } catch (error) {
+      showNotification(error?.message || 'Failed to submit quiz', 'error');
+    } finally {
       setSubmitting(false);
-      navigate(`/student/quiz/${quizId}/results/${attempt.id}`);
-    }, 500);
-  }, [attempt, quizId, navigate]);
+    }
+  }, [attempt, submitting, saveAnswersToServer, navigate, quizId]);
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      startQuizAttempt();
-    }, 0);
-    
+    startQuizAttempt();
+  }, [startQuizAttempt]);
+
+  useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden && attempt) {
+      if (document.hidden && attempt?.attempt_id && !autoSubmittedRef.current) {
         _setTabSwitchCount(prev => prev + 1);
         setShowWarning(true);
         setTimeout(() => setShowWarning(false), 3000);
       }
     };
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
+
     const handleBeforeUnload = (e) => {
+      if (!attempt?.attempt_id || autoSubmittedRef.current) return;
       e.preventDefault();
       e.returnValue = '';
     };
+
     window.addEventListener('beforeunload', handleBeforeUnload);
+
     return () => {
-      clearTimeout(timer);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
     };
-  }, [startQuizAttempt, attempt]);
+  }, [attempt]);
 
   useEffect(() => {
-    if (attempt && timeRemaining > 0) {
+    if (attempt?.attempt_id && timeRemaining > 0) {
       timerRef.current = setInterval(() => {
         setTimeRemaining(prev => {
           if (prev <= 1) {
-            handleSubmit(true);
+            if (!autoSubmittedRef.current) {
+              autoSubmittedRef.current = true;
+              handleSubmit(true);
+            }
             return 0;
           }
           return prev - 1;
@@ -127,31 +266,53 @@ const TakeQuiz = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [attempt, timeRemaining, handleSubmit]);
+  }, [attempt, handleSubmit, timeRemaining]);
 
   useEffect(() => {
-    if (attempt) {
+    if (attempt?.attempt_id) {
       autoSaveTimerRef.current = setInterval(() => {
-        saveAnswersToServer();
+        saveAnswersToServer(false);
       }, 30000);
     }
+
     return () => {
       if (autoSaveTimerRef.current) clearInterval(autoSaveTimerRef.current);
     };
   }, [attempt, saveAnswersToServer]);
 
   const handleAnswerChange = (questionId, value) => {
-    setAnswers(prev => ({ ...prev, [questionId]: value }));
+    const question = questions.find((q) => (q.question_id || q.id) === questionId);
+    if (!question) return;
+
+    const serialized = serializeAnswer(value);
+    if (serialized !== (lastSaveRef.current[questionId] || '')) {
+      dirtyAnswersRef.current.add(questionId);
+    } else {
+      dirtyAnswersRef.current.delete(questionId);
+    }
+
+    setAnswers((prev) => ({ ...prev, [questionId]: value }));
   };
 
   const handleMultipleChoiceToggle = (questionId, optionId) => {
     setAnswers(prev => {
       const current = prev[questionId] || [];
+      let next = [];
+
       if (current.includes(optionId)) {
-        return { ...prev, [questionId]: current.filter(id => id !== optionId) };
+        next = current.filter(id => id !== optionId);
       } else {
-        return { ...prev, [questionId]: [...current, optionId] };
+        next = [...current, optionId];
       }
+
+      const serialized = serializeAnswer(next);
+      if (serialized !== (lastSaveRef.current[questionId] || '')) {
+        dirtyAnswersRef.current.add(questionId);
+      } else {
+        dirtyAnswersRef.current.delete(questionId);
+      }
+
+      return { ...prev, [questionId]: next };
     });
   };
 
@@ -174,6 +335,11 @@ const TakeQuiz = () => {
   }
 
   const currentQuestion = questions[currentQuestionIndex];
+  const currentQuestionId = currentQuestion?.question_id || currentQuestion?.id;
+  const currentQuestionType = normalizeQuestionType(currentQuestion?.question_type);
+
+  const currentOptions = Array.isArray(currentQuestion?.options) ? currentQuestion.options : [];
+  const currentAnswer = answers[currentQuestionId];
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -198,15 +364,61 @@ const TakeQuiz = () => {
         {showWarning && (<div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6 flex items-center gap-3"><FaExclamationTriangle className="text-yellow-600" /><span>Tab switch detected.</span></div>)}
 
         <div className="bg-white rounded-lg shadow-md p-8 mb-6">
-          <h2 className="text-xl font-semibold mb-6">{currentQuestion?.question_text}</h2>
+          <h2 className="text-xl font-semibold mb-6">{currentQuestion?.question_text || 'No question available'}</h2>
 
-          {currentQuestion?.question_type === 'MCQ_SINGLE' && (<div className="space-y-3">{currentQuestion?.options?.map(option => (<label key={option.id} className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="radio" name="answer" value={option.id} checked={answers[currentQuestion?.id] === option.id} onChange={() => handleAnswerChange(currentQuestion?.id, option.id)} className="w-4 h-4" /><span className="ml-3">{option.option_text}</span></label>))}</div>)}
+          {currentQuestionType === QUESTION_TYPES.SINGLE && (
+            <div className="space-y-3">
+              {currentOptions.map((option) => {
+                const optionId = option.option_id || option.id;
+                return (
+                  <label key={optionId} className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="radio"
+                      name={`answer-${currentQuestionId}`}
+                      value={optionId}
+                      checked={String(currentAnswer || '') === String(optionId)}
+                      onChange={() => handleAnswerChange(currentQuestionId, optionId)}
+                      className="w-4 h-4"
+                    />
+                    <span className="ml-3">{option.option_text}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
 
-          {currentQuestion?.question_type === 'TRUE_FALSE' && (<div className="space-y-3">{currentQuestion?.options?.map(option => (<label key={option.id} className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="radio" name="answer" value={option.id} checked={answers[currentQuestion?.id] === option.id} onChange={() => handleAnswerChange(currentQuestion?.id, option.id)} className="w-4 h-4" /><span className="ml-3">{option.option_text}</span></label>))}</div>)}
+          {currentQuestionType === QUESTION_TYPES.MULTIPLE && (
+            <div className="space-y-3">
+              {currentOptions.map((option) => {
+                const optionId = option.option_id || option.id;
+                return (
+                  <label key={optionId} className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50">
+                    <input
+                      type="checkbox"
+                      checked={(currentAnswer || []).map(String).includes(String(optionId))}
+                      onChange={() => handleMultipleChoiceToggle(currentQuestionId, optionId)}
+                      className="w-4 h-4"
+                    />
+                    <span className="ml-3">{option.option_text}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
 
-          {currentQuestion?.question_type === 'MCQ_MULTIPLE' && (<div className="space-y-3">{currentQuestion?.options?.map(option => (<label key={option.id} className="flex items-center p-4 border rounded-lg cursor-pointer hover:bg-gray-50"><input type="checkbox" checked={(answers[currentQuestion?.id] || []).includes(option.id)} onChange={() => handleMultipleChoiceToggle(currentQuestion?.id, option.id)} className="w-4 h-4" /><span className="ml-3">{option.option_text}</span></label>))}</div>)}
+          {(currentQuestionType === QUESTION_TYPES.SHORT || currentQuestionType === QUESTION_TYPES.LONG) && (
+            <textarea
+              value={currentAnswer || ''}
+              onChange={(e) => handleAnswerChange(currentQuestionId, e.target.value)}
+              placeholder="Type your answer..."
+              rows={currentQuestionType === QUESTION_TYPES.LONG ? 8 : 3}
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          )}
 
-          {(['SHORT_ANSWER', 'LONG_ANSWER'].includes(currentQuestion?.question_type)) && (<textarea value={answers[currentQuestion?.id] || ''} onChange={(e) => handleAnswerChange(currentQuestion?.id, e.target.value)} placeholder="Type your answer..." rows={currentQuestion?.question_type === 'LONG_ANSWER' ? 8 : 3} className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" />)}
+          {!currentQuestion && (
+            <p className="text-gray-600">No questions available for this quiz.</p>
+          )}
         </div>
 
         <div className="flex items-center justify-between">
@@ -215,7 +427,7 @@ const TakeQuiz = () => {
             label="Save"
             loadingLabel="Saving..."
             isLoading={autoSaving}
-            onClick={() => saveAnswersToServer()}
+            onClick={() => saveAnswersToServer(true)}
             icon={<FaSave />}
             variant="success"
           />
@@ -229,6 +441,7 @@ const TakeQuiz = () => {
                 onClick={() => handleSubmit()}
                 icon={<FaCheck />}
                 variant="secondary"
+                disabled={questions.length === 0}
               />
             )}
           </div>
