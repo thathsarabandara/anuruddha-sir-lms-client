@@ -11,6 +11,7 @@ import TextViewer from '../../components/TextViewer';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
+import EnrollmentKeyManager from '../../components/teacher/EnrollmentKeyManager';
 import { courseAPI } from '../../api/course';
 import { quizAPI } from '../../api/quiz';
 import {
@@ -61,6 +62,13 @@ const CourseDetail = () => {
 
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+
+  const tabs = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'content', label: 'Content' },
+    { key: 'enrollment-keys', label: 'Enrollment Keys' },
+    { key: 'settings', label: 'Settings' },
+  ];
   const [course, setCourse] = useState(null);
   const [notification, setNotification] = useState(null);
   const [sections, setSections] = useState([]);
@@ -1066,17 +1074,17 @@ const CourseDetail = () => {
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
-          {['overview', 'content', 'settings'].map((tab) => (
+          {tabs.map((tab) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
               className={`${
-                activeTab === tab
+                activeTab === tab.key
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
               } whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm capitalize`}
             >
-              {tab}
+              {tab.label}
             </button>
           ))}
         </nav>
@@ -1561,6 +1569,13 @@ const CourseDetail = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {activeTab === 'enrollment-keys' && (
+        <EnrollmentKeyManager
+          courseId={courseId}
+          showNotification={showNotification}
+        />
       )}
 
       {/* Edit Course Modal */}
