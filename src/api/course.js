@@ -129,6 +129,11 @@ export const courseAPI = {
 			{ params: { course_id: courseId, key_id: keyId } }
 		),
 
+	updateEnrollmentKey: (courseId, keyId, keyData) =>
+		axiosInstance.put(`${COURSE_BASE}/enrollment-keys`, keyData, {
+			params: { course_id: courseId, key_id: keyId },
+		}),
+
 	getEnrollmentKeyAnalytics: (courseId, keyId) =>
 		axiosInstance.get(`${COURSE_BASE}/enrollment-keys/analytics`, {
 			params: { course_id: courseId, key_id: keyId },
