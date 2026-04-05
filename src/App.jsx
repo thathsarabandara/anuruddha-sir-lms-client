@@ -110,7 +110,6 @@ function App() {
           <Route path={ROUTES.STUDENT_DASHBOARD} element={<StudentDashboard />} />
           <Route path={ROUTES.STUDENT_COURSES} element={<StudentCourses />} />
           <Route path="/student/courses/discover" element={<StudentCoursesDiscover />} />
-          <Route path="/student/course/:courseId" element={<StudentCoursesDiscover />} />
           <Route path="/student/course/:courseId/learn" element={<StudentCourseLearning />} />
           <Route path={ROUTES.STUDENT_LIVE_CLASSES} element={<StudentLiveClasses />} />
           <Route path={ROUTES.STUDENT_QUIZZES} element={<StudentQuizzes />} />
