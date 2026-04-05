@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import Notification from '../../components/common/Notification';
 import CourseCard from '../../components/common/CourseCard';
 import { courseAPI } from '../../api/course';
+import { useCart } from '../../hooks/useCart';
 import {
   COURSE_SUBJECT_OPTIONS,
   COURSE_GRADE_LEVEL_OPTIONS,
@@ -14,6 +15,7 @@ import {
 
 const StudentCourses = () => {
   const navigate = useNavigate();
+  const { addToCart } = useCart();
   const gradeLevels = COURSE_GRADE_LEVEL_OPTIONS.map((grade) => ({
     id: grade.value,
     name: grade.label,
@@ -211,9 +213,14 @@ const StudentCourses = () => {
       : filteredCompletedCourses;
 
   // Event handlers for CourseCard buttons
-  const handleAddToCart = useCallback((course) => {
-    setNotification({ message: `${course.title} added to cart!`, type: 'success', duration: 3000 });
-  }, []);
+  const handleAddToCart = useCallback(async (course) => {
+    const result = await addToCart(course);
+    setNotification({
+      message: result.message || `${course.title} added to cart!`,
+      type: result.success ? 'success' : 'error',
+      duration: 3000,
+    });
+  }, [addToCart]);
 
   const handleContinueLearning = useCallback((course) => {
     navigate(`/student/course/${course.id}/learn`);
