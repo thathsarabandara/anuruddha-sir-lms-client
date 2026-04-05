@@ -5,6 +5,8 @@ const CART_BASE = '/cart';
 export const cartAPI = {
   getMyCart: () => axiosInstance.get(`${CART_BASE}/`),
 
+  getMyCartCount: () => axiosInstance.get(`${CART_BASE}/count`),
+
   addCourseToCart: (courseId) =>
     axiosInstance.post(`${CART_BASE}/items/course`, {
       course_id: courseId,
