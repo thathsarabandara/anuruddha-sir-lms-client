@@ -94,7 +94,7 @@ export const courseAPI = {
 		}),
 
 	getMyCourses: (queryParams = {}) =>
-		axiosInstance.get('/users/my-courses', { params: queryParams }),
+		axiosInstance.get(`${COURSE_BASE}/users/my-courses`, { params: queryParams }),
 
 	getTeacherDashboardStats: () => axiosInstance.get(`${COURSE_BASE}/stats`),
 
