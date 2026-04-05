@@ -1,6 +1,6 @@
 import axiosInstance from './axios';
 
-const COURSE_BASE = '/courses';
+const COURSE_BASE = '/course';
 
 /**
  * Course Management API
@@ -11,15 +11,34 @@ export const courseAPI = {
 	// Course CRUD
 	// ---------------------------------------------------------------------------
 
-	createCourse: (courseData) => axiosInstance.post(COURSE_BASE, courseData),
+	createCourse: (courseData) => axiosInstance.post(`${COURSE_BASE}/`, courseData),
 
-	getCourses: (queryParams = {}) => axiosInstance.get(COURSE_BASE, { params: queryParams }),
+	getCourses: (queryParams = {}) => axiosInstance.get(`${COURSE_BASE}/`, { params: queryParams }),
+
+	getTeacherCourses: (queryParams = {}) =>
+		axiosInstance.get(`${COURSE_BASE}/teacher/courses`, { params: queryParams }),
 
 	getCourseDetails: (courseId) =>
 		axiosInstance.get(`${COURSE_BASE}/details`, { params: { course_id: courseId } }),
 
 	updateCourse: (courseId, updateData) =>
 		axiosInstance.put(`${COURSE_BASE}/update`, updateData, {
+			params: { course_id: courseId },
+		}),
+
+	uploadCourseThumbnail: (courseId, file, onUploadProgress) => {
+		const formData = new FormData();
+		formData.append('thumbnail', file);
+
+		return axiosInstance.post(`${COURSE_BASE}/thumbnail/upload`, formData, {
+			params: { course_id: courseId },
+			headers: { 'Content-Type': 'multipart/form-data' },
+			...(onUploadProgress ? { onUploadProgress } : {}),
+		});
+	},
+
+	deleteCourseThumbnail: (courseId) =>
+		axiosInstance.delete(`${COURSE_BASE}/thumbnail`, {
 			params: { course_id: courseId },
 		}),
 
@@ -77,10 +96,10 @@ export const courseAPI = {
 	getMyCourses: (queryParams = {}) =>
 		axiosInstance.get('/users/my-courses', { params: queryParams }),
 
-	getTeacherDashboardStats: () => axiosInstance.get('/stats'),
+	getTeacherDashboardStats: () => axiosInstance.get(`${COURSE_BASE}/stats`),
 
 	getCourseStats: (courseId) =>
-		axiosInstance.get('/course/stats', {
+		axiosInstance.get(`${COURSE_BASE}/stats`, {
 			params: { course_id: courseId },
 		}),
 
@@ -183,6 +202,36 @@ export const courseAPI = {
 			params: { course_id: courseId, lesson_id: lessonId },
 		}),
 
+	uploadVideoContentFile: (courseId, lessonId, file, extraData = {}) => {
+		const formData = new FormData();
+		formData.append('video_file', file);
+
+		Object.entries(extraData).forEach(([key, value]) => {
+			if (value !== undefined && value !== null && value !== '') {
+				formData.append(key, value);
+			}
+		});
+
+		return axiosInstance.post(`${COURSE_BASE}/contents/video/upload`, formData, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		});
+	},
+
+	uploadPdfContentFile: (courseId, lessonId, file, extraData = {}) => {
+		const formData = new FormData();
+		formData.append('pdf_file', file);
+
+		Object.entries(extraData).forEach(([key, value]) => {
+			if (value !== undefined && value !== null && value !== '') {
+				formData.append(key, value);
+			}
+		});
+
+		return axiosInstance.post(`${COURSE_BASE}/contents/pdf/upload`, formData, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		});
+	},
+
 	updateVideoContent: (courseId, lessonId, contentId, contentData) =>
 		axiosInstance.put(`${COURSE_BASE}/contents/video`, contentData, {
 			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
@@ -224,7 +273,7 @@ export const courseAPI = {
 		}),
 
 	downloadPdfContent: (courseId, lessonId, contentId) =>
-		axiosInstance.get(`${COURSE_BASE}/contents/download`, {
+		axiosInstance.get(`${COURSE_BASE}/contents/pdf/download`, {
 			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
 		}),
 
@@ -250,6 +299,11 @@ export const courseAPI = {
 
 	getCourseContent: (courseId) =>
 		axiosInstance.get(`${COURSE_BASE}/content`, { params: { course_id: courseId } }),
+
+	getCourseContentDetails: (courseId, lessonId) =>
+		axiosInstance.get(`${COURSE_BASE}/content/details`, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		}),
 
 	streamVideoContent: (courseId, lessonId, contentId) =>
 		axiosInstance.get(`${COURSE_BASE}/contents/stream`, {
