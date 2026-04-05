@@ -59,6 +59,11 @@ const StudentCourses = () => {
     (course, extra = {}) => {
       const rawRating = course?.average_rating ?? course?.rating;
       const parsedRating = Number.parseFloat(rawRating);
+      const progress = Number(course?.progress || 0);
+      const isCompleted =
+        String(course?.status || '').toLowerCase() === 'completed' ||
+        Boolean(course?.completed_at) ||
+        progress >= 100;
 
       return {
         ...course,
@@ -74,13 +79,27 @@ const StudentCourses = () => {
         price: Number(course?.price || 0),
         rating: Number.isFinite(parsedRating) ? parsedRating : null,
         students: Number(course?.total_enrollments || 0),
-        progress: Number(course?.progress || 0),
-        certificate: extra.certificate ?? Boolean(course?.completed_at),
+        progress,
+        certificate: extra.certificate ?? isCompleted,
         description: course?.description || '',
       };
     },
     [subjectLabelMap]
   );
+
+  const normalizeEnrollmentStatus = useCallback((course) => {
+    const rawStatus = String(course?.status || '').toLowerCase();
+    const progress = Number(course?.progress || 0);
+
+    if (rawStatus === 'dropped') return 'dropped';
+    if (rawStatus === 'completed' || Boolean(course?.completed_at) || progress >= 100) {
+      return 'completed';
+    }
+    if (rawStatus === 'in_progress' || progress > 0) {
+      return 'in_progress';
+    }
+    return 'enrolled';
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -106,17 +125,33 @@ const StudentCourses = () => {
   }, [debouncedSearchQuery, filters.subjects, filters.grades, filters.types, mapCourse]);
 
   const loadMyCourses = useCallback(async () => {
-    const [enrolledRes, inProgressRes, completedRes] = await Promise.all([
-      courseAPI.getMyCourses({ status: 'enrolled', page: 1, limit: 200 }),
-      courseAPI.getMyCourses({ status: 'in_progress', page: 1, limit: 200 }),
-      courseAPI.getMyCourses({ status: 'completed', page: 1, limit: 200 }),
-    ]);
+    const pageSize = 100;
+    let page = 1;
+    let totalPages = 1;
+    const rows = [];
 
-    const enrolledRows = enrolledRes?.data?.data || [];
-    const inProgressRows = inProgressRes?.data?.data || [];
-    const completedRows = completedRes?.data?.data || [];
+    do {
+      const response = await courseAPI.getMyCourses({ page, limit: pageSize });
+      const pageRows = response?.data?.data || [];
+      const pagination = response?.data?.pagination || {};
+      totalPages = Number(pagination.total_pages || 1);
 
-    const allEnrolled = [...enrolledRows, ...inProgressRows];
+      if (Array.isArray(pageRows)) {
+        rows.push(...pageRows);
+      }
+
+      page += 1;
+    } while (page <= totalPages && page <= 20);
+
+    const normalizedRows = rows.map((row) => ({
+      ...row,
+      status: normalizeEnrollmentStatus(row),
+    }));
+
+    const allEnrolled = normalizedRows.filter(
+      (row) => row.status === 'enrolled' || row.status === 'in_progress'
+    );
+    const completedRows = normalizedRows.filter((row) => row.status === 'completed');
 
     setEnrolledCourses(Array.isArray(allEnrolled) ? allEnrolled.map((row) => mapCourse(row)) : []);
     setCompletedCourses(
@@ -128,7 +163,7 @@ const StudentCourses = () => {
           )
         : []
     );
-  }, [mapCourse]);
+  }, [mapCourse, normalizeEnrollmentStatus]);
 
   useEffect(() => {
     const loadDiscoverCourses = async () => {
