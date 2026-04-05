@@ -19,7 +19,6 @@ import { courseAPI } from '../../api/course';
 import { useCart } from '../../hooks/useCart';
 import { ROUTES } from '../../utils/constants';
 import { getToken } from '../../utils/helpers';
-import { COURSE_SUBJECT_OPTIONS} from '../../utils/courseOptions';
 
 const formatMoney = (amount) => {
   const value = Number(amount || 0);
@@ -35,12 +34,6 @@ const formatDuration = (hours) => {
   if (!hours && hours !== 0) return 'Self-paced';
   if (hours === 0) return 'Self-paced';
   return `${hours}h`;
-};
-
-const toSubjectLabel = (subjectKey) => {
-  if (!subjectKey) return 'General';
-  const found = COURSE_SUBJECT_OPTIONS.find(option => option.value === subjectKey);
-  return found ? found.label : subjectKey;
 };
 
 const toCourse = (row) => {
@@ -162,7 +155,11 @@ const CourseView = () => {
         }
 
         if (isAuthenticated) {
-          const myCoursesRes = await courseAPI.getMyCourses({ page: 1, limit: 200 });
+          const myCoursesRes = await courseAPI.getMyCourses({
+            course_id: courseId,
+            page: 1,
+            limit: 1,
+          });
           const rows = Array.isArray(myCoursesRes?.data?.data) ? myCoursesRes.data.data : [];
           const enrolled = rows.some((row) => String(row.course_id || row.id) === String(courseId));
           setIsEnrolled(enrolled);
@@ -346,7 +343,7 @@ const CourseView = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <FaBook />
-                  <span>{toSubjectLabel(course.subject)} | Grade {course.gradeLevel}</span>
+                  <span>{course.subject} | Grade {course.gradeLevel}</span>
                 </div>
               </div>
 
@@ -491,6 +488,14 @@ const CourseView = () => {
               <h3 className="text-lg font-bold text-slate-900 mb-4">Course Details</h3>
               <div className="space-y-3 text-sm">
                 <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Status</span>
+                  <span className="font-medium uppercase text-slate-900">{course.status}</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-500">Visibility</span>
+                  <span className="font-medium uppercase text-slate-900">{course.visibility}</span>
+                </div>
+                <div className="flex items-center justify-between">
                   <span className="text-slate-500">Total Sections</span>
                   <span className="font-semibold text-slate-900">{sections.length}</span>
                 </div>
@@ -505,10 +510,33 @@ const CourseView = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Price</span>
                   <span className="font-semibold text-slate-900 flex items-center gap-1">
-                    {course.isPaid ? formatMoney(course.price) : 'Free'}
+                    <FaDollarSign /> {course.isPaid ? formatMoney(course.price) : 'Free'}
                   </span>
                 </div>
               </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 p-6">
+              <h3 className="text-lg font-bold text-slate-900 mb-3">Enrollment Key Access</h3>
+              <p className="text-sm text-slate-600 mb-4">
+                If you received an enrollment key from your teacher, paste it above and click
+                <span className="font-semibold"> Enroll With Key</span>.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  const trimmed = enrollmentKey.trim();
+                  if (!trimmed) {
+                    showNotification('Enter the enrollment key first', 'warning');
+                    return;
+                  }
+                  enrollWithKey();
+                }}
+                disabled={isSubmitting}
+                className="w-full py-2.5 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                <FaKey /> Quick Enroll With Key
+              </button>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-6">
