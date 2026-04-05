@@ -1,22 +1,46 @@
 import { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ROUTES } from '../../utils/constants';
 import { FaBook, FaFilePdf, FaVideo, FaPlayCircle } from 'react-icons/fa';
 import CourseCard from '../../components/common/CourseCard';
 import { courseAPI } from '../../api/course';
+import { cartAPI } from '../../api/cart';
 import { COURSE_SUBJECT_OPTIONS, COURSE_TYPE_OPTIONS } from '../../utils/courseOptions';
+import Notification from '../../components/common/Notification';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const Courses = () => {
+  const navigate = useNavigate();
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedCourseType, setSelectedCourseType] = useState('all');
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [notification, setNotification] = useState(null);
   const containerRef = useRef(null);
+
+  const showNotification = (message, type = 'info', duration = 4000) => {
+    setNotification({ message, type, duration });
+  };
+
+  const handleAddToCart = async (course) => {
+    const courseId = course?.course_id || course?.id;
+    if (!courseId) {
+      showNotification('Course information is missing', 'error');
+      return;
+    }
+
+    try {
+      await cartAPI.addCourseToCart(courseId);
+      showNotification('Course added to cart', 'success');
+      navigate('/student/cart');
+    } catch (err) {
+      showNotification(err?.message || 'Failed to add course to cart', 'error');
+    }
+  };
 
   const subjects = [
     { id: 'all', name: 'All Courses' },
@@ -124,6 +148,16 @@ const Courses = () => {
 
   return (
     <div ref={containerRef}>
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 max-w-md">
+          <Notification
+            message={notification.message}
+            type={notification.type}
+            duration={notification.duration}
+            onClose={() => setNotification(null)}
+          />
+        </div>
+      )}
       {/* Header */}
       <section className="relative py-24 overflow-hidden h-96">
         {/* Background Image with Overlay */}
@@ -210,6 +244,9 @@ const Courses = () => {
                 course={course}
                 userType="public"
                 courseStatus="new"
+                onAddToCart={handleAddToCart}
+                onViewDetails={(selectedCourse) => navigate(`/courses/${selectedCourse.id || selectedCourse.course_id}`)}
+                onNotification={showNotification}
               />
               ))}
             </div>
