@@ -1,9 +1,11 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   FaEye, FaEdit, FaTrash, FaShoppingCart, FaChartBar, FaCertificate,
   FaStar, FaClock, FaBook, FaUsers, FaDollarSign, FaCheckCircle,
   FaVideo, FaGraduationCap
 } from 'react-icons/fa';
+import { COURSE_TYPE_OPTIONS, COURSE_SUBJECT_OPTIONS, COURSE_GRADE_LEVEL_OPTIONS } from '../../utils/courseOptions';
 
 /**
  * Reusable CourseCard Component
@@ -30,10 +32,31 @@ const CourseCard = ({
 }) => {
   const navigate = useNavigate();
 
+  // Create label maps for course metadata
+  const courseTypeMap = useMemo(
+    () => COURSE_TYPE_OPTIONS.reduce((acc, option) => ({ ...acc, [option.value]: option.label }), {}),
+    []
+  );
+  const subjectMap = useMemo(
+    () => COURSE_SUBJECT_OPTIONS.reduce((acc, option) => ({ ...acc, [option.value]: option.label }), {}),
+    []
+  );
+  const gradeLevelMap = useMemo(
+    () => COURSE_GRADE_LEVEL_OPTIONS.reduce((acc, option) => ({ ...acc, [option.value]: option.label }), {}),
+    []
+  );
+
   const formatPrice = (price, priceType = 'PAID') => {
-    if (priceType === 'FREE' || !price) return 'Free';
+    const normalizedPriceType = String(priceType || '').toUpperCase();
+    if (normalizedPriceType === 'FREE' || !price) return 'Free';
     return `Rs. ${parseFloat(price).toLocaleString()}`;
   };
+
+  const resolvedRating = Number.parseFloat(course.rating ?? course.average_rating ?? '');
+  const hasRating = Number.isFinite(resolvedRating) && resolvedRating > 0;
+  const displayRating = hasRating ? resolvedRating.toFixed(1) : 'N/A';
+  const displayTeacherName = course.teacher_name || course.instructor_name || course.teacher || 'N/A';
+  const thumbnailSrc = course.thumbnail || course.thumbnail_url || null;
 
   // ==================== UNIFIED CARD STRUCTURE ====================
   return (
@@ -41,9 +64,9 @@ const CourseCard = ({
       
       {/* IMAGE SECTION - Consistent across all types */}
       <div className="relative h-44 bg-gradient-to-br from-slate-100 to-slate-200 overflow-hidden">
-        {course.thumbnail ? (
+        {thumbnailSrc ? (
           <img 
-            src={course.thumbnail} 
+            src={thumbnailSrc} 
             alt={course.title}
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" 
           />
@@ -106,26 +129,6 @@ const CourseCard = ({
       {/* CONTENT SECTION */}
       <div className="p-5">
         
-        {/* Subject & Grade Badges */}
-        <div className="mb-3 flex gap-2 flex-wrap">
-          {course.subject && (
-            <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-blue-50 text-blue-700 border border-blue-100">
-              {course.subject}
-            </span>
-          )}
-          {course.grade_level && (
-            <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-purple-50 text-purple-700 border border-purple-100">
-              {course.grade_level}
-            </span>
-          )}
-          {/* Student-New: Show badge if present */}
-          {userType === 'student' && courseStatus === 'new' && course.badge && (
-            <span className="px-2.5 py-1 rounded-md text-xs font-medium bg-orange-50 text-orange-700 border border-orange-100">
-              {course.badge}
-            </span>
-          )}
-        </div>
-
         {/* TITLE */}
         <h3 className="text-base font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-indigo-600 transition-colors">
           {course.title}
@@ -136,33 +139,46 @@ const CourseCard = ({
           <p className="text-xs text-gray-600 mb-3 line-clamp-1">{course.description}</p>
         )}
 
-        {/* TEACHER NAME */}
-        {course.teacher_name && (
-          <div className="flex items-center text-sm text-gray-600 mb-4">
-            <FaBook className="mr-2 text-gray-400 flex-shrink-0" />
-            <span className="truncate">{course.teacher_name}</span>
-          </div>
-        )}
-
         <div className="h-px bg-gray-100 mb-4"></div>
 
         {/* ============ ADMIN CONTENT ============ */}
         {userType === 'admin' && (
           <>
             <div className="space-y-3 mb-4">
+              {displayTeacherName && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Teacher</span>
+                  <span className="text-sm font-medium text-gray-700">{displayTeacherName}</span>
+                </div>
+              )}
+
+              {course.subject && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Subject</span>
+                  <span className="text-sm font-medium text-gray-700">{subjectMap[course.subject] || course.subject}</span>
+                </div>
+              )}
+
+              {course.grade_level && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Level</span>
+                  <span className="text-sm font-medium text-gray-700">{gradeLevelMap[course.grade_level] || course.grade_level}</span>
+                </div>
+              )}
+
+              {course.course_type && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Type</span>
+                  <span className="text-sm font-medium text-gray-700">{courseTypeMap[course.course_type] || course.course_type}</span>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-gray-500">Price</span>
                 <span className="text-sm font-semibold text-gray-900">
                   {formatPrice(course.price, course.price_type)}
                 </span>
               </div>
-
-              {course.grade_level && (
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-medium text-gray-500">Level</span>
-                  <span className="text-sm font-medium text-gray-700">{course.grade_level}</span>
-                </div>
-              )}
 
               {course.status === 'PUBLISHED' && (
                 <>
@@ -248,6 +264,34 @@ const CourseCard = ({
         {userType === 'teacher' && (
           <>
             <div className="space-y-3 mb-4">
+              {displayTeacherName && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Teacher</span>
+                  <span className="text-sm font-medium text-gray-700">{displayTeacherName}</span>
+                </div>
+              )}
+
+              {course.subject && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Subject</span>
+                  <span className="text-sm font-medium text-gray-700">{subjectMap[course.subject] || course.subject}</span>
+                </div>
+              )}
+
+              {course.grade_level && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Level</span>
+                  <span className="text-sm font-medium text-gray-700">{gradeLevelMap[course.grade_level] || course.grade_level}</span>
+                </div>
+              )}
+
+              {course.course_type && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Type</span>
+                  <span className="text-sm font-medium text-gray-700">{courseTypeMap[course.course_type] || course.course_type}</span>
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-gray-500">Students</span>
                 <span className="text-sm font-semibold text-gray-900 flex items-center gap-2">
@@ -262,12 +306,15 @@ const CourseCard = ({
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-500">Rating</span>
-                <span className="text-sm font-semibold text-gray-900 flex items-center gap-2">
-                  <FaStar className="text-yellow-500" /> {course.average_rating?.toFixed(1) || 'N/A'}
-                </span>
-              </div>
+              {hasRating && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Rating</span>
+                  <span className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <FaStar className="text-yellow-500" />
+                    {displayRating}
+                  </span>
+                </div>
+              )}
 
               <div className="flex items-center justify-between">
                 <span className="text-xs font-medium text-gray-500">Created</span>
@@ -310,12 +357,42 @@ const CourseCard = ({
         {userType === 'student' && courseStatus === 'new' && (
           <>
             <div className="space-y-3 mb-4">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium text-gray-500">Rating</span>
-                <span className="text-sm font-semibold text-gray-900 flex items-center gap-1">
-                  <FaStar className="text-yellow-400" /> {course.rating || 'N/A'}
-                </span>
-              </div>
+              {displayTeacherName && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Teacher</span>
+                  <span className="text-sm font-medium text-gray-700">{displayTeacherName}</span>
+                </div>
+              )}
+
+              {course.subject && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Subject</span>
+                  <span className="text-sm font-medium text-gray-700">{subjectMap[course.subject] || course.subject}</span>
+                </div>
+              )}
+
+              {course.grade_level && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Level</span>
+                  <span className="text-sm font-medium text-gray-700">{gradeLevelMap[course.grade_level] || course.grade_level}</span>
+                </div>
+              )}
+
+              {course.course_type && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Type</span>
+                  <span className="text-sm font-medium text-gray-700">{courseTypeMap[course.course_type] || course.course_type}</span>
+                </div>
+              )}
+
+              {hasRating && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Rating</span>
+                  <span className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                    <FaStar className="text-yellow-400" /> {displayRating}
+                  </span>
+                </div>
+              )}
 
               {course.students && (
                 <div className="flex items-center justify-between">
@@ -370,6 +447,58 @@ const CourseCard = ({
           </>
         )}
 
+        {/* ============ PUBLIC COURSE CONTENT (WITHOUT LOGIN) ============ */}
+        {userType === 'public' && (
+          <>
+            <div className="space-y-3 mb-4">
+              {displayTeacherName && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Teacher</span>
+                  <span className="text-sm font-medium text-gray-700">{displayTeacherName}</span>
+                </div>
+              )}
+
+              {course.subject && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Subject</span>
+                  <span className="text-sm font-medium text-gray-700">{subjectMap[course.subject] || course.subject}</span>
+                </div>
+              )}
+
+              {course.grade_level && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Level</span>
+                  <span className="text-sm font-medium text-gray-700">{gradeLevelMap[course.grade_level] || course.grade_level}</span>
+                </div>
+              )}
+
+              {course.course_type && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Type</span>
+                  <span className="text-sm font-medium text-gray-700">{courseTypeMap[course.course_type] || course.course_type}</span>
+                </div>
+              )}
+
+              {hasRating && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Rating</span>
+                  <span className="text-sm font-semibold text-gray-900 flex items-center gap-1">
+                    <FaStar className="text-yellow-400" />
+                    {displayRating}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-gray-500">Price</span>
+                <span className="text-base font-bold text-indigo-600">
+                  {course.priceText || formatPrice(course.price, course.price_type)}
+                </span>
+              </div>
+            </div>
+          </>
+        )}
+
         {/* ============ STUDENT - ENROLLED COURSE CONTENT ============ */}
         {userType === 'student' && courseStatus === 'enrolled' && (
           <>
@@ -390,6 +519,27 @@ const CourseCard = ({
             )}
 
             <div className="space-y-3 mb-4">
+              {displayTeacherName && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Teacher</span>
+                  <span className="text-sm font-medium text-gray-700">{displayTeacherName}</span>
+                </div>
+              )}
+
+              {course.subject && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Subject</span>
+                  <span className="text-sm font-medium text-gray-700">{subjectMap[course.subject] || course.subject}</span>
+                </div>
+              )}
+
+              {course.course_type && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Type</span>
+                  <span className="text-sm font-medium text-gray-700">{courseTypeMap[course.course_type] || course.course_type}</span>
+                </div>
+              )}
+
               {course.lessonsCompleted !== undefined && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-gray-500">Lessons</span>
@@ -463,6 +613,27 @@ const CourseCard = ({
             </div>
 
             <div className="space-y-3 mb-4">
+              {displayTeacherName && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Teacher</span>
+                  <span className="text-sm font-medium text-gray-700">{displayTeacherName}</span>
+                </div>
+              )}
+
+              {course.subject && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Subject</span>
+                  <span className="text-sm font-medium text-gray-700">{subjectMap[course.subject] || course.subject}</span>
+                </div>
+              )}
+
+              {course.course_type && (
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-medium text-gray-500">Type</span>
+                  <span className="text-sm font-medium text-gray-700">{courseTypeMap[course.course_type] || course.course_type}</span>
+                </div>
+              )}
+
               {course.finalScore !== undefined && (
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-medium text-gray-500">Final Score</span>
