@@ -1,9 +1,11 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import { FaSearch, FaFilter, FaTimes, FaBook, FaBookOpen } from 'react-icons/fa';
 import { MdOutlineWorkspacePremium } from 'react-icons/md';
 import { GrCompliance } from 'react-icons/gr';
+import { useNavigate } from 'react-router-dom';
 import Notification from '../../components/common/Notification';
-import DataTable from '../../components/common/DataTable';
+import CourseCard from '../../components/common/CourseCard';
+import { courseAPI } from '../../api/course';
 import {
   COURSE_SUBJECT_OPTIONS,
   COURSE_GRADE_LEVEL_OPTIONS,
@@ -11,45 +13,30 @@ import {
 } from '../../utils/courseOptions';
 
 const StudentCourses = () => {
-  // Dummy data
-  const dummyNewCourses = [
-    { id: 1, title: 'Advanced Python', teacher_name: 'Dr. John', price: 49.99, rating: 4.8, students: 245 },
-    { id: 2, title: 'Web Development 101', teacher_name: 'Mr. Davis', price: 39.99, rating: 4.6, students: 180 },
-  ];
-  
-  const dummyEnrolledCourses = [
-    { id: 1, title: 'JavaScript Basics', progress: 45, teacher_name: 'Jane Smith' },
-    { id: 2, title: 'React Fundamentals', progress: 65, teacher_name: 'John Doe' },
-  ];
-
-  const dummyCompletedCourses = [
-    { id: 1, title: 'HTML & CSS Basics', certificate: true, teacher_name: 'Tom Wilson' },
-  ];
-
-  const dummyGradeLevels = COURSE_GRADE_LEVEL_OPTIONS.map((grade) => ({
+  const navigate = useNavigate();
+  const gradeLevels = COURSE_GRADE_LEVEL_OPTIONS.map((grade) => ({
     id: grade.value,
     name: grade.label,
   }));
-  const dummySubjects = COURSE_SUBJECT_OPTIONS.map((subject) => ({
+  const subjects = COURSE_SUBJECT_OPTIONS.map((subject) => ({
     id: subject.value,
     name: subject.label,
   }));
-  const dummyCourseTypes = COURSE_TYPE_OPTIONS.map((type) => ({
+  const courseTypes = COURSE_TYPE_OPTIONS.map((type) => ({
     id: type.value,
     name: type.label,
   }));
 
   const [activeTab, setActiveTab] = useState('enrolled');
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(true);
-  const newCourses = dummyNewCourses;
-  const enrolledCourses = dummyEnrolledCourses;
-  const completedCourses = dummyCompletedCourses;
-  const loading = false;
-  const error = null;
-  const gradeLevels = dummyGradeLevels;
-  const subjects = dummySubjects;
-  const courseTypes = dummyCourseTypes;
+  const [newCourses, setNewCourses] = useState([]);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [completedCourses, setCompletedCourses] = useState([]);
+  const [loadingDiscover, setLoadingDiscover] = useState(false);
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     grades: [],
     subjects: [],
@@ -59,21 +46,138 @@ const StudentCourses = () => {
   });
 
   const [notification, setNotification] = useState(null);
+  const loading = loadingDiscover || loadingEnrollments;
+
+  const subjectLabelMap = useMemo(
+    () => COURSE_SUBJECT_OPTIONS.reduce((acc, option) => ({ ...acc, [option.value]: option.label }), {}),
+    []
+  );
+
+  const mapCourse = useCallback(
+    (course, extra = {}) => {
+      const rawRating = course?.average_rating ?? course?.rating;
+      const parsedRating = Number.parseFloat(rawRating);
+
+      return {
+        ...course,
+        ...extra,
+        id: course?.course_id || course?.id,
+        title: course?.title || 'Untitled Course',
+        teacher_name: course?.teacher_name || course?.instructor_name || 'N/A',
+        thumbnail: course?.thumbnail || course?.thumbnail_url || null,
+        subject: subjectLabelMap[course?.subject] || course?.subject || 'N/A',
+        subject_value: course?.subject,
+        grade: course?.grade_level || '',
+        type: course?.course_type || '',
+        price: Number(course?.price || 0),
+        rating: Number.isFinite(parsedRating) ? parsedRating : null,
+        students: Number(course?.total_enrollments || 0),
+        progress: Number(course?.progress || 0),
+        certificate: extra.certificate ?? Boolean(course?.completed_at),
+        description: course?.description || '',
+      };
+    },
+    [subjectLabelMap]
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const loadNewCourses = useCallback(async () => {
+    const params = {
+      page: 1,
+      limit: 200,
+      ...(debouncedSearchQuery ? { q: debouncedSearchQuery } : {}),
+      ...(filters.subjects.length === 1 ? { subject: filters.subjects[0] } : {}),
+      ...(filters.grades.length === 1 ? { grade_level: filters.grades[0] } : {}),
+      ...(filters.types.length === 1 ? { course_type: filters.types[0] } : {}),
+    };
+
+    const response = await courseAPI.getCourses(params);
+    const rows = response?.data?.data || [];
+    setNewCourses(Array.isArray(rows) ? rows.map((row) => mapCourse(row)) : []);
+  }, [debouncedSearchQuery, filters.subjects, filters.grades, filters.types, mapCourse]);
+
+  const loadMyCourses = useCallback(async () => {
+    const [enrolledRes, inProgressRes, completedRes] = await Promise.all([
+      courseAPI.getMyCourses({ status: 'enrolled', page: 1, limit: 200 }),
+      courseAPI.getMyCourses({ status: 'in_progress', page: 1, limit: 200 }),
+      courseAPI.getMyCourses({ status: 'completed', page: 1, limit: 200 }),
+    ]);
+
+    const enrolledRows = enrolledRes?.data?.data || [];
+    const inProgressRows = inProgressRes?.data?.data || [];
+    const completedRows = completedRes?.data?.data || [];
+
+    const allEnrolled = [...enrolledRows, ...inProgressRows];
+
+    setEnrolledCourses(Array.isArray(allEnrolled) ? allEnrolled.map((row) => mapCourse(row)) : []);
+    setCompletedCourses(
+      Array.isArray(completedRows)
+        ? completedRows.map((row) =>
+            mapCourse(row, {
+              certificate: true,
+            })
+          )
+        : []
+    );
+  }, [mapCourse]);
+
+  useEffect(() => {
+    const loadDiscoverCourses = async () => {
+      try {
+        setLoadingDiscover(true);
+        setError(null);
+        await loadNewCourses();
+      } catch (err) {
+        const message = err?.message || 'Failed to load courses';
+        setError(message);
+        setNotification({ message, type: 'error', duration: 5000 });
+      } finally {
+        setLoadingDiscover(false);
+      }
+    };
+
+    loadDiscoverCourses();
+  }, [loadNewCourses]);
+
+  useEffect(() => {
+    const loadStudentEnrollments = async () => {
+      try {
+        setLoadingEnrollments(true);
+        setError(null);
+        await loadMyCourses();
+      } catch (err) {
+        const message = err?.message || 'Failed to load my courses';
+        setError(message);
+        setNotification({ message, type: 'error', duration: 5000 });
+      } finally {
+        setLoadingEnrollments(false);
+      }
+    };
+
+    loadStudentEnrollments();
+  }, [loadMyCourses]);
 
   // Filter Application Function
   const applyFilters = useCallback((coursesToFilter) => {
     return coursesToFilter.filter(course => {
       const matchesSearch = 
-        course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         course.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         false;
 
       const matchesGrade = filters.grades.length === 0 || (course.grade && filters.grades.includes(course.grade));
-      const matchesSubject = filters.subjects.length === 0 || (course.subject && filters.subjects.includes(course.subject));
+      const matchesSubject = filters.subjects.length === 0 || (course.subject_value && filters.subjects.includes(course.subject_value));
       const matchesType = filters.types.length === 0 || !course.type || filters.types.includes(course.type);
-      const matchesPrice = !course.price || (course.price >= filters.priceRange[0] && course.price <= filters.priceRange[1]);
-      const matchesRating = !course.rating || course.rating >= filters.rating;
+      const matchesPrice = course.price >= filters.priceRange[0] && course.price <= filters.priceRange[1];
+      const matchesRating = filters.rating === 0 || course.rating >= filters.rating;
 
       return matchesSearch && matchesGrade && matchesSubject && matchesType && matchesPrice && matchesRating;
     });
@@ -83,6 +187,16 @@ const StudentCourses = () => {
   const filteredNewCourses = useMemo(() => applyFilters(newCourses), [applyFilters, newCourses]);
   const filteredEnrolledCourses = useMemo(() => applyFilters(enrolledCourses), [applyFilters, enrolledCourses]);
   const filteredCompletedCourses = useMemo(() => applyFilters(completedCourses), [applyFilters, completedCourses]);
+
+  const enrolledCourseIds = useMemo(
+    () => new Set(enrolledCourses.map((course) => String(course.id)).filter(Boolean)),
+    [enrolledCourses]
+  );
+
+  const completedCourseIds = useMemo(
+    () => new Set(completedCourses.map((course) => String(course.id)).filter(Boolean)),
+    [completedCourses]
+  );
 
   const currentFilteredCount = 
     activeTab === 'new' ? filteredNewCourses.length :
@@ -96,86 +210,34 @@ const StudentCourses = () => {
       ? filteredEnrolledCourses
       : filteredCompletedCourses;
 
-  const tableColumns = useMemo(() => {
-    if (activeTab === 'new') {
-      return [
-        { key: 'title', label: 'Course Title' },
-        { key: 'teacher_name', label: 'Teacher' },
-        { key: 'subject', label: 'Subject', render: (value) => value || 'N/A' },
-        {
-          key: 'price',
-          label: 'Price',
-          render: (value) => (value ? `Rs. ${Number(value).toLocaleString()}` : 'Free'),
-        },
-        {
-          key: 'rating',
-          label: 'Rating',
-          render: (value) => (value ? `${value} Stars` : 'N/A'),
-        },
-        {
-          key: 'students',
-          label: 'Students',
-          render: (value) => (value ? Number(value).toLocaleString() : '0'),
-        },
-      ];
-    }
+  // Event handlers for CourseCard buttons
+  const handleAddToCart = useCallback((course) => {
+    setNotification({ message: `${course.title} added to cart!`, type: 'success', duration: 3000 });
+  }, []);
 
-    if (activeTab === 'enrolled') {
-      return [
-        { key: 'title', label: 'Course Title' },
-        { key: 'teacher_name', label: 'Teacher' },
-        { key: 'subject', label: 'Subject', render: (value) => value || 'N/A' },
-        {
-          key: 'progress',
-          label: 'Progress',
-          render: (value) => (
-            <div className="min-w-28">
-              <p className="text-xs text-slate-600 mb-1">{value || 0}%</p>
-              <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-green-500 to-green-600"
-                  style={{ width: `${value || 0}%` }}
-                />
-              </div>
-            </div>
-          ),
-        },
-      ];
-    }
+  const handleContinueLearning = useCallback((course) => {
+    navigate(`/student/course/${course.id}/learn`);
+  }, [navigate]);
 
-    return [
-      { key: 'title', label: 'Course Title' },
-      { key: 'teacher_name', label: 'Teacher' },
-      { key: 'subject', label: 'Subject', render: (value) => value || 'N/A' },
-      {
-        key: 'certificate',
-        label: 'Certificate',
-        render: (value) => (
-          <span
-            className={`px-2 py-1 text-xs font-semibold rounded-full ${
-              value ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-600'
-            }`}
-          >
-            {value ? 'Available' : 'Not Available'}
-          </span>
-        ),
-      },
-    ];
-  }, [activeTab]);
+  const handleViewStats = useCallback((course) => {
+    navigate(`/student/course/${course.id}/stats`);
+  }, [navigate]);
 
-  const tableConfig = useMemo(
-    () => ({
-      itemsPerPage: 9,
-      hideSearch: true,
-      emptyMessage:
-        activeTab === 'new'
-          ? 'No courses match your filters'
-          : activeTab === 'enrolled'
-          ? 'No enrolled courses. Start learning today!'
-          : 'No completed courses yet. Keep learning!',
-    }),
-    [activeTab]
-  );
+  const handleDownloadCertificate = useCallback((courseId) => {
+    // TODO: Implement certificate download API call
+    console.log('Downloading certificate for course:', courseId);
+    setNotification({ message: 'Downloading certificate...', type: 'success', duration: 3000 });
+  }, []);
+
+  const handleViewReport = useCallback((courseId) => {
+    navigate(`/student/course/${courseId}/report`);
+  }, [navigate]);
+
+  const getEmptyMessage = () => {
+    if (activeTab === 'new') return 'No courses match your filters';
+    if (activeTab === 'enrolled') return 'No enrolled courses. Start learning today!';
+    return 'No completed courses yet. Keep learning!';
+  };
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => {
@@ -379,8 +441,8 @@ const StudentCourses = () => {
                     <label key={grade.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
                       <input
                         type="checkbox"
-                        checked={filters.grades.includes(grade.name)}
-                        onChange={() => handleFilterChange('grades', grade.name)}
+                        checked={filters.grades.includes(grade.id)}
+                        onChange={() => handleFilterChange('grades', grade.id)}
                         className="w-4 h-4 text-blue-600 rounded"
                       />
                       <span className="text-slate-700">{grade.name}</span>
@@ -403,8 +465,8 @@ const StudentCourses = () => {
                     <label key={subject.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
                       <input
                         type="checkbox"
-                        checked={filters.subjects.includes(subject.name)}
-                        onChange={() => handleFilterChange('subjects', subject.name)}
+                        checked={filters.subjects.includes(subject.id)}
+                        onChange={() => handleFilterChange('subjects', subject.id)}
                         className="w-4 h-4 text-blue-600 rounded"
                       />
                       <span className="text-slate-700">{subject.name}</span>
@@ -528,14 +590,40 @@ const StudentCourses = () => {
           </h2>
           <p className="text-slate-600 mb-6">Showing {currentFilteredCount} course(s)</p>
 
-          <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 sm:p-6">
-            <DataTable
-              data={currentFilteredCourses}
-              columns={tableColumns}
-              config={tableConfig}
-              loading={loading}
-            />
-          </div>
+          {currentFilteredCourses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {currentFilteredCourses.map((course) => {
+                  const courseId = String(course.id);
+                  const derivedStatus = activeTab === 'new'
+                    ? completedCourseIds.has(courseId)
+                      ? 'completed'
+                      : enrolledCourseIds.has(courseId)
+                      ? 'enrolled'
+                      : 'new'
+                    : activeTab;
+
+                  return (
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  userType="student"
+                  courseStatus={derivedStatus}
+                  onAddToCart={handleAddToCart}
+                  onContinueLearning={handleContinueLearning}
+                  onViewStats={handleViewStats}
+                  onDownloadCertificate={handleDownloadCertificate}
+                  onViewReport={handleViewReport}
+                  loading={loading}
+                />
+                  );
+                })}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center">
+              <FaBook className="mx-auto text-5xl text-slate-300 mb-4" />
+              <p className="text-slate-600 text-lg font-medium">{getEmptyMessage()}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
