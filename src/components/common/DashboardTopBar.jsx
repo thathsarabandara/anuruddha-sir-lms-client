@@ -1,9 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaBell, FaUser, FaCog, FaSignOutAlt, FaShoppingCart } from 'react-icons/fa';
 import { FaGem } from 'react-icons/fa';
 import { logout } from '../../app/slices/authSlice';
+import { studentAPI } from '../../api/student';
+import { cartAPI } from '../../api/cart';
 import { ROUTES, ROLES } from '../../utils/constants';
 import gsap from 'gsap';
 import { CiMenuBurger } from 'react-icons/ci';
@@ -14,7 +16,9 @@ const DashboardTopBar = ({ onMenuToggle }) => {
   const navigate = useNavigate();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
-  const [notifications] = useState(3);
+  const [notifications, setNotifications] = useState([]);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [cartItemCount, setCartItemCount] = useState(0);
   const dropdownRef = useRef(null);
   const notificationsRef = useRef(null);
 
@@ -57,6 +61,50 @@ const DashboardTopBar = ({ onMenuToggle }) => {
     ? `${user.profile_picture}`
     : null;
   const isStudent = user?.role === ROLES.STUDENT;
+  const notificationRoute = isStudent ? ROUTES.STUDENT_NOTIFICATIONS : ROUTES.HOME;
+
+  const fetchTopBarData = useCallback(async () => {
+    if (!user?.user_id) return;
+
+    try {
+      const requests = [studentAPI.getTopbarNotificationSummary(3)];
+
+      if (isStudent) {
+        requests.push(cartAPI.getMyCartCount());
+      }
+
+      const [notificationResponse, cartResponse] = await Promise.all(requests);
+      const notificationData = notificationResponse?.data?.data || {};
+
+      setUnreadNotificationCount(Number(notificationData?.unread_count || 0));
+      setNotifications(
+        Array.isArray(notificationData?.notifications)
+          ? notificationData.notifications
+          : []
+      );
+
+      if (isStudent) {
+        setCartItemCount(Number(cartResponse?.data?.data?.item_count || 0));
+      } else {
+        setCartItemCount(0);
+      }
+    } catch (_) {
+      setUnreadNotificationCount(0);
+      setNotifications([]);
+      setCartItemCount(0);
+    }
+  }, [isStudent, user?.user_id]);
+
+  useEffect(() => {
+    fetchTopBarData();
+  }, [fetchTopBarData]);
+
+  const formatNotificationTimestamp = (value) => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString();
+  };
 
   return (
     <div className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
@@ -85,15 +133,43 @@ const DashboardTopBar = ({ onMenuToggle }) => {
                 <p className="font-semibold">Notifications</p>
               </div>
               <div className="p-4">
-                <p className="text-sm text-gray-600">You have {notifications} notifications.</p>
-                <div className="mt-3 space-y-2">
-                  <div className="p-3 bg-gray-50 rounded-md">
-                    <p className="text-sm">No new notifications.</p>
+                <p className="text-sm text-gray-600">
+                  You have {unreadNotificationCount} unread notifications.
+                </p>
+                {notifications.length > 0 ? (
+                  <div className="mt-3 space-y-2">
+                    {notifications.map((item) => (
+                      <div key={item.notification_id} className="p-3 bg-gray-50 rounded-md">
+                        <p className="text-sm font-semibold text-gray-900 line-clamp-1">
+                          {item.title || 'Notification'}
+                        </p>
+                        <p className="text-xs text-gray-600 line-clamp-2 mt-1">
+                          {item.message || 'No message provided.'}
+                        </p>
+                        {item.created_at && (
+                          <p className="text-[11px] text-gray-500 mt-2">
+                            {formatNotificationTimestamp(item.created_at)}
+                          </p>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                </div>
+                ) : (
+                  <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                    <p className="text-sm">No notifications yet.</p>
+                  </div>
+                )}
               </div>
               <div className="border-t border-gray-100 p-3 text-right">
-                <button className="text-sm text-primary-600 font-medium">View All</button>
+                <button
+                  className="text-sm text-primary-600 font-medium"
+                  onClick={() => {
+                    navigate(notificationRoute);
+                    setIsNotificationsOpen(false);
+                  }}
+                >
+                  View All
+                </button>
               </div>
             </div>
           )}
@@ -119,9 +195,9 @@ const DashboardTopBar = ({ onMenuToggle }) => {
               }}
             >
               <FaBell className="text-xl text-gray-600 group-hover:text-primary-600" />
-              {notifications > 0 && (
+              {unreadNotificationCount > 0 && (
                 <span className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                  {notifications}
+                  {unreadNotificationCount}
                 </span>
               )}
             </button>
@@ -133,9 +209,11 @@ const DashboardTopBar = ({ onMenuToggle }) => {
                 title="Shopping Cart"
               >
                 <FaShoppingCart className="text-xl text-gray-600 group-hover:text-primary-600" />
-                <span className="absolute top-0 right-0 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
-                  2
-                </span>
+                {cartItemCount > 0 && (
+                  <span className="absolute top-0 right-0 w-5 h-5 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center font-bold">
+                    {cartItemCount}
+                  </span>
+                )}
               </button>
             )}
 
