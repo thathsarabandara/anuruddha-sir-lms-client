@@ -20,6 +20,7 @@ import {
 } from 'react-icons/fa';
 import VideoPlayer from '../../components/VideoPlayer';
 import PDFViewer from '../../components/PDFViewer';
+import TextViewer from '../../components/TextViewer';
 import SectionProgress from '../../components/SectionProgress';
 import Notification from '../../components/common/Notification';
 import ButtonWithLoader from '../../components/common/ButtonWithLoader';
@@ -156,7 +157,6 @@ const getDummyCourseData = () => ({
         {
           id: 'lesson-6',
           title: 'Inheritance & Polymorphism',
-          description: 'Master inheritance, method overriding, and polymorphism.',
           content_type: 'TEXT',
           type: 'TEXT',
           description: 'Learn how to create class hierarchies and use polymorphism effectively in Python applications.',
@@ -734,12 +734,18 @@ const StudentCourseLearning = () => {
                       </div>
                     )
                   ) : currentLesson.type === 'TEXT' ? (
-                    <div className="aspect-video bg-slate-50 flex items-center justify-center p-8">
-                      <div className="bg-white rounded-lg p-8 max-w-2xl">
-                        <h2 className="text-2xl font-bold text-slate-900 mb-4">{currentLesson.title}</h2>
-                        <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{currentLesson.description}</p>
-                      </div>
-                    </div>
+                    <TextViewer
+                      key={currentLesson.id}
+                      title={currentLesson.title}
+                      content={currentLesson.description || ''}
+                      contentId={currentLesson.id}
+                      onComplete={() => {
+                        if (!completedLessons.has(currentLesson.id)) {
+                          markLessonComplete(currentLesson);
+                        }
+                      }}
+                      isCompleted={completedLessons.has(currentLesson.id)}
+                    />
                   ) : currentLesson.type === 'LINK' && currentLesson.videoUrl ? (
                     <iframe
                       src={currentLesson.videoUrl}
