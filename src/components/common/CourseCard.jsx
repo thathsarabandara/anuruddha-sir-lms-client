@@ -57,6 +57,18 @@ const CourseCard = ({
   const displayRating = hasRating ? resolvedRating.toFixed(1) : 'N/A';
   const displayTeacherName = course.teacher_name || course.instructor_name || course.teacher || 'N/A';
   const thumbnailSrc = course.thumbnail || course.thumbnail_url || null;
+  const courseIdentifier = course.id || course.course_id;
+
+  const handleOpenCourseDetails = () => {
+    if (onViewDetails) {
+      onViewDetails(course);
+      return;
+    }
+
+    if (courseIdentifier) {
+      navigate(`/student/course/${courseIdentifier}`);
+    }
+  };
 
   // ==================== UNIFIED CARD STRUCTURE ====================
   return (
@@ -430,20 +442,30 @@ const CourseCard = ({
             <div className="h-px bg-gray-100 mb-4"></div>
 
             {/* Student-New Button */}
-            <button
-              onClick={() => {
-                if (onAddToCart) {
-                  onAddToCart(course);
-                } else if (onNotification) {
-                  onNotification('Added to cart!', 'success');
-                }
-              }}
-              disabled={loading}
-              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 flex items-center justify-center gap-2"
-            >
-              <FaShoppingCart className="text-sm" />
-              Add to Cart
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleOpenCourseDetails}
+                disabled={loading}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-50 text-slate-700 py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                <FaEye className="text-sm" />
+                View
+              </button>
+              <button
+                onClick={() => {
+                  if (onAddToCart) {
+                    onAddToCart(course);
+                  } else if (onNotification) {
+                    onNotification('Added to cart!', 'success');
+                  }
+                }}
+                disabled={loading}
+                className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                <FaShoppingCart className="text-sm" />
+                Add to Cart
+              </button>
+            </div>
           </>
         )}
 
