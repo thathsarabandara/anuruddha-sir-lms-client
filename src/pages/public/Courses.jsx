@@ -3,116 +3,77 @@ import { Link } from 'react-router-dom';
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import { ROUTES } from '../../utils/constants';
-import { FaBook, FaCheck, FaClock, FaFilePdf, FaVideo, FaStar, FaPlayCircle } from 'react-icons/fa';
+import { FaBook, FaFilePdf, FaVideo, FaPlayCircle } from 'react-icons/fa';
 import CourseCard from '../../components/common/CourseCard';
+import { courseAPI } from '../../api/course';
+import { COURSE_SUBJECT_OPTIONS, COURSE_TYPE_OPTIONS } from '../../utils/courseOptions';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const Courses = () => {
   const [selectedSubject, setSelectedSubject] = useState('all');
+  const [selectedCourseType, setSelectedCourseType] = useState('all');
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const containerRef = useRef(null);
-
-  const courses = [
-    {
-      id: 1,
-      title: 'Complete Scholarship Package',
-      img: '/assets/images/courses/hero.jpeg ',
-      subject: 'all',
-      description: 'Comprehensive coverage of all subjects for Grade 5 Scholarship',
-      duration: '6 Months',
-      classes: '48 Live Classes',
-      price: 'Rs. 15,000',
-      originalPrice: 'Rs. 18,000',
-      rating: 4.9,
-      reviews: 247,
-      features: ['All Subjects', 'Live Classes', 'Recorded Sessions', 'Study Materials', 'Mock Exams'],
-      color: 'from-primary-600 to-primary-700',
-      badge: 'Most Popular',
-    },
-    {
-      id: 2,
-      title: 'Sinhala Language & Literature',
-      subject: 'sinhala',
-      description: 'Master Sinhala language skills with comprehensive grammar and comprehension',
-      duration: '3 Months',
-      classes: '24 Live Classes',
-      price: 'Rs. 8,000',
-      originalPrice: 'Rs. 10,000',
-      rating: 4.8,
-      reviews: 156,
-      features: ['Grammar Mastery', 'Essay Writing', 'Comprehension', 'Practice Papers'],
-      color: 'from-blue-500 to-blue-600',
-    },
-    {
-      id: 3,
-      title: 'Mathematics Excellence',
-      subject: 'maths',
-      description: 'Build strong mathematical foundation with problem-solving techniques',
-      duration: '3 Months',
-      classes: '24 Live Classes',
-      price: 'Rs. 8,000',
-      originalPrice: 'Rs. 10,000',
-      rating: 4.9,
-      reviews: 189,
-      features: ['Basic to Advanced', 'Problem Solving', 'Mental Math', 'Speed Techniques'],
-      color: 'from-green-500 to-green-600',
-    },
-    {
-      id: 4,
-      title: 'Environment Studies',
-      subject: 'environment',
-      description: 'Explore Sri Lankan environment, history, and general knowledge',
-      duration: '3 Months',
-      classes: '24 Live Classes',
-      price: 'Rs. 8,000',
-      originalPrice: 'Rs. 10,000',
-      rating: 4.7,
-      reviews: 124,
-      features: ['Geography', 'History', 'Science', 'Current Affairs'],
-      color: 'from-yellow-500 to-yellow-600',
-    },
-    {
-      id: 5,
-      title: 'English Language',
-      subject: 'english',
-      description: 'Improve English communication and comprehension skills',
-      duration: '3 Months',
-      classes: '24 Live Classes',
-      price: 'Rs. 8,000',
-      originalPrice: 'Rs. 10,000',
-      rating: 4.8,
-      reviews: 167,
-      features: ['Grammar', 'Vocabulary', 'Reading', 'Writing'],
-      color: 'from-purple-500 to-purple-600',
-    },
-    {
-      id: 6,
-      title: 'Intensive Revision Program',
-      subject: 'all',
-      description: 'Last-minute comprehensive revision with mock exams',
-      duration: '1 Month',
-      classes: '12 Live Classes',
-      price: 'Rs. 5,000',
-      originalPrice: 'Rs. 7,000',
-      rating: 4.9,
-      reviews: 298,
-      features: ['All Subjects', 'Mock Exams', 'Doubt Clearing', 'Exam Tips'],
-      color: 'from-red-500 to-red-600',
-      badge: 'Best Value',
-    },
-  ];
 
   const subjects = [
     { id: 'all', name: 'All Courses' },
-    { id: 'sinhala', name: 'Sinhala' },
-    { id: 'maths', name: 'Mathematics' },
-    { id: 'environment', name: 'Environment' },
-    { id: 'english', name: 'English' },
+    ...COURSE_SUBJECT_OPTIONS.map((subject) => ({ id: subject.value, name: subject.label })),
   ];
 
-  const filteredCourses = selectedSubject === 'all' 
-    ? courses 
-    : courses.filter(course => course.subject === selectedSubject || course.subject === 'all');
+  const courseTypes = [
+    { id: 'all', name: 'All Types' },
+    ...COURSE_TYPE_OPTIONS.map((type) => ({ id: type.value, name: type.label })),
+  ];
+
+  const filteredCourses = courses.filter((course) => {
+    const subjectMatched = selectedSubject === 'all'
+      || course.subject === selectedSubject
+      || course.subject === 'all-shishyathwaya';
+
+    const courseTypeMatched = selectedCourseType === 'all' || course.course_type === selectedCourseType;
+
+    return subjectMatched && courseTypeMatched;
+  });
+
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const params = {
+          page: 1,
+          limit: 200,
+          ...(selectedSubject !== 'all' ? { subject: selectedSubject } : {}),
+        };
+
+        const response = await courseAPI.getCourses(params);
+        const rows = response?.data?.data || [];
+
+        const mappedCourses = Array.isArray(rows)
+          ? rows.map((course) => ({
+              ...course,
+              id: course.course_id,
+              thumbnail: course.thumbnail_url,
+              price_type: course.is_paid ? 'paid' : 'free',
+              course_type_label: COURSE_TYPE_OPTIONS.find((type) => type.value === course.course_type)?.label || course.course_type,
+            }))
+          : [];
+
+        setCourses(mappedCourses);
+      } catch (err) {
+        setError(err?.message || 'Failed to load courses');
+        setCourses([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCourses();
+  }, [selectedSubject]);
 
   useEffect(() => {
     const headerTitle = containerRef.current?.querySelector('[data-header-title]');
@@ -207,6 +168,21 @@ const Courses = () => {
                 {subject.name}
               </button>
             ))}
+
+            {courseTypes.map((courseType) => (
+              <button
+                data-subject-btn
+                key={`course-type-${courseType.id}`}
+                onClick={() => setSelectedCourseType(courseType.id)}
+                className={`px-6 py-2.5 rounded-full font-medium transition-all duration-300 transform ${
+                  selectedCourseType === courseType.id
+                    ? 'bg-gradient-to-r from-secondary-600 to-secondary-700 text-white shadow-lg scale-105'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {courseType.name}
+              </button>
+            ))}
           </div>
         </div>
       </section>
@@ -214,16 +190,36 @@ const Courses = () => {
       {/* Courses Grid */}
       <section className="py-16 bg-gradient-to-br from-gray-50 to-blue-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredCourses.map((course) => (
+          {error && (
+            <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-700">
+              {error}
+            </div>
+          )}
+
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, idx) => (
+                <div key={idx} className="h-80 rounded-xl border border-gray-200 bg-white animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredCourses.map((course) => (
               <CourseCard 
-                key={course.id} 
+                key={course.id}
                 course={course}
-                userType="student"
+                userType="public"
                 courseStatus="new"
               />
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+
+          {!loading && !error && filteredCourses.length === 0 && (
+            <div className="mt-8 rounded-xl border border-gray-200 bg-white p-8 text-center text-gray-600">
+              No courses found for this subject yet.
+            </div>
+          )}
         </div>
       </section>
 
