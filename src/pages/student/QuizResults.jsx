@@ -3,16 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaTimes, FaTrophy, FaClock, FaClipboardCheck, FaExclamationCircle } from 'react-icons/fa';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
 import Notification from '../../components/common/Notification';
-
-const dummyResults = {
-  attempt: { id: 'attempt-001', score: 75, started_at: '2024-03-10T10:00:00', submitted_at: '2024-03-10T10:30:00' },
-  quiz: { id: 1, title: 'Sample Quiz', total_marks: 100, passing_score: 60 },
-  questions_with_answers: [
-    { id: 1, question_text: 'What is 2+2?', student_answer: '4', correct_answer: '4', marks_earned: 10, total_marks: 10, is_correct: true },
-    { id: 2, question_text: 'True or False: JS is a language', student_answer: 'True', correct_answer: 'True', marks_earned: 10, total_marks: 10, is_correct: true },
-  ],
-  statistics: { total_questions: 2, correct_answers: 2, incorrect_answers: 0, time_taken: '30 minutes' },
-};
+import { quizAPI } from '../../api/quiz';
 
 const QuizResults = () => {
   const { quizId, attemptId } = useParams();
@@ -20,18 +11,28 @@ const QuizResults = () => {
   
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [notification, setNotification] = useState(null);
 
-  const fetchResults = () => {
+  const fetchResults = async () => {
     setLoading(true);
-    setTimeout(() => {
-      setResults(dummyResults);
+    try {
+      const response = await quizAPI.getAttemptDetails(attemptId);
+      setResults(response?.data?.data || null);
+    } catch (error) {
+      setNotification({
+        message: error?.message || 'Unable to load quiz results.',
+        type: 'error',
+        duration: 5000,
+      });
+      setResults(null);
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   };
 
   useEffect(() => {
     fetchResults();
-  }, []);
+  }, [attemptId]);
 
   if (loading) {
     return (
@@ -87,14 +88,8 @@ const QuizResults = () => {
   }
 
   const { attempt, quiz, questions_with_answers, statistics } = results;
-  const scorePercentage = (attempt.score / quiz.total_marks) * 100;
-  const passed = scorePercentage >= quiz.passing_score;
-
-  const [notification, setNotification] = useState(null);
-
-  const showNotification = (message, type = 'info', duration = 5000) => {
-    setNotification({ message, type, duration });
-  };
+  const scorePercentage = quiz?.total_marks ? ((attempt.score || 0) / quiz.total_marks) * 100 : 0;
+  const passed = typeof attempt.passed === 'boolean' ? attempt.passed : scorePercentage >= (quiz?.passing_score || 0);
 
   return (
     <div className="min-h-screen bg-gray-50 p-8">
@@ -137,7 +132,7 @@ const QuizResults = () => {
                 {Math.round(scorePercentage)}%
               </span>
               <div className="text-left">
-                <div className="text-2xl font-bold text-gray-900">{attempt.score}/{quiz.total_marks}</div>
+                <div className="text-2xl font-bold text-gray-900">{attempt.score || 0}/{quiz.total_marks || 0}</div>
                 <div className="text-sm text-gray-600">points</div>
               </div>
             </div>
@@ -160,7 +155,7 @@ const QuizResults = () => {
             <div className="text-center">
               <div className="text-sm text-gray-600 mb-1">Time Taken</div>
               <div className="text-2xl font-bold text-primary-600">
-                {Math.floor(attempt.time_taken / 60)}:{(attempt.time_taken % 60).toString().padStart(2, '0')}
+                {statistics.time_taken}
               </div>
             </div>
             <div className="text-center">
@@ -172,7 +167,7 @@ const QuizResults = () => {
             <div className="text-center">
               <div className="text-sm text-gray-600 mb-1">Attempt</div>
               <div className="text-2xl font-bold text-gray-900">
-                {attempt.attempt_number}/{quiz.max_attempts}
+                1/{quiz.max_attempts || 1}
               </div>
             </div>
           </div>
@@ -191,6 +186,10 @@ const QuizResults = () => {
           
           {questions_with_answers.map((item, index) => {
             const { question, user_answer, is_correct, earned_marks } = item;
+            const selectedOptionIds = Array.isArray(user_answer?.selected_options)
+              ? user_answer.selected_options.map(String)
+              : [];
+            const selectedOptionId = user_answer?.selected_option_id != null ? String(user_answer.selected_option_id) : null;
             
             return (
               <div key={question.id} className="card">
@@ -238,9 +237,10 @@ const QuizResults = () => {
                   question.question_type === 'TRUE_FALSE') && (
                   <div className="space-y-2">
                     {question.options?.map((option) => {
+                      const optionId = String(option.id);
                       const isUserAnswer = question.question_type === 'MCQ_MULTIPLE'
-                        ? user_answer?.selected_options?.includes(option.id)
-                        : user_answer?.selected_option_id === option.id;
+                        ? selectedOptionIds.includes(optionId)
+                        : selectedOptionId === optionId;
                       const isCorrect = option.is_correct;
                       
                       return (
@@ -284,13 +284,6 @@ const QuizResults = () => {
                       <div className="text-sm font-medium text-gray-700 mb-1">Your Answer:</div>
                       <p className="text-gray-900">{user_answer?.text_answer || 'No answer provided'}</p>
                     </div>
-                    
-                    {user_answer?.teacher_feedback && (
-                      <div className="p-4 bg-yellow-50 border-2 border-yellow-200 rounded-lg">
-                        <div className="text-sm font-medium text-gray-700 mb-1">Teacher Feedback:</div>
-                        <p className="text-gray-900">{user_answer.teacher_feedback}</p>
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -319,7 +312,7 @@ const QuizResults = () => {
           >
             Back to Quizzes
           </button>
-          {attempt.attempt_number < quiz.max_attempts && !passed && (
+          {!(passed) && (
             <button 
               onClick={() => navigate(`/student/quiz/${quizId}/take`)} 
               className="btn-primary px-8"
