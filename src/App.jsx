@@ -43,6 +43,7 @@ import StudentRecordings from './pages/student/Recordings';
 import StudentCertificates from './pages/student/Certificates';
 import StudentPayments from './pages/student/Payments';
 import StudentRewards from './pages/student/Rewards';
+import StudentNotifications from './pages/student/Notifications';
 import StudentProfile from './pages/student/Profile';
 import StudentCart from './pages/student/Cart';
 import StudentCheckout from './pages/student/Checkout';
@@ -98,6 +99,7 @@ function App() {
           <Route path={ROUTES.TESTIMONIALS} element={<Testimonials />} />
           <Route path={ROUTES.FAQ} element={<FAQ />} />
           <Route path={ROUTES.GALLERY} element={<Gallery />} />
+          <Route path="/courses/:courseId" element={<StudentCoursesView />} />
         </Route>
         
         <Route
@@ -120,6 +122,7 @@ function App() {
           <Route path={ROUTES.STUDENT_CERTIFICATES} element={<StudentCertificates />} />
           <Route path={ROUTES.STUDENT_PAYMENTS} element={<StudentPayments />} />
           <Route path={ROUTES.STUDENT_REWARDS} element={<StudentRewards />} />
+          <Route path={ROUTES.STUDENT_NOTIFICATIONS} element={<StudentNotifications />} />
           <Route path={ROUTES.STUDENT_PROFILE} element={<StudentProfile />} />
           <Route path={ROUTES.STUDENT_CART} element={<StudentCart />} />
           <Route path={ROUTES.STUDENT_CHECKOUT} element={<StudentCheckout />} />
