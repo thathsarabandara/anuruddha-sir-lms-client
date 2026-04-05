@@ -1,41 +1,142 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {  FaCheck, FaGraduationCap, FaTrophy, FaSearch, FaClock, FaClipboardCheck, FaExclamationCircle, FaCheckCircle, FaHourglassHalf, FaTimes, FaCalendarTimes, FaFire, FaChartBar, FaEye } from 'react-icons/fa';
+import {
+  FaGraduationCap,
+  FaTrophy,
+  FaSearch,
+  FaClock,
+  FaExclamationCircle,
+  FaCheckCircle,
+  FaHourglassHalf,
+  FaTimes,
+  FaCalendarTimes,
+  FaFire,
+  FaChartBar,
+} from 'react-icons/fa';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
+import { courseAPI } from '../../api/course';
+import { quizAPI } from '../../api/quiz';
+
+const DEFAULT_QUIZ = {
+  quiz_type: 'GRADED',
+  total_questions: 0,
+  passing_score: 0,
+  time_limit_minutes: 0,
+  user_attempts: 0,
+  max_attempts: 1,
+  user_best_score: null,
+  last_attempt_id: null,
+  start_date: null,
+  end_date: null,
+  status: 'available',
+};
+
+const normalizeEnrollmentStatus = (course) => {
+  const rawStatus = String(course?.status || '').toLowerCase();
+  const progress = Number(course?.progress || 0);
+
+  if (rawStatus === 'dropped') return 'dropped';
+  if (rawStatus === 'completed' || Boolean(course?.completed_at) || progress >= 100) {
+    return 'completed';
+  }
+  if (rawStatus === 'in_progress' || progress > 0) {
+    return 'in_progress';
+  }
+  return 'enrolled';
+};
+
+const getAttemptScore = (attempt) => {
+  const raw = attempt?.percentage ?? attempt?.score_percentage ?? attempt?.score ?? null;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const normalizeQuizDetails = (details) => {
+  if (!details) return {};
+
+  return {
+    quiz_type: details.quiz_type || details.type || 'GRADED',
+    total_questions: Number(details.total_questions || 0),
+    passing_score: Number(details.passing_score || 0),
+    time_limit_minutes: Number(details.duration_minutes || details.time_limit_minutes || 0),
+    max_attempts: Number(details.max_attempts || 1),
+    start_date: details.available_from || details.start_date || null,
+    end_date: details.available_until || details.end_date || null,
+    title: details.title,
+  };
+};
+
+const categorizeQuizStatus = (quiz) => {
+  const now = new Date();
+  const hasEnded = quiz.end_date && new Date(quiz.end_date) < now;
+  const hasNotStarted = quiz.start_date && new Date(quiz.start_date) > now;
+
+  if (hasEnded && quiz.user_attempts === 0) return 'missed';
+  if (hasEnded) return 'expired';
+  if (quiz.user_attempts >= quiz.max_attempts) return 'completed';
+  if (hasNotStarted) return 'upcoming';
+  if (quiz.user_attempts > 0) return 'completed';
+  return 'available';
+};
+
+const quizStatusStyles = {
+  available: { text: 'Available', className: 'bg-emerald-100 text-emerald-700', icon: FaCheckCircle },
+  completed: { text: 'Completed', className: 'bg-green-100 text-green-700', icon: FaCheckCircle },
+  expired: { text: 'Expired', className: 'bg-red-100 text-red-700', icon: FaExclamationCircle },
+  upcoming: { text: 'Upcoming', className: 'bg-blue-100 text-blue-700', icon: FaHourglassHalf },
+  missed: { text: 'Missed', className: 'bg-orange-100 text-orange-700', icon: FaCalendarTimes },
+};
 
 const StudentQuizzes = () => {
   const navigate = useNavigate();
-  
-  // Dummy data
-  const dummyQuizzes = [
-    { id: 1, title: 'Python Basics', course_title: 'Python 101', course_id: 1, status: 'available', quiz_type: 'GRADED', total_questions: 15, passing_score: 70, time_limit_minutes: 60, user_attempts: 0, max_attempts: 3, user_best_score: null, end_date: null },
-    { id: 2, title: 'Advanced OOP', course_title: 'OOP Concepts', course_id: 2, status: 'completed', quiz_type: 'GRADED', total_questions: 20, passing_score: 70, time_limit_minutes: 90, user_attempts: 2, max_attempts: 3, user_best_score: 80, end_date: '2024-02-20', last_attempt_id: 1 },
-    { id: 3, title: 'Data Structures', course_title: 'DSA Course', course_id: 1, status: 'available', quiz_type: 'FINAL_EXAM', total_questions: 18, passing_score: 75, time_limit_minutes: 120, user_attempts: 1, max_attempts: 2, user_best_score: 65, end_date: '2024-03-30' },
-  ];
-  
-  const dummyStats = {
-    completed: 5,
-    avgScore: 78,
-    bestScore: 95,
-    totalAttempts: 8
-  };
-  
+
   const [filter, setFilter] = useState('available');
   const [searchTerm, setSearchTerm] = useState('');
   const [courseSearchTerm, setCourseSearchTerm] = useState('');
   const [courseFilter, setCourseFilter] = useState('all');
   const [showCourseDropdown, setShowCourseDropdown] = useState(false);
-  
-  const [availableQuizzes, _setAvailableQuizzes] = useState(dummyQuizzes.filter(q => q.status === 'available'));
-  const [completedQuizzes, _setCompletedQuizzes] = useState(dummyQuizzes.filter(q => q.status === 'completed'));
-  const [missedQuizzes, _setMissedQuizzes] = useState([]);
-  const [upcomingQuizzes, _setUpcomingQuizzes] = useState([]);
-  const [expiredQuizzes, _setExpiredQuizzes] = useState([]);
-  
-  const [courses, _setCourses] = useState([{ id: 1, title: 'Python 101' }, { id: 2, title: 'OOP Concepts' }]);
-  const [stats, _setStats] = useState(dummyStats);
+
+  const [availableQuizzes, setAvailableQuizzes] = useState([]);
+  const [completedQuizzes, setCompletedQuizzes] = useState([]);
+  const [missedQuizzes, setMissedQuizzes] = useState([]);
+  const [upcomingQuizzes, setUpcomingQuizzes] = useState([]);
+  const [expiredQuizzes, setExpiredQuizzes] = useState([]);
+
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [notification, setNotification] = useState(null);
+
+  const allQuizzes = useMemo(
+    () => [
+      ...availableQuizzes,
+      ...completedQuizzes,
+      ...missedQuizzes,
+      ...upcomingQuizzes,
+      ...expiredQuizzes,
+    ],
+    [availableQuizzes, completedQuizzes, missedQuizzes, upcomingQuizzes, expiredQuizzes]
+  );
+
+  const stats = useMemo(() => {
+    const scores = allQuizzes
+      .map((quiz) => Number(quiz.user_best_score))
+      .filter((value) => Number.isFinite(value));
+
+    const totalAttempts = allQuizzes.reduce((sum, quiz) => sum + Number(quiz.user_attempts || 0), 0);
+    const avgScore = scores.length > 0
+      ? Math.round(scores.reduce((sum, score) => sum + score, 0) / scores.length)
+      : 0;
+    const bestScore = scores.length > 0 ? Math.round(Math.max(...scores)) : 0;
+
+    return {
+      completed: completedQuizzes.length,
+      avgScore,
+      bestScore,
+      totalAttempts,
+    };
+  }, [allQuizzes, completedQuizzes.length]);
 
   const quizzesMetricsConfig = [
     {
@@ -73,35 +174,163 @@ const StudentQuizzes = () => {
       description: 'Number of attempts',
     },
   ];
-  const [loading, _setLoading] = useState(false);
 
-  useEffect(() => {
-    // Initialize with dummy data
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
+  const loadStudentQuizzes = useCallback(async () => {
+    setLoading(true);
+
+    try {
+      const pageSize = 100;
+      let page = 1;
+      let totalPages = 1;
+      const enrolledRows = [];
+
+      do {
+        const response = await courseAPI.getMyCourses({ page, limit: pageSize });
+        const rows = response?.data?.data || [];
+        const pagination = response?.data?.pagination || {};
+        totalPages = Number(pagination.total_pages || 1);
+
+        if (Array.isArray(rows)) {
+          enrolledRows.push(...rows);
+        }
+
+        page += 1;
+      } while (page <= totalPages && page <= 20);
+
+      const activeCourses = enrolledRows
+        .filter((course) => {
+          const status = normalizeEnrollmentStatus(course);
+          return status === 'enrolled' || status === 'in_progress' || status === 'completed';
+        })
+        .map((course) => ({
+          id: course.course_id || course.id,
+          title: course.title || 'Untitled Course',
+        }))
+        .filter((course) => Boolean(course.id));
+
+      setCourses(activeCourses);
+
+      if (activeCourses.length === 0) {
+        setAvailableQuizzes([]);
+        setCompletedQuizzes([]);
+        setMissedQuizzes([]);
+        setUpcomingQuizzes([]);
+        setExpiredQuizzes([]);
+        setLoading(false);
+        return;
+      }
+
+      const contentResponses = await Promise.allSettled(
+        activeCourses.map((course) => courseAPI.getCourseContent(course.id))
+      );
+
+      const quizMap = new Map();
+
+      contentResponses.forEach((response, index) => {
+        if (response.status !== 'fulfilled') {
+          return;
+        }
+
+        const course = activeCourses[index];
+        const sections = response?.value?.data?.data?.sections || [];
+
+        sections.forEach((section) => {
+          const lessons = Array.isArray(section?.lessons) ? section.lessons : [];
+
+          lessons.forEach((lesson) => {
+            if (!lesson?.quiz_id) return;
+            if (quizMap.has(lesson.quiz_id)) return;
+
+            quizMap.set(lesson.quiz_id, {
+              ...DEFAULT_QUIZ,
+              id: lesson.quiz_id,
+              title: lesson.quiz_title || lesson.quiz_content_title || lesson.title || 'Untitled Quiz',
+              course_id: course.id,
+              course_title: course.title,
+            });
+          });
+        });
+      });
+
+      const baseQuizzes = Array.from(quizMap.values());
+
+      const enrichedQuizzes = await Promise.all(
+        baseQuizzes.map(async (quiz) => {
+          const [detailsRes, resultsRes] = await Promise.allSettled([
+            quizAPI.getQuizDetails(quiz.id),
+            quizAPI.getQuizResults(quiz.id),
+          ]);
+
+          const details = detailsRes.status === 'fulfilled' ? detailsRes?.value?.data?.data : null;
+          const attempts = resultsRes.status === 'fulfilled'
+            ? resultsRes?.value?.data?.data?.attempts || []
+            : [];
+
+          const detailFields = normalizeQuizDetails(details);
+          const scores = attempts
+            .map((attempt) => getAttemptScore(attempt))
+            .filter((score) => Number.isFinite(score));
+
+          const sortedAttempts = [...attempts].sort((a, b) => {
+            const aDate = new Date(a?.submitted_at || a?.created_at || 0).getTime();
+            const bDate = new Date(b?.submitted_at || b?.created_at || 0).getTime();
+            return bDate - aDate;
+          });
+
+          const lastAttempt = sortedAttempts[0] || null;
+
+          const mergedQuiz = {
+            ...quiz,
+            ...detailFields,
+            title: detailFields.title || quiz.title,
+            user_attempts: attempts.length,
+            user_best_score: scores.length ? Math.max(...scores) : null,
+            last_attempt_id: lastAttempt?.attempt_id || lastAttempt?.id || null,
+          };
+
+          return {
+            ...mergedQuiz,
+            status: categorizeQuizStatus(mergedQuiz),
+          };
+        })
+      );
+
+      setAvailableQuizzes(enrichedQuizzes.filter((quiz) => quiz.status === 'available'));
+      setCompletedQuizzes(enrichedQuizzes.filter((quiz) => quiz.status === 'completed'));
+      setMissedQuizzes(enrichedQuizzes.filter((quiz) => quiz.status === 'missed'));
+      setUpcomingQuizzes(enrichedQuizzes.filter((quiz) => quiz.status === 'upcoming'));
+      setExpiredQuizzes(enrichedQuizzes.filter((quiz) => quiz.status === 'expired'));
+    } catch (error) {
+      const message = error?.response?.data?.message || error?.message || 'Failed to load quizzes';
+      showNotification(message, 'error');
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
-    // Dummy search - quizzes already loaded
-  }, [searchTerm, courseFilter, filter]);
+    loadStudentQuizzes();
+  }, [loadStudentQuizzes]);
 
   const handleStartQuiz = useCallback((quizId) => {
     navigate(`/student/quiz/${quizId}/take`);
   }, [navigate]);
 
   const handleViewResults = useCallback((quizId, attemptId) => {
+    if (!attemptId) {
+      showNotification('No completed attempt found for this quiz yet.', 'warning');
+      return;
+    }
     navigate(`/student/quiz/${quizId}/results/${attemptId}`);
   }, [navigate]);
 
   const getQuizStatus = (quiz) => {
-    if (quiz.user_attempts >= quiz.max_attempts) {
-      return { text: 'Completed', color: 'green', icon: FaCheckCircle };
-    }
-    if (quiz.end_date && new Date(quiz.end_date) < new Date()) {
-      return { text: 'Expired', color: 'red', icon: FaExclamationCircle };
-    }
-    if (quiz.start_date && new Date(quiz.start_date) > new Date()) {
-      return { text: 'Upcoming', color: 'blue', icon: FaHourglassHalf };
-    }
-    return { text: 'Available', color: 'green', icon: FaCheckCircle };
+    const statusKey = quiz.status || categorizeQuizStatus(quiz);
+    return quizStatusStyles[statusKey] || quizStatusStyles.available;
   };
 
   // Define table columns
@@ -161,7 +390,7 @@ const StudentQuizzes = () => {
         const status = getQuizStatus(row);
         const StatusIcon = status.icon;
         return (
-          <span className={`px-2 py-1 bg-${status.color}-100 text-${status.color}-700 text-xs font-semibold rounded-full flex items-center gap-1 w-fit`}>
+          <span className={`px-2 py-1 text-xs font-semibold rounded-full flex items-center gap-1 w-fit ${status.className}`}>
             <StatusIcon className="text-xs" /> {status.text}
           </span>
         );
@@ -210,8 +439,14 @@ const StudentQuizzes = () => {
   // Filter quizzes based on course filter
   const getFilteredQuizzes = (quizzesList) => {
     return quizzesList.filter(quiz => {
-      const matchesCourse = courseFilter === 'all' || quiz.course_id === courseFilter;
-      return matchesCourse;
+      const matchesCourse = courseFilter === 'all' || String(quiz.course_id) === String(courseFilter);
+      const term = searchTerm.trim().toLowerCase();
+      const matchesSearch =
+        !term ||
+        String(quiz.title || '').toLowerCase().includes(term) ||
+        String(quiz.course_title || '').toLowerCase().includes(term);
+
+      return matchesCourse && matchesSearch;
     });
   };
 
@@ -223,15 +458,15 @@ const StudentQuizzes = () => {
   const getCourseCount = (courseId) => {
     let count = 0;
     if (filter === 'available') {
-      count = availableQuizzes.filter(q => q.course_id === courseId).length;
+      count = availableQuizzes.filter(q => String(q.course_id) === String(courseId)).length;
     } else if (filter === 'completed') {
-      count = completedQuizzes.filter(q => q.course_id === courseId).length;
+      count = completedQuizzes.filter(q => String(q.course_id) === String(courseId)).length;
     } else if (filter === 'expired') {
-      count = expiredQuizzes.filter(q => q.course_id === courseId).length;
+      count = expiredQuizzes.filter(q => String(q.course_id) === String(courseId)).length;
     } else if (filter === 'upcoming') {
-      count = upcomingQuizzes.filter(q => q.course_id === courseId).length;
+      count = upcomingQuizzes.filter(q => String(q.course_id) === String(courseId)).length;
     } else if (filter === 'missed') {
-      count = missedQuizzes.filter(q => q.course_id === courseId).length;
+      count = missedQuizzes.filter(q => String(q.course_id) === String(courseId)).length;
     }
     return count;
   };
@@ -259,12 +494,6 @@ const StudentQuizzes = () => {
   };
 
   const displayData = getDisplayData();
-
-  const [notification, setNotification] = useState(null);
-
-  const showNotification = (message, type = 'info', duration = 5000) => {
-    setNotification({ message, type, duration });
-  };
 
   return (
     <div className="p-8">
@@ -341,7 +570,7 @@ const StudentQuizzes = () => {
                     <span>
                       {courseFilter === 'all' 
                         ? 'All Courses' 
-                        : courses.find(c => c.id === courseFilter)?.title || 'Select Course'
+                        : courses.find(c => String(c.id) === String(courseFilter))?.title || 'Select Course'
                       }
                     </span>
                     <FaSearch className="text-gray-400 text-sm" />
@@ -376,7 +605,7 @@ const StudentQuizzes = () => {
                       >
                         <div className="flex items-center justify-between">
                           <span>All Courses</span>
-                          <span className="text-sm text-gray-500">{availableQuizzes.length + completedQuizzes.length}</span>
+                          <span className="text-sm text-gray-500">{allQuizzes.length}</span>
                         </div>
                       </button>
 
@@ -441,7 +670,7 @@ const StudentQuizzes = () => {
               )}
               {courseFilter !== 'all' && (
                 <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium flex items-center gap-2">
-                  Course: {courses.find(c => c.id === courseFilter)?.title}
+                  Course: {courses.find(c => String(c.id) === String(courseFilter))?.title}
                   <button onClick={() => setCourseFilter('all')} className="hover:text-green-900">
                     <FaTimes className="text-xs" />
                   </button>
