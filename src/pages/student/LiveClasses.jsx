@@ -1,138 +1,97 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { FaBook, FaCalendar, FaCheck, FaClock, FaFileVideo, FaUsers, FaVideo, FaSearch, FaFilter, FaTimes, FaGraduationCap, FaCheckCircle, FaEye } from 'react-icons/fa';
-import { GoDotFill } from 'react-icons/go';
+import { FaBook, FaClock, FaGraduationCap, FaCheckCircle, FaEye } from 'react-icons/fa';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
+import { courseAPI } from '../../api/course';
+import { getUser } from '../../utils/helpers';
 
-// Dummy Live Classes Data
-const getDummyZoomClasses = () => {
+const getStudentDisplayName = () => {
+  const user = getUser();
+  const candidate =
+    user?.full_name ||
+    user?.name ||
+    user?.username ||
+    [user?.first_name, user?.last_name].filter(Boolean).join(' ');
+
+  return String(candidate || 'Student').trim().replace(/\s+/g, ' ');
+};
+
+const buildZoomJoinLink = (zoomLink, displayName = getStudentDisplayName()) => {
+  if (!zoomLink) return null;
+
+  const trimmed = String(zoomLink).trim();
+  if (!trimmed) return null;
+
+  try {
+    const url = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
+    url.searchParams.set('uname', displayName);
+    return url.toString();
+  } catch {
+    const separator = trimmed.includes('?') ? '&' : '?';
+    return `${trimmed}${separator}uname=${encodeURIComponent(displayName)}`;
+  }
+};
+
+const formatTimeFromISO = (isoDate) => {
+  if (!isoDate) return '-';
+  const dateObj = new Date(isoDate);
+  if (Number.isNaN(dateObj.getTime())) return '-';
+  return dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+};
+
+const formatDateSafe = (isoDate) => {
+  if (!isoDate) return 'Not scheduled';
+  const dateObj = new Date(isoDate);
+  if (Number.isNaN(dateObj.getTime())) return 'Not scheduled';
+  return dateObj.toLocaleDateString();
+};
+
+const toLiveClassRows = (enrolledCourses = [], contentByCourse = {}) => {
   const now = new Date();
-  return [
-    {
-      id: 'class-1',
-      title: 'Python Advanced Concepts',
-      subject: 'Programming',
-      instructor: 'John Smith',
-      date: new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString(),
-      time: '2:00 PM',
-      duration: 60,
-      zoom_link: 'https://zoom.us/j/123456789',
-      meeting_id: '123456789',
-      passcode: '123456',
-      description: 'Deep dive into decorators, generators, and async programming',
-      enrolled_students: 45,
-      status: 'scheduled'
-    },
-    {
-      id: 'class-2',
-      title: 'Web Development Fundamentals',
-      subject: 'Web Development',
-      instructor: 'Sarah Lee',
-      date: new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString(),
-      time: '3:30 PM',
-      duration: 90,
-      zoom_link: 'https://zoom.us/j/987654321',
-      meeting_id: '987654321',
-      passcode: '654321',
-      description: 'Learn HTML, CSS, JavaScript basics for web development',
-      enrolled_students: 67,
-      status: 'scheduled'
-    },
-    {
-      id: 'class-3',
-      title: 'Data Science Bootcamp',
-      subject: 'Data Science',
-      instructor: 'Mike Johnson',
-      date: new Date(now.getTime() + 48 * 60 * 60 * 1000).toISOString(),
-      time: '1:00 PM',
-      duration: 120,
-      zoom_link: 'https://zoom.us/j/456789123',
-      meeting_id: '456789123',
-      passcode: '789123',
-      description: 'Pandas, NumPy, and data visualization techniques',
-      enrolled_students: 32,
-      status: 'scheduled'
-    },
-    {
-      id: 'class-4',
-      title: 'JavaScript ES6+ Features',
-      subject: 'Programming',
-      instructor: 'Emma Brown',
-      date: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-      time: '4:00 PM',
-      duration: 75,
-      zoom_link: 'https://zoom.us/j/789123456',
-      meeting_id: '789123456',
-      passcode: '456789',
-      description: 'Arrow functions, promises, async/await patterns',
-      enrolled_students: 55,
-      status: 'scheduled'
-    },
-    {
-      id: 'class-5',
-      title: 'Database Design & SQL',
-      subject: 'Databases',
-      instructor: 'Alex Brown',
-      date: new Date(now.getTime() - 2 * 60 * 60 * 1000).toISOString(),
-      time: '10:00 AM',
-      duration: 90,
-      zoom_link: 'https://zoom.us/j/321654987',
-      meeting_id: '321654987',
-      passcode: '654987',
-      description: 'Relational databases, normalization, and query optimization',
-      enrolled_students: 41,
-      status: 'completed',
-      recording_link: 'https://example.com/recording/class-5'
-    },
-    {
-      id: 'class-6',
-      title: 'Cloud Computing with AWS',
-      subject: 'Cloud',
-      instructor: 'David Wilson',
-      date: new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString(),
-      time: '2:30 PM',
-      duration: 120,
-      zoom_link: 'https://zoom.us/j/654987321',
-      meeting_id: '654987321',
-      passcode: '987654',
-      description: 'EC2, S3, Lambda, and serverless architecture',
-      enrolled_students: 38,
-      status: 'completed',
-      recording_link: 'https://example.com/recording/class-6'
-    },
-    {
-      id: 'class-7',
-      title: 'React Hooks Deep Dive',
-      subject: 'Web Development',
-      instructor: 'Sarah Lee',
-      date: new Date(now.getTime() - 72 * 60 * 60 * 1000).toISOString(),
-      time: '3:00 PM',
-      duration: 60,
-      zoom_link: 'https://zoom.us/j/987321654',
-      meeting_id: '987321654',
-      passcode: '321987',
-      description: 'useState, useEffect, useContext, custom hooks',
-      enrolled_students: 72,
-      status: 'completed',
-      recording_link: 'https://example.com/recording/class-7'
-    },
-    {
-      id: 'class-8',
-      title: 'Machine Learning Basics',
-      subject: 'Data Science',
-      instructor: 'Mike Johnson',
-      date: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      time: '1:30 PM',
-      duration: 90,
-      zoom_link: 'https://zoom.us/j/123987654',
-      meeting_id: '123987654',
-      passcode: '987123',
-      description: 'Supervised learning, classification, regression algorithms',
-      enrolled_students: 28,
-      status: 'scheduled'
-    }
-  ];
+  const rows = [];
+
+  enrolledCourses.forEach((course) => {
+    const courseId = course.course_id || course.id;
+    if (!courseId) return;
+
+    const content = contentByCourse[courseId];
+    const sections = Array.isArray(content?.sections) ? content.sections : [];
+
+    sections.forEach((section) => {
+      const lessons = Array.isArray(section.lessons) ? section.lessons : [];
+
+      lessons.forEach((lesson) => {
+        if (!lesson.zoom_meeting_link) return;
+
+        const scheduledAt = lesson.zoom_scheduled_date || null;
+        const scheduledDate = scheduledAt ? new Date(scheduledAt) : null;
+        const hasValidDate = scheduledDate && !Number.isNaN(scheduledDate.getTime());
+        const isCompleted = hasValidDate ? scheduledDate <= now : false;
+
+        rows.push({
+          id: lesson.lesson_id || `${courseId}-${lesson.title || 'live-class'}`,
+          course_id: courseId,
+          course_title: course.title || 'Untitled Course',
+          title: lesson.title || 'Live Class',
+          subject: course.subject || 'General',
+          instructor: course.teacher_name || course.instructor_name || 'Instructor',
+          date: scheduledAt,
+          time: formatTimeFromISO(scheduledAt),
+          duration: Number(lesson.zoom_duration_minutes || lesson.duration_minutes || 0),
+          zoom_link: buildZoomJoinLink(lesson.zoom_meeting_link),
+          meeting_id: lesson.zoom_meeting_id || null,
+          passcode: lesson.zoom_passcode || null,
+          description: lesson.description || section.description || '',
+          status: isCompleted ? 'completed' : 'scheduled',
+          attended: isCompleted,
+          recording_link: lesson.recording_url || null,
+        });
+      });
+    });
+  });
+
+  return rows;
 };
 
 const StudentLiveClasses = () => {
@@ -146,20 +105,20 @@ const StudentLiveClasses = () => {
       description: 'Enrolled classes',
     },
     {
-      label: 'Attended',
+      label: 'Completed',
       statsKey: 'attended',
       icon: FaCheckCircle,
       bgColor: 'bg-green-100',
       textColor: 'text-green-600',
-      description: 'Classes completed',
+      description: 'Past classes',
     },
     {
-      label: 'Attendance Rate',
+      label: 'Completion Rate',
       statsKey: 'attendanceRate',
       icon: FaEye,
       bgColor: 'bg-blue-100',
       textColor: 'text-blue-600',
-      description: 'Overall percentage',
+      description: 'Completed classes',
     },
     {
       label: 'Upcoming',
@@ -172,7 +131,6 @@ const StudentLiveClasses = () => {
   ];
   const [filter, setFilter] = useState('upcoming');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedSubjects, setSelectedSubjects] = useState([]);
   
   // Data loading states
   const [loading, setLoading] = useState(true);
@@ -180,32 +138,75 @@ const StudentLiveClasses = () => {
   const [upcomingClasses, setUpcomingClasses] = useState([]);
   const [completedClasses, setCompletedClasses] = useState([]);
 
-  // Fetch zoom classes when component mounts
+  // Fetch zoom classes from enrolled courses when component mounts
   useEffect(() => {
     const fetchZoomClasses = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        // Use dummy data instead of API call
-        const zoomClasses = getDummyZoomClasses();
-        
-        // Separate upcoming and completed classes
-        const upcoming = zoomClasses.filter(cls => {
-          const classDate = new Date(cls.date);
-          return classDate > new Date();
+
+        const myCoursesResponse = await courseAPI.getMyCourses({
+          page: 1,
+          limit: 500,
+          status: 'active',
         });
-        
-        const completed = zoomClasses.filter(cls => {
-          const classDate = new Date(cls.date);
-          return classDate <= new Date();
+
+        const enrolledCourses = Array.isArray(myCoursesResponse?.data?.data)
+          ? myCoursesResponse.data.data
+          : [];
+
+        if (enrolledCourses.length === 0) {
+          setUpcomingClasses([]);
+          setCompletedClasses([]);
+          return;
+        }
+
+        const contentResponses = await Promise.allSettled(
+          enrolledCourses.map((course) => courseAPI.getCourseContent(course.course_id || course.id))
+        );
+
+        const contentByCourse = {};
+        let failedContentRequests = 0;
+
+        contentResponses.forEach((result, index) => {
+          const courseId = enrolledCourses[index]?.course_id || enrolledCourses[index]?.id;
+          if (!courseId) return;
+
+          if (result.status === 'fulfilled') {
+            contentByCourse[courseId] = result.value?.data?.data;
+            return;
+          }
+
+          failedContentRequests += 1;
         });
+
+        if (failedContentRequests > 0) {
+          showNotification('Some course live class details could not be loaded.', 'warning');
+        }
+
+        const zoomClasses = toLiveClassRows(enrolledCourses, contentByCourse);
+
+        const upcoming = zoomClasses
+          .filter((cls) => cls.status === 'scheduled')
+          .sort((a, b) => {
+            const aTime = a.date ? new Date(a.date).getTime() : Number.MAX_SAFE_INTEGER;
+            const bTime = b.date ? new Date(b.date).getTime() : Number.MAX_SAFE_INTEGER;
+            return aTime - bTime;
+          });
+
+        const completed = zoomClasses
+          .filter((cls) => cls.status === 'completed')
+          .sort((a, b) => {
+            const aTime = a.date ? new Date(a.date).getTime() : 0;
+            const bTime = b.date ? new Date(b.date).getTime() : 0;
+            return bTime - aTime;
+          });
         
         setUpcomingClasses(upcoming);
         setCompletedClasses(completed);
       } catch (err) {
         console.error('Error loading live classes:', err);
-        setError('Failed to load live classes');
+        setError(err?.message || 'Failed to load live classes');
       } finally {
         setLoading(false);
       }
@@ -223,12 +224,9 @@ const StudentLiveClasses = () => {
         classItem.subject.toLowerCase().includes(searchQuery.toLowerCase()) ||
         classItem.instructor.toLowerCase().includes(searchQuery.toLowerCase());
 
-      // Subject filter
-      const matchesSubject = selectedSubjects.length === 0 || selectedSubjects.includes(classItem.subject);
-
-      return matchesSearch && matchesSubject;
+      return matchesSearch;
     });
-  }, [searchQuery, selectedSubjects]);
+  }, [searchQuery]);
 
   const filteredUpcomingClasses = useMemo(() => applyFilters(upcomingClasses), [applyFilters, upcomingClasses]);
   const filteredCompletedClasses = useMemo(() => applyFilters(completedClasses), [applyFilters, completedClasses]);
@@ -256,7 +254,7 @@ const StudentLiveClasses = () => {
     { 
       key: 'date', 
       label: 'Date',
-      render: (_, row) => new Date(row.date).toLocaleDateString()
+      render: (_, row) => formatDateSafe(row.date)
     },
     { 
       key: 'time', 
@@ -271,8 +269,8 @@ const StudentLiveClasses = () => {
           SCHEDULED
         </span>
       ) : (
-        <span className={`px-3 py-1 text-xs font-bold rounded-full ${row.attended ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-600'}`}>
-          {row.attended ? '✓ ATTENDED' : '✗ MISSED'}
+        <span className="px-3 py-1 text-xs font-bold rounded-full bg-green-100 text-green-600">
+          COMPLETED
         </span>
       )
     },
@@ -362,8 +360,10 @@ const StudentLiveClasses = () => {
             <StatCard 
               stats={{
                 totalClasses: (upcomingClasses.length + completedClasses.length).toString(),
-                attended: completedClasses.filter(c => c.attended).length.toString(),
-                attendanceRate: completedClasses.length > 0 ? `${Math.round((completedClasses.filter(c => c.attended).length / completedClasses.length) * 100)}%` : '0%',
+                attended: completedClasses.length.toString(),
+                attendanceRate: (upcomingClasses.length + completedClasses.length) > 0
+                  ? `${Math.round((completedClasses.length / (upcomingClasses.length + completedClasses.length)) * 100)}%`
+                  : '0%',
                 upcomingCount: upcomingClasses.length.toString(),
               }}
               metricsConfig={liveClassesMetricsConfig}
