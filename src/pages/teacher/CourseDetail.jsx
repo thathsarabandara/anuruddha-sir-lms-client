@@ -5,7 +5,9 @@ import { BiLoader } from 'react-icons/bi';
 import { FaEdit, FaStar, FaCheck, FaTimes, FaUser, FaEye, FaBook, FaGamepad, FaStar as FaRating, FaUsers, FaGripVertical } from 'react-icons/fa';
 import QuizSearchModal from '../../components/teacher/QuizSearchModal';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
+import VideoPlayer from '../../components/VideoPlayer';
 import PDFViewer from '../../components/PDFViewer';
+import TextViewer from '../../components/TextViewer';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
@@ -116,6 +118,8 @@ const CourseDetail = () => {
   });
   const [selectedPDF, setSelectedPDF] = useState(null);
   const [showPDFViewerModal, setShowPDFViewerModal] = useState(false);
+  const [selectedTextLesson, setSelectedTextLesson] = useState(null);
+  const [showTextViewerModal, setShowTextViewerModal] = useState(false);
   const courseThumbnailUrl = getAbsoluteImageUrl(course?.thumbnail_url || course?.thumbnail);
 
   const [courseStats, setCourseStats] = useState({
@@ -616,7 +620,43 @@ const CourseDetail = () => {
 
   if(showPDFViewerModal && selectedPDF) {
     return (
-      <PDFViewer pdfUrl={selectedPDF.url} title={selectedPDF.title} onClose={() => setShowPDFViewerModal(false)} />
+      <PDFViewer
+        pdfUrl={selectedPDF.url}
+        title={selectedPDF.title}
+        contentId={selectedPDF.id}
+        onClose={() => {
+          setShowPDFViewerModal(false);
+          setSelectedPDF(null);
+        }}
+      />
+    );
+  }
+
+  if (showTextViewerModal && selectedTextLesson) {
+    return (
+      <div className="min-h-screen bg-slate-100">
+        <div className="max-w-6xl mx-auto p-4 sm:p-6 space-y-4">
+          <div className="flex items-center justify-between bg-white rounded-lg border border-slate-200 px-4 py-3">
+            <h2 className="font-semibold text-slate-900">{selectedTextLesson.title || 'Text Lesson'}</h2>
+            <button
+              onClick={() => {
+                setShowTextViewerModal(false);
+                setSelectedTextLesson(null);
+              }}
+              className="px-3 py-1.5 text-sm bg-slate-900 text-white rounded hover:bg-slate-800"
+            >
+              Close
+            </button>
+          </div>
+
+          <TextViewer
+            title={selectedTextLesson.title || 'Text Lesson'}
+            content={selectedTextLesson.text || ''}
+            contentId={selectedTextLesson.id}
+            completionThreshold={70}
+          />
+        </div>
+      </div>
     );
   }
 
@@ -1263,7 +1303,7 @@ const CourseDetail = () => {
                                     setSelectedVideo({
                                       id: lessonId,
                                       title: lesson.title,
-                                      url: lesson.video_file.startsWith('http') ? lesson.video_file : `http://localhost:8000${lesson.video_file}`
+                                      url: getAbsoluteImageUrl(lesson.video_file)
                                     });
                                     setShowVideoPlayerModal(true);
                                   }}
@@ -1295,7 +1335,7 @@ const CourseDetail = () => {
                                   setSelectedPDF({
                                     id: lessonId,
                                     title: lesson.title,
-                                    url: lesson.pdf_file.startsWith('http') ? lesson.pdf_file : `http://localhost:8000${lesson.pdf_file}`
+                                    url: getAbsoluteImageUrl(lesson.pdf_file)
                                   });
                                   setShowPDFViewerModal(true);
                                 }}
@@ -1329,6 +1369,19 @@ const CourseDetail = () => {
                               <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 max-h-32 overflow-y-auto text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                                 {lesson.text_content}
                               </div>
+                              <button
+                                onClick={() => {
+                                  setSelectedTextLesson({
+                                    id: lessonId,
+                                    title: lesson.title,
+                                    text: lesson.text_content,
+                                  });
+                                  setShowTextViewerModal(true);
+                                }}
+                                className="mt-3 px-3 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                              >
+                                Open Text Reader
+                              </button>
                             </div>
                           )}
 
@@ -2227,7 +2280,7 @@ const CourseDetail = () => {
       {/* Video Player Modal */}
       {showVideoPlayerModal && selectedVideo && (
         <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="bg-black rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
+          <div className="bg-black rounded-lg w-full max-w-6xl max-h-[95vh] overflow-hidden flex flex-col">
             {/* Header */}
             <div className="bg-gray-900 px-6 py-4 flex justify-between items-center border-b border-gray-700">
               <h2 className="text-xl font-bold text-white">{selectedVideo.title}</h2>
@@ -2243,19 +2296,14 @@ const CourseDetail = () => {
             </div>
 
             {/* Video Container */}
-            <div className="flex-1 flex items-center justify-center bg-black overflow-hidden">
-              <video
-                key={selectedVideo.id}
-                controls
-                controlsList="nodownload"
-                className="w-full h-full max-w-full max-h-full object-contain"
-                onContextMenu={(e) => e.preventDefault()}
-                crossOrigin="anonymous"
-                preload="metadata"
-              >
-                <source src={selectedVideo.url} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+            <div className="flex-1 bg-black overflow-auto p-3 sm:p-4">
+              <VideoPlayer
+                videoUrl={selectedVideo.url}
+                contentId={selectedVideo.id}
+                theme="dark"
+                disableContextMenu
+                disableDownload
+              />
             </div>
           </div>
         </div>
