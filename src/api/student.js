@@ -64,4 +64,60 @@ export const studentAPI = {
    */
   editStudentDetails: (studentId, studentData) =>
     axiosInstance.put("/students/details", studentData, { params: { student: studentId } }),
+
+  /**
+   * Get notifications for current student.
+   * @param {Object} params - Query params (limit, offset, filter, sort)
+   * @returns {Promise} Notification list with pagination
+   */
+  getNotifications: (params = {}) =>
+    axiosInstance.get(API_ENDPOINTS.NOTIFICATIONS, { params }),
+
+  /**
+   * Get single notification details.
+   * @param {string} notificationId - Notification ID
+   * @returns {Promise} Notification details
+   */
+  getNotificationDetail: (notificationId) =>
+    axiosInstance.get(`${API_ENDPOINTS.NOTIFICATIONS}/${notificationId}`),
+
+  /**
+   * Mark a notification as read.
+   * @param {string} notificationId - Notification ID
+   * @returns {Promise} Updated notification
+   */
+  markNotificationAsRead: (notificationId) =>
+    axiosInstance.put(`${API_ENDPOINTS.NOTIFICATIONS}/${notificationId}/read`),
+
+  /**
+   * Mark all notifications as read.
+   * @returns {Promise} Updated count
+   */
+  markAllNotificationsAsRead: () =>
+    axiosInstance.put(`${API_ENDPOINTS.NOTIFICATIONS}/read-all`),
+
+  /**
+   * Delete a notification.
+   * @param {string} notificationId - Notification ID
+   * @returns {Promise} Deletion result
+   */
+  deleteNotification: (notificationId) =>
+    axiosInstance.delete(`${API_ENDPOINTS.NOTIFICATIONS}/${notificationId}`),
+
+  /**
+   * Get unread notification count.
+   * @returns {Promise} Unread count details
+   */
+  getUnreadNotificationCount: () =>
+    axiosInstance.get(`${API_ENDPOINTS.NOTIFICATIONS}/unread-count`),
+
+  /**
+   * Get top bar notification summary (unread count + first notifications).
+   * @param {number} limit - Number of latest notifications to return (default: 3)
+   * @returns {Promise} Top bar notification summary
+   */
+  getTopbarNotificationSummary: (limit = 3) =>
+    axiosInstance.get(`${API_ENDPOINTS.NOTIFICATIONS}/topbar-summary`, {
+      params: { limit },
+    }),
 };
