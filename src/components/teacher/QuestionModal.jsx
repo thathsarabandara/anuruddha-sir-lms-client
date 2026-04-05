@@ -12,7 +12,7 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
     category: question?.category || '',
     question_order: question?.question_order || null,
     image: question?.image_url ? null : null,
-    existing_image: question?.image || null,
+    existing_image: question?.image_url || null,
     remove_image: false,
     options: question?.options?.length > 0 ? question.options : [
       { option_text: '', is_correct: false },
@@ -21,7 +21,7 @@ const QuestionModal = ({ isOpen, onClose, onSave, question, quizId, onNotificati
   });
 
   const [formData, setFormData] = useState(getInitialFormData);
-  const [imagePreview, setImagePreview] =useState(question.image_url || null);
+  const [imagePreview, setImagePreview] = useState(question?.image_url || null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
 
