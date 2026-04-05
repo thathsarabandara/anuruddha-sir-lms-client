@@ -116,6 +116,7 @@ const CourseDetail = () => {
   });
   const [selectedPDF, setSelectedPDF] = useState(null);
   const [showPDFViewerModal, setShowPDFViewerModal] = useState(false);
+  const courseThumbnailUrl = getAbsoluteImageUrl(course?.thumbnail_url || course?.thumbnail);
 
   const [courseStats, setCourseStats] = useState({
     total_sections: 0,
@@ -308,6 +309,73 @@ const CourseDetail = () => {
     }));
   };
 
+  const findContentByType = (contents = [], contentType) =>
+    (contents || []).find((content) => String(content?.content_type || '').toLowerCase() === contentType);
+
+  const syncLessonTypeContent = async (lessonId, lessonType, existingContents = []) => {
+    const normalizedType = String(lessonType || '').toLowerCase();
+
+    if (normalizedType === 'quiz') {
+      const quizId = String(lessonForm.quiz_id || '').trim();
+      if (!quizId) {
+        throw new Error('Quiz ID is required for quiz lessons');
+      }
+
+      const existingQuizContent = findContentByType(existingContents, 'quiz');
+      const payload = {
+        title: lessonForm.title,
+        description: lessonForm.description || undefined,
+        quiz_id: quizId,
+      };
+
+      if (existingQuizContent?.content_id) {
+        await courseAPI.updateQuizContent(courseId, lessonId, existingQuizContent.content_id, payload);
+      } else {
+        await courseAPI.addQuizContent(courseId, lessonId, payload);
+      }
+      return;
+    }
+
+    if (normalizedType === 'text') {
+      const textValue = String(lessonForm.text_content || '').trim();
+      if (!textValue) {
+        throw new Error('Text content is required for text lessons');
+      }
+
+      const existingTextContent = findContentByType(existingContents, 'text');
+      const payload = {
+        title: lessonForm.title,
+        description: lessonForm.description || undefined,
+        text_content: textValue,
+      };
+
+      if (existingTextContent?.content_id) {
+        await courseAPI.updateTextContent(courseId, lessonId, existingTextContent.content_id, payload);
+      } else {
+        await courseAPI.addTextContent(courseId, lessonId, payload);
+      }
+      return;
+    }
+
+    if (normalizedType === 'video') {
+      const videoUrl = String(lessonForm.video_url || '').trim();
+      if (!videoUrl) return;
+
+      const existingVideoContent = findContentByType(existingContents, 'video');
+      const payload = {
+        title: lessonForm.title,
+        description: lessonForm.description || undefined,
+        video_url: videoUrl,
+      };
+
+      if (existingVideoContent?.content_id) {
+        await courseAPI.updateVideoContent(courseId, lessonId, existingVideoContent.content_id, payload);
+      } else {
+        await courseAPI.addVideoContent(courseId, lessonId, payload);
+      }
+    }
+  };
+
   const handleUpdateCourse = async (e) => {
     e.preventDefault();
     try {
@@ -358,14 +426,50 @@ const CourseDetail = () => {
   };
 
   const handleUploadThumbnail = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
-    showNotification('Thumbnail upload endpoint is not available yet', 'warning');
+
+    if (!file.type?.startsWith('image/')) {
+      showNotification('Please select a valid image file', 'error');
+      e.target.value = '';
+      return;
+    }
+
+    try {
+      _setUploadingFile(true);
+      _setUploadProgress(0);
+
+      await courseAPI.uploadCourseThumbnail(courseId, file, (progressEvent) => {
+        const total = progressEvent?.total || 0;
+        if (!total) return;
+        const percent = Math.round((progressEvent.loaded * 100) / total);
+        _setUploadProgress(Math.max(0, Math.min(100, percent)));
+      });
+
+      await loadCourseData();
+      showNotification('Thumbnail uploaded successfully', 'success');
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to upload thumbnail'), 'error');
+    } finally {
+      _setUploadingFile(false);
+      _setUploadProgress(0);
+      e.target.value = '';
+    }
   };
 
   const handleDeleteThumbnail = async () => {
     if (!window.confirm('Are you sure you want to delete the current thumbnail?')) return;
-    showNotification('Thumbnail delete endpoint is not available yet', 'warning');
+
+    try {
+      _setUploadingFile(true);
+      await courseAPI.deleteCourseThumbnail(courseId);
+      await loadCourseData();
+      showNotification('Thumbnail deleted successfully', 'success');
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to delete thumbnail'), 'error');
+    } finally {
+      _setUploadingFile(false);
+    }
   };
 
   const handleCreateSection = async (e) => {
@@ -503,15 +607,30 @@ const CourseDetail = () => {
 
     try {
       setIsSubmitting(true);
+      let targetLessonId = null;
+      let existingContents = [];
+
       if (editingLesson) {
+        targetLessonId = editingLesson.lesson_id || editingLesson.id;
+        existingContents = Array.isArray(editingLesson?.contents) ? editingLesson.contents : [];
+
         await courseAPI.updateLesson(
           courseId,
-          editingLesson.lesson_id || editingLesson.id,
+          targetLessonId,
           payload
         );
+
+        await syncLessonTypeContent(targetLessonId, payload.lesson_type, existingContents);
         showNotification('Lesson updated successfully', 'success');
       } else {
-        await courseAPI.createLesson(courseId, sectionId, payload);
+        const lessonRes = await courseAPI.createLesson(courseId, sectionId, payload);
+        const createdLesson = lessonRes?.data?.data || {};
+        targetLessonId = createdLesson.lesson_id || createdLesson.id;
+
+        if (targetLessonId) {
+          await syncLessonTypeContent(targetLessonId, payload.lesson_type, []);
+        }
+
         showNotification('Lesson created successfully', 'success');
       }
 
@@ -529,7 +648,47 @@ const CourseDetail = () => {
 
   const handleUploadLessonFile = async (lessonId, file, fileType) => {
     if (!file || !lessonId) return;
-    showNotification(`${fileType} upload endpoint is not available yet`, 'warning');
+
+    const normalizedType = String(fileType).toLowerCase();
+    if (!['video', 'pdf'].includes(normalizedType)) {
+      showNotification(`${fileType} upload is not available yet`, 'warning');
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+      const response = normalizedType === 'video'
+        ? await courseAPI.uploadVideoContentFile(courseId, lessonId, file, { title: file.name })
+        : await courseAPI.uploadPdfContentFile(courseId, lessonId, file, { title: file.name });
+
+      const uploadedUrl = normalizedType === 'video'
+        ? response?.data?.data?.video_url
+        : response?.data?.data?.pdf_file_url;
+      const targetField = normalizedType === 'video' ? 'video_file' : 'pdf_file';
+
+      // Keep current UI responsive without requiring a full page reload.
+      if (uploadedUrl) {
+        setSections((prevSections) =>
+          prevSections.map((section) => ({
+            ...section,
+            lessons: (section.lessons || []).map((lesson) => {
+              const currentLessonId = lesson.lesson_id || lesson.id;
+              if (currentLessonId !== lessonId) return lesson;
+              return { ...lesson, [targetField]: uploadedUrl };
+            }),
+          }))
+        );
+      }
+
+      showNotification(normalizedType === 'video' ? 'Video uploaded successfully' : 'PDF uploaded successfully', 'success');
+    } catch (err) {
+      showNotification(
+        getErrorMessage(err, normalizedType === 'video' ? 'Failed to upload video' : 'Failed to upload PDF'),
+        'error'
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleDeleteLesson = (lessonId, lessonTitle) => {
@@ -554,6 +713,12 @@ const CourseDetail = () => {
   const openCreateLesson = (section) => {
     setSelectedSection(section);
     setEditingLesson(null);
+    setQuizVerification({
+      isLoading: false,
+      isValid: false,
+      quizData: null,
+      error: null,
+    });
     setLessonForm({
       ...getDefaultLessonForm(),
       order: (section.lessons?.length || 0) + 1,
@@ -561,17 +726,61 @@ const CourseDetail = () => {
     setShowLessonModal(true);
   };
 
-  const openEditLesson = (section, lesson) => {
+  const openEditLesson = async (section, lesson) => {
     setSelectedSection(section);
-    setEditingLesson(lesson);
+    let nextLesson = lesson;
+
+    try {
+      const lessonId = lesson?.lesson_id || lesson?.id;
+      if (lessonId) {
+        const detailsRes = await courseAPI.getCourseContentDetails(courseId, lessonId);
+        const detailedLesson = detailsRes?.data?.data?.lesson;
+        if (detailedLesson) {
+          nextLesson = detailedLesson;
+        }
+      }
+    } catch {
+      // Keep fallback lesson object if detail fetch fails.
+    }
+
+    const nextContents = Array.isArray(nextLesson?.contents) ? nextLesson.contents : [];
+    const videoContent = findContentByType(nextContents, 'video');
+    const textContent = findContentByType(nextContents, 'text');
+    const quizContent = findContentByType(nextContents, 'quiz');
+    const zoomContent = findContentByType(nextContents, 'zoom_live');
+
+    setEditingLesson(nextLesson);
     setLessonForm({
       ...getDefaultLessonForm(),
-      title: lesson.title || '',
-      description: lesson.description || '',
-      lesson_type: (lesson.lesson_type || 'video').toLowerCase(),
-      duration_minutes: lesson.duration_minutes || '',
-      order: lesson.lesson_order || '',
+      title: nextLesson.title || '',
+      description: nextLesson.description || '',
+      lesson_type: (nextLesson.lesson_type || 'video').toLowerCase(),
+      duration_minutes: nextLesson.duration_minutes || '',
+      order: nextLesson.lesson_order || '',
+      video_url: videoContent?.video_url || '',
+      text_content: textContent?.text_content || '',
+      quiz_id: quizContent?.quiz_id || '',
+      zoom_meeting_link: zoomContent?.zoom_link || '',
+      zoom_meeting_id: zoomContent?.zoom_meeting_id || '',
+      zoom_passcode: zoomContent?.zoom_password || '',
     });
+
+    if (String(nextLesson.lesson_type || '').toLowerCase() === 'quiz' && quizContent?.quiz_id) {
+      setQuizVerification({
+        isLoading: false,
+        isValid: true,
+        quizData: quizContent.quiz || null,
+        error: null,
+      });
+    } else {
+      setQuizVerification({
+        isLoading: false,
+        isValid: false,
+        quizData: null,
+        error: null,
+      });
+    }
+
     setShowLessonModal(true);
   };
 
@@ -807,15 +1016,15 @@ const CourseDetail = () => {
           <div className="bg-white rounded-lg shadow p-6">
             <div className="flex items-start gap-6">
               <div className="w-48 h-32 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0">
-                {course?.thumbnail ? (
+                {courseThumbnailUrl ? (
                   <img 
-                    src={course.thumbnail.startsWith('http') ? course.thumbnail : `http://localhost:8000${course.thumbnail}`} 
+                    src={courseThumbnailUrl}
                     alt={course.title} 
                     className="w-full h-full object-cover"
                     onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
                   />
                 ) : null}
-                <div className={`w-full h-full ${course?.thumbnail ? 'hidden' : 'flex'} items-center justify-center text-gray-400`}>
+                <div className={`w-full h-full ${courseThumbnailUrl ? 'hidden' : 'flex'} items-center justify-center text-gray-400`}>
                   No thumbnail
                 </div>
               </div>
@@ -1120,13 +1329,13 @@ const CourseDetail = () => {
               </label>
               
               {/* Current Thumbnail */}
-              {course?.thumbnail && (
+              {courseThumbnailUrl && (
                 <div className="mb-4 bg-white rounded-lg border border-gray-200 p-4">
                   <p className="text-xs font-semibold text-gray-700 mb-3">Current Thumbnail</p>
                   <div className="flex gap-4">
                     <div className="w-48 h-32 bg-gray-100 rounded-lg overflow-hidden border border-gray-300 flex-shrink-0">
                       <img 
-                        src={course.thumbnail.startsWith('http') ? course.thumbnail : `http://localhost:8000${course.thumbnail}`} 
+                        src={courseThumbnailUrl}
                         alt="Current thumbnail" 
                         className="w-full h-full object-cover"
                         onError={(e) => { e.target.style.display = 'none'; }}
@@ -1136,7 +1345,7 @@ const CourseDetail = () => {
                       <div>
                         <p className="text-sm font-medium text-gray-900 mb-1">Thumbnail Details</p>
                         <p className="text-xs text-gray-600 mb-2">
-                          Filename: <span className="font-mono text-gray-800">{course.thumbnail.split('/').pop()}</span>
+                          Filename: <span className="font-mono text-gray-800">{courseThumbnailUrl.split('/').pop()}</span>
                         </p>
                         <p className="text-xs text-gray-600">
                           Uploaded: <span className="font-medium text-gray-800">{new Date(course?.updated_at).toLocaleDateString()}</span>
@@ -1686,7 +1895,16 @@ const CourseDetail = () => {
                               <p><strong>Questions:</strong> {quizVerification.quizData.total_questions}</p>
                               <p><strong>Duration:</strong> {quizVerification.quizData.time_limit_minutes} minutes</p>
                               <p><strong>Total Marks:</strong> {quizVerification.quizData.total_marks}</p>
-                              <p><strong>Teacher:</strong> {quizVerification.quizData.teacher?.name || 'N/A'}</p>
+                              <p><strong>Teacher:</strong> {
+                                quizVerification.quizData.teacher?.name
+                                || quizVerification.quizData.teacher_name
+                                || quizVerification.quizData.instructor_name
+                                || [
+                                  quizVerification.quizData.teacher?.first_name,
+                                  quizVerification.quizData.teacher?.last_name,
+                                ].filter(Boolean).join(' ')
+                                || 'N/A'
+                              }</p>
                             </div>
                           </div>
                         </div>
@@ -1784,11 +2002,12 @@ const CourseDetail = () => {
         isOpen={showQuizSearchModal}
         onClose={() => setShowQuizSearchModal(false)}
         onSelect={(quiz) => {
-          setLessonForm({ ...lessonForm, quiz_id: quiz.id });
+          const selectedQuizId = quiz?.quiz_id || quiz?.id || '';
+          setLessonForm({ ...lessonForm, quiz_id: selectedQuizId });
           setShowQuizSearchModal(false);
           // Auto-verify the selected quiz
           setTimeout(() => {
-            verifyQuizId(quiz.id);
+            verifyQuizId(selectedQuizId);
           }, 100);
         }}
         onNotification={showNotification}
