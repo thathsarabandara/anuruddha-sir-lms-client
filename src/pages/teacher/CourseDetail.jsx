@@ -315,6 +315,37 @@ const CourseDetail = () => {
   const syncLessonTypeContent = async (lessonId, lessonType, existingContents = []) => {
     const normalizedType = String(lessonType || '').toLowerCase();
 
+    if (normalizedType === 'zoom') {
+      const zoomLink = String(lessonForm.zoom_meeting_link || '').trim();
+      if (!zoomLink) {
+        throw new Error('Zoom meeting link is required for zoom lessons');
+      }
+
+      const existingZoomContent = findContentByType(existingContents, 'zoom_live');
+      const scheduledDate = lessonForm.scheduled_date || '';
+      const scheduledTime = lessonForm.scheduled_time || '';
+      const scheduledDateTime = scheduledDate
+        ? `${scheduledDate}T${scheduledTime || '00:00'}`
+        : undefined;
+
+      const payload = {
+        title: lessonForm.title,
+        description: lessonForm.description || undefined,
+        zoom_link: zoomLink,
+        zoom_meeting_id: lessonForm.zoom_meeting_id || undefined,
+        zoom_password: lessonForm.zoom_passcode || undefined,
+        scheduled_date: scheduledDateTime,
+        scheduled_duration_minutes: lessonForm.duration_minutes || undefined,
+      };
+
+      if (existingZoomContent?.content_id) {
+        await courseAPI.updateZoomContent(courseId, lessonId, existingZoomContent.content_id, payload);
+      } else {
+        await courseAPI.addZoomContent(courseId, lessonId, payload);
+      }
+      return;
+    }
+
     if (normalizedType === 'quiz') {
       const quizId = String(lessonForm.quiz_id || '').trim();
       if (!quizId) {
@@ -763,6 +794,8 @@ const CourseDetail = () => {
       zoom_meeting_link: zoomContent?.zoom_link || '',
       zoom_meeting_id: zoomContent?.zoom_meeting_id || '',
       zoom_passcode: zoomContent?.zoom_password || '',
+      scheduled_date: zoomContent?.scheduled_date ? String(zoomContent.scheduled_date).slice(0, 10) : '',
+      scheduled_time: zoomContent?.scheduled_date ? String(zoomContent.scheduled_date).slice(11, 16) : '',
     });
 
     if (String(nextLesson.lesson_type || '').toLowerCase() === 'quiz' && quizContent?.quiz_id) {
@@ -1295,6 +1328,37 @@ const CourseDetail = () => {
                               <div className="text-xs font-semibold text-gray-700 mb-2">Text Content</div>
                               <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 max-h-32 overflow-y-auto text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
                                 {lesson.text_content}
+                              </div>
+                            </div>
+                          )}
+
+                          {String(lesson.lesson_type).toLowerCase() === 'zoom' && (lesson.zoom_meeting_link || lesson.zoom_meeting_id) && (
+                            <div className="p-4 bg-white border-t border-gray-200">
+                              <div className="text-xs font-semibold text-gray-700 mb-2">Zoom Meeting Details</div>
+                              <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm text-gray-700 space-y-1">
+                                {lesson.zoom_meeting_link && (
+                                  <p>
+                                    <span className="font-medium">Link:</span>{' '}
+                                    <a href={lesson.zoom_meeting_link} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">
+                                      Join Meeting
+                                    </a>
+                                  </p>
+                                )}
+                                {lesson.zoom_meeting_id && <p><span className="font-medium">Meeting ID:</span> {lesson.zoom_meeting_id}</p>}
+                                {lesson.zoom_passcode && <p><span className="font-medium">Passcode:</span> {lesson.zoom_passcode}</p>}
+                                {lesson.zoom_scheduled_date && <p><span className="font-medium">Scheduled:</span> {new Date(lesson.zoom_scheduled_date).toLocaleString()}</p>}
+                              </div>
+                            </div>
+                          )}
+
+                          {String(lesson.lesson_type).toLowerCase() === 'quiz' && lesson.quiz_id && (
+                            <div className="p-4 bg-white border-t border-gray-200">
+                              <div className="text-xs font-semibold text-gray-700 mb-2">Quiz Details</div>
+                              <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-sm text-gray-700 space-y-1">
+                                <p><span className="font-medium">Quiz ID:</span> {lesson.quiz_id}</p>
+                                {(lesson.quiz_title || lesson.quiz_content_title) && (
+                                  <p><span className="font-medium">Title:</span> {lesson.quiz_title || lesson.quiz_content_title}</p>
+                                )}
                               </div>
                             </div>
                           )}
