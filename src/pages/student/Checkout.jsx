@@ -91,23 +91,35 @@ const CheckoutPage = () => {
   const isFreeCheckout = parseFloat(totalAmount) === 0;
 
   // Handle free course enrollment
-  const handleFreeEnrollment = () => {
+  const handleFreeEnrollment = async () => {
     setProcessing(true);
     setCheckoutError(null);
 
-    // Simulate API delay with dummy data
-    setTimeout(() => {
-      showNotification('Enrolled successfully!', 'success');
-      setCheckoutResult({
-        type: 'success',
-        title: 'Enrollment Successful! 🎉',
-        message: 'You have been enrolled in the course',
-        enrollments: [],
-        order: { id: 'order-001' }
-      });
-      setCountdownTimer(7);
+    try {
+      const result = await checkout('free', couponCode || null, parseFloat(tax) || 0);
+
+      if (result.success) {
+        showNotification('Enrolled successfully!', 'success');
+        setCheckoutResult({
+          type: 'success',
+          title: 'Enrollment Successful! 🎉',
+          message: result.message || 'You have been enrolled in the course(s)',
+          enrollments: result.enrollments || [],
+          order: result.order,
+          payment: result.payment,
+        });
+        setCountdownTimer(7);
+      } else {
+        setCheckoutResult({
+          type: 'error',
+          title: 'Enrollment Failed',
+          message: result.message || 'Unable to complete checkout',
+        });
+        setCountdownTimer(7);
+      }
+    } finally {
       setProcessing(false);
-    }, 500);
+    }
   };
 
   // Handle coupon validation
@@ -147,8 +159,8 @@ const CheckoutPage = () => {
         
         setCheckoutResult({
           type: 'success',
-          title: 'Redirecting to PayHere',
-          message: 'Please complete your payment on the PayHere gateway. You will be redirected shortly...',
+          title: 'Checkout Created',
+          message: 'Your checkout is ready. Follow the payment process to confirm enrollment for paid courses.',
           isPayHere: true
         });
         setCountdownTimer(7);
