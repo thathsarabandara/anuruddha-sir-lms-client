@@ -300,6 +300,9 @@ export const courseAPI = {
 	getCourseContent: (courseId) =>
 		axiosInstance.get(`${COURSE_BASE}/content`, { params: { course_id: courseId } }),
 
+	getCourseContentPreview: (courseId) =>
+		axiosInstance.get(`${COURSE_BASE}/content/preview`, { params: { course_id: courseId } }),
+
 	getCourseContentDetails: (courseId, lessonId) =>
 		axiosInstance.get(`${COURSE_BASE}/content/details`, {
 			params: { course_id: courseId, lesson_id: lessonId },
