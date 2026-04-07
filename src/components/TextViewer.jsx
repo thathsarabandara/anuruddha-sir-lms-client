@@ -404,26 +404,8 @@ const TextViewer = ({
         </div>
       </div>
 
-      <div className="grid lg:grid-cols-[260px_1fr_280px] gap-0" style={{ height: 'calc(100vh - 280px)' }}>
-        <aside className="border-r border-inherit p-4 overflow-auto hidden lg:block">
-          <p className="text-xs uppercase tracking-wide mb-3 opacity-70">Contents</p>
-          <div className="space-y-1">
-            {headings.map((heading) => (
-              <button
-                key={heading.id}
-                onClick={() => jumpToSection(heading.id)}
-                className={`w-full text-left px-2 py-1.5 rounded text-sm ${
-                  activeSection === heading.id ? 'bg-blue-100 text-blue-700 font-semibold' : 'hover:bg-slate-100'
-                }`}
-                style={{ paddingLeft: `${heading.level * 8}px` }}
-              >
-                {heading.text}
-              </button>
-            ))}
-          </div>
-        </aside>
-
-        <div ref={scrollRef} className="overflow-auto p-6 sm:p-8" onScroll={handleScroll} onMouseUp={captureSelection}>
+      <div className="flex min-h-[70vh] max-h-[80vh] w-ful">
+        <div ref={scrollRef} className="overflow-auto p-6 sm:p-8 w-3/4" onScroll={handleScroll} onMouseUp={captureSelection}>
           <article
             ref={articleRef}
             className={articleClass}
