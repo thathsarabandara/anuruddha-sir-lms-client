@@ -91,7 +91,6 @@ const VideoPlayer = ({
   const [hoverPreview, setHoverPreview] = useState({ show: false, time: 0, x: 0 });
   const [timeSpentSeconds, setTimeSpentSeconds] = useState(0);
   const [captionsEnabled, setCaptionsEnabled] = useState(Boolean(subtitles.find((s) => s.default)));
-  const [noteDraft, setNoteDraft] = useState('');
   const [notes, setNotes] = useState([]);
   const [bookmarks, setBookmarks] = useState([]);
 
@@ -502,24 +501,6 @@ const VideoPlayer = ({
     emitEvent('onQualityChange', { quality: option.value });
   };
 
-  const addNote = () => {
-    const text = noteDraft.trim();
-    if (!text) return;
-
-    const newNote = {
-      id: `${Date.now()}`,
-      at: currentTime,
-      text,
-      createdAt: new Date().toISOString(),
-    };
-
-    const updated = [newNote, ...notes].slice(0, 20);
-    setNotes(updated);
-    setNoteDraft('');
-    persistState({ notes: updated });
-    emitEvent('onNoteAdd', { at: currentTime, textLength: text.length });
-  };
-
   const addBookmark = () => {
     const newBookmark = {
       id: `${Date.now()}`,
@@ -531,13 +512,6 @@ const VideoPlayer = ({
     setBookmarks(updated);
     persistState({ bookmarks: updated });
     emitEvent('onBookmarkAdd', { at: currentTime });
-  };
-
-  const jumpTo = (seconds) => {
-    if (!videoRef.current) return;
-    videoRef.current.currentTime = seconds;
-    setCurrentTime(seconds);
-    emitEvent('onSeek', { to: seconds, source: 'shortcut_or_click' });
   };
 
   const handleProgressHover = (event) => {
@@ -787,8 +761,6 @@ const VideoPlayer = ({
                 className="w-16 sm:w-20 h-1 bg-white/30 rounded-full cursor-pointer accent-blue-500"
               />
             </div>
-
-            <span className="text-sm font-semibold ml-2 hidden md:inline">{formatTime(currentTime)}</span>
           </div>
 
           <div className="flex items-center gap-1 sm:gap-2">
@@ -863,37 +835,6 @@ const VideoPlayer = ({
             >
               {isFullscreen ? <FaCompress size={18} /> : <FaExpand size={18} />}
             </button>
-          </div>
-        </div>
-
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          <div className="flex items-center gap-2">
-            <FaBook size={14} />
-            <input
-              type="text"
-              value={noteDraft}
-              onChange={(event) => setNoteDraft(event.target.value)}
-              placeholder={`Add note at ${formatTime(currentTime)}`}
-              className="w-full rounded-md px-2 py-1 text-sm bg-white/90 text-slate-900 placeholder:text-slate-500"
-            />
-            <button
-              onClick={addNote}
-              className="px-3 py-1 rounded-md text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Save
-            </button>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-2 text-xs">
-            {bookmarks.slice(0, 4).map((bookmark) => (
-              <button
-                key={bookmark.id}
-                onClick={() => jumpTo(bookmark.at)}
-                className="px-2 py-1 rounded bg-white/20 hover:bg-white/30"
-              >
-                {formatTime(bookmark.at)}
-              </button>
-            ))}
           </div>
         </div>
       </div>
