@@ -40,7 +40,6 @@ import StudentQuizzes from './pages/student/Quizzes';
 import StudentQuizDetails from './pages/student/QuizDetails';
 import TakeQuiz from './pages/student/TakeQuiz';
 import QuizResults from './pages/student/QuizResults';
-import StudentRecordings from './pages/student/Recordings';
 import StudentCertificates from './pages/student/Certificates';
 import StudentPayments from './pages/student/Payments';
 import StudentRewards from './pages/student/Rewards';
@@ -62,6 +61,7 @@ import ManageQuestions from './pages/teacher/ManageQuestions';
 import GradeQuiz from './pages/teacher/GradeQuiz';
 import QuizResultsDashboard from './pages/teacher/QuizResultsDashboard';
 import TeacherRevenue from './pages/teacher/Revenue';
+import TeacherPaymentApprovals from './pages/teacher/PaymentApprovals';
 import TeacherRewards from './pages/teacher/Rewards';
 import TeacherAnnouncements from './pages/teacher/Announcements';
 import TeacherProfile from './pages/teacher/Profile';
@@ -121,7 +121,6 @@ function App() {
           <Route path="/student/quiz/:quizId" element={<TakeQuiz />} />
           <Route path="/student/quiz/:quizId/take" element={<TakeQuiz />} />
           <Route path="/student/quiz/:quizId/results/:attemptId" element={<QuizResults />} />
-          <Route path={ROUTES.STUDENT_RECORDINGS} element={<StudentRecordings />} />
           <Route path={ROUTES.STUDENT_CERTIFICATES} element={<StudentCertificates />} />
           <Route path={ROUTES.STUDENT_PAYMENTS} element={<StudentPayments />} />
           <Route path={ROUTES.STUDENT_REWARDS} element={<StudentRewards />} />
@@ -151,6 +150,7 @@ function App() {
           <Route path="/teacher/quizzes/:quizId/grade" element={<GradeQuiz />} />
           <Route path="/teacher/quizzes/:quizId/results" element={<QuizResultsDashboard />} />
           <Route path={ROUTES.TEACHER_REVENUE} element={<TeacherRevenue />} />
+          <Route path={ROUTES.TEACHER_PAYMENT_APPROVALS} element={<TeacherPaymentApprovals />} />
           <Route path={ROUTES.TEACHER_REWARDS} element={<TeacherRewards />} />
           <Route path={ROUTES.TEACHER_ANNOUNCEMENTS} element={<TeacherAnnouncements />} />
           <Route path={ROUTES.TEACHER_PROFILE} element={<TeacherProfile />} />
