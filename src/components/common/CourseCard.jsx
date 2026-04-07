@@ -731,6 +731,14 @@ const CourseCard = ({
 
             {/* Student-Completed Buttons */}
             <div className="flex flex-col gap-2">
+              <button
+                onClick={() => onContinueLearning?.(course) || navigate(`/student/course/${course.id}/learn`)}
+                disabled={loading}
+                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white py-2.5 rounded-lg font-semibold text-sm transition-colors duration-200 flex items-center justify-center gap-2"
+              >
+                <FaVideo className="text-sm" />
+                Rewatch
+              </button>
               {course.certificate && (
                 <button
                   onClick={() => onDownloadCertificate?.(course.id)}
