@@ -510,33 +510,10 @@ const CourseView = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-slate-500">Price</span>
                   <span className="font-semibold text-slate-900 flex items-center gap-1">
-                    <FaDollarSign /> {course.isPaid ? formatMoney(course.price) : 'Free'}
+                    {course.isPaid ? formatMoney(course.price) : 'Free'}
                   </span>
                 </div>
               </div>
-            </div>
-
-            <div className="bg-white rounded-xl border border-slate-200 p-6">
-              <h3 className="text-lg font-bold text-slate-900 mb-3">Enrollment Key Access</h3>
-              <p className="text-sm text-slate-600 mb-4">
-                If you received an enrollment key from your teacher, paste it above and click
-                <span className="font-semibold"> Enroll With Key</span>.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  const trimmed = enrollmentKey.trim();
-                  if (!trimmed) {
-                    showNotification('Enter the enrollment key first', 'warning');
-                    return;
-                  }
-                  enrollWithKey();
-                }}
-                disabled={isSubmitting}
-                className="w-full py-2.5 rounded-lg bg-slate-900 text-white hover:bg-slate-800 disabled:opacity-50 flex items-center justify-center gap-2"
-              >
-                <FaKey /> Quick Enroll With Key
-              </button>
             </div>
 
             <div className="bg-white rounded-xl border border-slate-200 p-6">
