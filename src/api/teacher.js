@@ -26,6 +26,12 @@ export const teacherAPI = {
   getTeacherStats: () => axiosInstance.get("/teachers/stats"),
 
   /**
+   * Get authenticated teacher's personal dashboard stats
+   * @returns {Promise} Teacher personal stats (courses, students, reviews, experience)
+   */
+  getMyStats: () => axiosInstance.get("/teachers/my-stats"),
+
+  /**
    * Get list of teachers with filtering and pagination
    * @param {string} search - Search query for teacher names or emails
    * @param {string} status - Filter by status (active, pending, banned)
