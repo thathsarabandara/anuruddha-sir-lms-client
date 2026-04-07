@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { FaBell, FaUser, FaCog, FaSignOutAlt, FaShoppingCart } from 'react-icons/fa';
@@ -63,41 +63,57 @@ const DashboardTopBar = ({ onMenuToggle }) => {
   const isStudent = user?.role === ROLES.STUDENT;
   const notificationRoute = isStudent ? ROUTES.STUDENT_NOTIFICATIONS : ROUTES.HOME;
 
-  const fetchTopBarData = useCallback(async () => {
-    if (!user?.user_id) return;
+  useEffect(() => {
+    let cancelled = false;
 
-    try {
-      const requests = [studentAPI.getTopbarNotificationSummary(3)];
-
-      if (isStudent) {
-        requests.push(cartAPI.getMyCartCount());
+    const loadTopBarData = async () => {
+      if (!user?.user_id) {
+        if (!cancelled) {
+          setUnreadNotificationCount(0);
+          setNotifications([]);
+          setCartItemCount(0);
+        }
+        return;
       }
 
-      const [notificationResponse, cartResponse] = await Promise.all(requests);
-      const notificationData = notificationResponse?.data?.data || {};
+      try {
+        const requests = [studentAPI.getTopbarNotificationSummary(3)];
 
-      setUnreadNotificationCount(Number(notificationData?.unread_count || 0));
-      setNotifications(
-        Array.isArray(notificationData?.notifications)
-          ? notificationData.notifications
-          : []
-      );
+        if (isStudent) {
+          requests.push(cartAPI.getMyCartCount());
+        }
 
-      if (isStudent) {
-        setCartItemCount(Number(cartResponse?.data?.data?.item_count || 0));
-      } else {
+        const [notificationResponse, cartResponse] = await Promise.all(requests);
+        const notificationData = notificationResponse?.data?.data || {};
+
+        if (cancelled) return;
+
+        setUnreadNotificationCount(Number(notificationData?.unread_count || 0));
+        setNotifications(
+          Array.isArray(notificationData?.notifications)
+            ? notificationData.notifications
+            : []
+        );
+
+        if (isStudent) {
+          setCartItemCount(Number(cartResponse?.data?.data?.item_count || 0));
+        } else {
+          setCartItemCount(0);
+        }
+      } catch {
+        if (cancelled) return;
+        setUnreadNotificationCount(0);
+        setNotifications([]);
         setCartItemCount(0);
       }
-    } catch (_) {
-      setUnreadNotificationCount(0);
-      setNotifications([]);
-      setCartItemCount(0);
-    }
-  }, [isStudent, user?.user_id]);
+    };
 
-  useEffect(() => {
-    fetchTopBarData();
-  }, [fetchTopBarData]);
+    void loadTopBarData();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isStudent, user?.user_id]);
 
   const formatNotificationTimestamp = (value) => {
     if (!value) return '';
@@ -177,14 +193,14 @@ const DashboardTopBar = ({ onMenuToggle }) => {
 
           {/* Right Side - Cart, Gems, Notifications & Profile */}
           <div className="flex items-center gap-6">
-                        {/* Gems Display (students only) */}
-                        {isStudent && (
-                          <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200 hover:border-amber-300 transition-all">
-                            <FaGem className="text-lg text-amber-500 animate-pulse" />
-                            <span className="font-bold text-amber-900">560</span>
-                            <span className="text-xs text-amber-700 ml-1">Gems</span>
-                          </div>
-                        )}
+            {/* Gems Display (students only) */}
+              {isStudent && (
+                <div className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border border-amber-200 hover:border-amber-300 transition-all">
+                  <FaGem className="text-lg text-amber-500 animate-pulse" />
+                  <span className="font-bold text-amber-900">560</span>
+                  <span className="text-xs text-amber-700 ml-1">Gems</span>
+                </div>
+            )}
 
             {/* Notification Bell */}
             <button
@@ -238,7 +254,7 @@ const DashboardTopBar = ({ onMenuToggle }) => {
 
               {/* Dropdown Menu */}
               {isDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden">
                   {/* User Info Header */}
                   <div className="bg-gradient-to-r from-primary-600 to-secondary-600 text-white p-4">
                     <div className="flex items-center gap-3">
@@ -266,7 +282,7 @@ const DashboardTopBar = ({ onMenuToggle }) => {
                   <div className="py-2">
                     <button
                       onClick={() => {
-                        navigate(ROUTES.STUDENT_PROFILE);
+                        navigate('/teacher/profile');
                         setIsDropdownOpen(false);
                       }}
                       className="w-full px-4 py-2.5 flex items-center gap-3 text-gray-700 hover:bg-gray-50 transition-colors text-sm"
@@ -277,7 +293,7 @@ const DashboardTopBar = ({ onMenuToggle }) => {
 
                     <button
                       onClick={() => {
-                        navigate(ROUTES.STUDENT_PROFILE);
+                        navigate('/teacher/profile');
                         setIsDropdownOpen(false);
                       }}
                       className="w-full px-4 py-2.5 flex items-center gap-3 text-gray-700 hover:bg-gray-50 transition-colors text-sm"
