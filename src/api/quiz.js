@@ -211,8 +211,21 @@ export const quizAPI = {
    * @param {string} quizId - Quiz ID
    * @returns {Promise} Created attempt with attempt_id
    */
-  startQuizAttempt: (quizId) =>
+  startQuizAttempt: (quizId, courseId = null) =>
     axiosInstance.post("/quiz/attempts", null, {
+      params: {
+        quiz_id: quizId,
+        ...(courseId ? { course_id: courseId } : {}),
+      },
+    }),
+
+  /**
+   * Get an active in-progress attempt for a quiz (resume support)
+   * @param {string} quizId - Quiz ID
+   * @returns {Promise} Active attempt with questions and saved answers
+   */
+  getActiveAttempt: (quizId) =>
+    axiosInstance.get("/quiz/attempts/active", {
       params: { quiz_id: quizId },
     }),
 
@@ -223,9 +236,7 @@ export const quizAPI = {
    * @returns {Promise} Saved answer confirmation
    */
   saveAnswer: (attemptId, answerData) =>
-    axiosInstance.post("/quiz/submit/answers", answerData, {
-      params: { attempt_id: attemptId },
-    }),
+    axiosInstance.post(`/quiz/submit/answers/${attemptId}`, answerData),
 
   /**
    * Submit a quiz attempt
