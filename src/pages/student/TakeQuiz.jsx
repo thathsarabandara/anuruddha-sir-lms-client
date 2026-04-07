@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FaClock, FaCheck, FaExclamationTriangle, FaSave, FaArrowLeft, FaArrowRight } from 'react-icons/fa';
 import Notification from '../../components/common/Notification';
 import ButtonWithLoader from '../../components/common/ButtonWithLoader';
@@ -63,9 +63,28 @@ const buildAnswerPayload = (question, value) => {
   };
 };
 
+const parseSavedAnswer = (questionType, savedValue) => {
+  if (questionType === QUESTION_TYPES.MULTIPLE) {
+    if (Array.isArray(savedValue)) return savedValue.map(String);
+    if (!savedValue) return [];
+    return String(savedValue)
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+  }
+
+  if (savedValue === null || savedValue === undefined) {
+    return '';
+  }
+
+  return String(savedValue);
+};
+
 const TakeQuiz = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const courseId = new URLSearchParams(location.search).get('course_id');
   const [quiz, setQuiz] = useState(null);
   const [attempt, setAttempt] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -79,6 +98,8 @@ const TakeQuiz = () => {
   const [showWarning, setShowWarning] = useState(false);
   const [notification, setNotification] = useState(null);
   const timerRef = useRef(null);
+  const timerDeadlineRef = useRef(null);
+  const submitHandlerRef = useRef(null);
   const autoSaveTimerRef = useRef(null);
   const lastSaveRef = useRef({});
   const dirtyAnswersRef = useRef(new Set());
@@ -92,14 +113,26 @@ const TakeQuiz = () => {
     setLoading(true);
 
     try {
-      const [quizResponse, attemptResponse] = await Promise.all([
-        quizAPI.getQuizDetails(quizId),
-        quizAPI.startQuizAttempt(quizId),
-      ]);
+      const quizResponse = await quizAPI.getQuizDetails(quizId);
+      let attemptResponse = null;
+
+      try {
+        // Required flow: always attempt to create/validate an attempt first.
+        attemptResponse = await quizAPI.startQuizAttempt(quizId, courseId);
+      } catch (startError) {
+        // If an attempt already exists, resume it instead of failing.
+        if (startError?.status === 409) {
+          attemptResponse = await quizAPI.getActiveAttempt(quizId);
+          showNotification('Resumed your in-progress quiz attempt.', 'info', 3000);
+        } else {
+          throw startError;
+        }
+      }
 
       const quizData = quizResponse?.data?.data || {};
       const attemptData = attemptResponse?.data?.data || {};
       const quizQuestions = Array.isArray(attemptData?.questions) ? attemptData.questions : [];
+      const savedAnswers = attemptData?.saved_answers || {};
 
       setQuiz({
         id: quizData.quiz_id || quizData.id || quizId,
@@ -110,6 +143,7 @@ const TakeQuiz = () => {
       });
       setAttempt(attemptData);
       setQuestions(quizQuestions);
+      setCurrentQuestionIndex(0);
 
       const expiresAt = attemptData?.expires_at ? new Date(attemptData.expires_at).getTime() : null;
       const durationSeconds = Number(quizData.duration_minutes || quizData.time_limit_minutes || 0) * 60;
@@ -118,6 +152,7 @@ const TakeQuiz = () => {
         ? Math.max(0, Math.floor((expiresAt - now) / 1000))
         : Math.max(0, durationSeconds);
 
+      timerDeadlineRef.current = now + (computedRemaining * 1000);
       setTimeRemaining(computedRemaining);
 
       const initialAnswers = {};
@@ -125,10 +160,11 @@ const TakeQuiz = () => {
         const questionId = question?.question_id || question?.id;
         if (!questionId) return;
         const type = normalizeQuestionType(question?.question_type);
-        initialAnswers[questionId] = type === QUESTION_TYPES.MULTIPLE ? [] : '';
+        initialAnswers[questionId] = parseSavedAnswer(type, savedAnswers[questionId]);
       });
 
       setAnswers(initialAnswers);
+      dirtyAnswersRef.current = new Set();
       lastSaveRef.current = Object.fromEntries(
         Object.entries(initialAnswers).map(([key, value]) => [key, serializeAnswer(value)])
       );
@@ -142,7 +178,7 @@ const TakeQuiz = () => {
     } finally {
       setLoading(false);
     }
-  }, [quizId]);
+  }, [quizId, courseId]);
 
   const saveSingleAnswer = useCallback(async (questionId) => {
     if (!attempt?.attempt_id) return false;
@@ -220,6 +256,10 @@ const TakeQuiz = () => {
   }, [attempt, submitting, saveAnswersToServer, navigate, quizId]);
 
   useEffect(() => {
+    submitHandlerRef.current = handleSubmit;
+  }, [handleSubmit]);
+
+  useEffect(() => {
     startQuizAttempt();
   }, [startQuizAttempt]);
 
@@ -249,24 +289,25 @@ const TakeQuiz = () => {
   }, [attempt]);
 
   useEffect(() => {
-    if (attempt?.attempt_id && timeRemaining > 0) {
-      timerRef.current = setInterval(() => {
-        setTimeRemaining(prev => {
-          if (prev <= 1) {
-            if (!autoSubmittedRef.current) {
-              autoSubmittedRef.current = true;
-              handleSubmit(true);
-            }
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
+    if (!attempt?.attempt_id || !timerDeadlineRef.current) return;
+
+    timerRef.current = setInterval(() => {
+      const remaining = Math.max(0, Math.floor((timerDeadlineRef.current - Date.now()) / 1000));
+      setTimeRemaining(remaining);
+
+      if (remaining <= 0) {
+        clearInterval(timerRef.current);
+        if (!autoSubmittedRef.current) {
+          autoSubmittedRef.current = true;
+          submitHandlerRef.current?.(true);
+        }
+      }
+    }, 1000);
+
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [attempt, handleSubmit, timeRemaining]);
+  }, [attempt?.attempt_id]);
 
   useEffect(() => {
     if (attempt?.attempt_id) {
