@@ -19,6 +19,8 @@ const TeacherProfile = () => {
   const [isLoadingProfile, setIsLoadingProfile] = useState(false);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [isLoadingStats, setIsLoadingStats] = useState(false);
+  const [stats, setStats] = useState(null);
 
   const [formData, setFormData] = useState({
     first_name: user?.first_name || '',
@@ -46,11 +48,12 @@ const TeacherProfile = () => {
     setNotification({ message, type, duration });
   };
 
-  const stats = [
-    { label: 'Total Students', value: '245', icon: FaUserGraduate },
-    { label: 'Courses', value: '8', icon: FaBook },
-    { label: 'Success Rate', value: '95%', icon: FaAward },
-    { label: 'Experience', value: '15', icon: FaStar },
+  // Build stats array from fetched data or use defaults
+  const statsArray = [
+    { label: 'Total Students', value: stats?.total_students || '0', icon: FaUserGraduate },
+    { label: 'Courses', value: stats?.total_courses || '0', icon: FaBook },
+    { label: 'Reviews', value: stats?.total_reviews || '0', icon: FaAward },
+    { label: 'Experience', value: (stats?.years_of_experience || '0') + ' yrs', icon: FaStar },
   ];
 
   const notifications = [
@@ -88,6 +91,25 @@ const TeacherProfile = () => {
     };
 
     loadProfile();
+  }, []);
+
+  // Load teacher stats
+  useEffect(() => {
+    const loadStats = async () => {
+      setIsLoadingStats(true);
+      try {
+        const response = await teacherAPI.getMyStats();
+        const statsData = response?.data?.data || response?.data || {};
+        setStats(statsData);
+      } catch (err) {
+        console.error('Failed to load teacher stats:', err?.message);
+        // Don't show error notification for stats - it's not critical
+      } finally {
+        setIsLoadingStats(false);
+      }
+    };
+
+    loadStats();
   }, []);
 
   const handleInputChange = (e) => {
@@ -253,7 +275,7 @@ const TeacherProfile = () => {
             </div>
 
             <div className="grid grid-cols-2 gap-3 mb-6">
-              {stats.map((stat, index) => (
+              {statsArray.map((stat, index) => (
                 <div key={index} className="text-center p-3 bg-gray-50 rounded-lg">
                   <stat.icon size={24} className="mx-auto mb-2 text-primary-500" />
                   <div className="text-lg font-bold text-gray-900">{stat.value}</div>
