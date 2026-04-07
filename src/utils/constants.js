@@ -86,6 +86,7 @@ export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
   VERIFY_OTP: '/verify-otp',
+  ACCOUNT_PENDING: '/account-pending',
   RESEND_OTP: '/resend-otp',
   FORGOT_PASSWORD: '/forgot-password',
   RESET_PASSWORD: '/password-reset',
