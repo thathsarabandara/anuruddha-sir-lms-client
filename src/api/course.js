@@ -108,6 +108,11 @@ export const courseAPI = {
 			params: { course_id: courseId, ...queryParams },
 		}),
 
+	getStudentDetails: (courseId, studentId) =>
+		axiosInstance.get(`${COURSE_BASE}/student-details`, {
+			params: { course_id: courseId, student: studentId },
+		}),
+
 	// ---------------------------------------------------------------------------
 	// Enrollment Keys
 	// ---------------------------------------------------------------------------
@@ -416,12 +421,12 @@ export const courseAPI = {
 	// ---------------------------------------------------------------------------
 
 	createReview: (courseId, reviewData) =>
-		axiosInstance.post(`${COURSE_BASE}/reviews`, reviewData, {
+		axiosInstance.post(`/reviews`, reviewData, {
 			params: { course_id: courseId },
 		}),
 
 	getReviews: (courseId, queryParams = {}) =>
-		axiosInstance.get(`${COURSE_BASE}/reviews`, {
+		axiosInstance.get(`/reviews`, {
 			params: { course_id: courseId, ...queryParams },
 		}),
 };
