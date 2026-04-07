@@ -144,6 +144,7 @@ const TeacherAnnouncements = () => {
         setCourseOptions(Array.isArray(courses) ? courses : courses?.courses || []);
       } catch (error) {
         setCourseOptions([]);
+        setNotification(error?.message, 'error')
       } finally {
         setCourseLoading(false);
       }
@@ -635,33 +636,6 @@ const TeacherAnnouncements = () => {
         </div>
       </div>
 
-      <div className="mb-6 rounded-xl border border-gray-200 bg-white p-2">
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('outgoing')}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-              activeTab === 'outgoing'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Outgoing Notifications
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('incoming')}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
-              activeTab === 'incoming'
-                ? 'bg-primary-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            Incoming Notifications
-          </button>
-        </div>
-      </div>
-
       <div className="mb-6 rounded-xl border border-gray-200 bg-white p-4">
         <div className="flex flex-wrap items-center gap-4">
           <div className="relative min-w-[260px] flex-1">
@@ -710,6 +684,32 @@ const TeacherAnnouncements = () => {
       </div>
 
       <StatCard stats={stats} metricsConfig={metricsConfig} />
+      <div className="mb-6 rounded-xl border border-gray-200 border-b-1 p-2">
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab('outgoing')}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+              activeTab === 'outgoing'
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Outgoing Notifications
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('incoming')}
+            className={`rounded-lg px-4 py-2 text-sm font-medium transition ${
+              activeTab === 'incoming'
+                ? 'bg-primary-600 text-white'
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            Incoming Notifications
+          </button>
+        </div>
+      </div>
 
       <div className="mt-8">
         {activeTab === 'outgoing' ? (
