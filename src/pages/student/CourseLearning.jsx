@@ -16,6 +16,7 @@ import {
   FaTimes,
   FaChevronRight,
   FaChevronLeft,
+  FaStar,
   FaQuestionCircle,
 } from 'react-icons/fa';
 import VideoPlayer from '../../components/VideoPlayer';
@@ -755,7 +756,7 @@ const StudentCourseLearning = () => {
                     )}
                     {currentLesson.quiz_id && (
                       <button
-                        onClick={() => navigate(`/student/quiz/${currentLesson.quiz_id}`)}
+                        onClick={() => navigate(`/student/quiz/${currentLesson.quiz_id}/take?course_id=${courseId}`)}
                         className="px-6 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2 text-sm"
                       >
                         <FaQuestionCircle size={14} /> Take Quiz
@@ -827,7 +828,7 @@ const StudentCourseLearning = () => {
                         </p>
                         <div className="flex flex-wrap justify-center gap-3">
                           <button
-                            onClick={() => navigate(`/student/quiz/${currentLesson.quiz_id}/take`)}
+                            onClick={() => navigate(`/student/quiz/${currentLesson.quiz_id}/take?course_id=${courseId}`)}
                             className="px-5 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg font-medium transition-colors text-sm"
                           >
                             {isLessonCompleted(currentLesson) ? 'Retry Quiz' : 'Take Quiz'}
