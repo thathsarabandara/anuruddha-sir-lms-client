@@ -26,6 +26,7 @@ import Gallery from './pages/public/Gallery';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import VerifyOTP from './pages/auth/VerifyOTP';
+import AccountPending from './pages/auth/AccountPending';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 
@@ -89,6 +90,7 @@ function App() {
           <Route path={ROUTES.LOGIN} element={<Login />} />
           <Route path={ROUTES.REGISTER} element={<Register />} />
           <Route path={ROUTES.VERIFY_OTP} element={<VerifyOTP />} />
+          <Route path={ROUTES.ACCOUNT_PENDING} element={<AccountPending />} />
           <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
           <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
           <Route path={ROUTES.HOME} element={<Home />} />
