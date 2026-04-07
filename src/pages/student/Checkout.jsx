@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft, FaCreditCard, FaFileInvoice, FaSpinner, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { useCart, useCheckout } from '../../hooks/useCart';
+import paymentAPI from '../../api/payment';
 import { CiBank } from 'react-icons/ci';
 import Notification from '../../components/common/Notification';
 import ButtonWithLoader from '../../components/common/ButtonWithLoader';
@@ -195,20 +196,17 @@ const CheckoutPage = () => {
       const result = await checkout(paymentMethod, couponCode || null, parseFloat(tax) || 0);
 
       if (result.success) {
-        // Upload bank slip
+        // Upload bank slip via payment API
         const formData = new FormData();
-        formData.append('order_id', result.order.id);
-        formData.append('payment_id', result.payment.id);
+        formData.append('transaction_id', result.payment.id);
         formData.append('bank_name', bankSlipData.bankName);
         formData.append('account_holder_name', bankSlipData.accountHolderName);
         formData.append('transfer_date', bankSlipData.transferDate);
-        formData.append('bank_slip', bankSlipData.bankSlip);
+        formData.append('receipt_image', bankSlipData.bankSlip);
 
-        const uploadResponse = await new Promise(resolve => {
-          setTimeout(() => resolve({ data: { success: true } }), 500);
-        });
+        const uploadResponse = await paymentAPI.uploadStudentReceipt(formData);
 
-        if (uploadResponse.data.success) {
+        if (uploadResponse?.data?.status === 'success') {
           showNotification('Bank slip uploaded successfully!', 'success');
           setCheckoutResult({
             type: 'success',
