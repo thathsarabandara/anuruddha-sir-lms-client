@@ -126,6 +126,7 @@ export const ROUTES = {
   TEACHER_QUIZZES: '/teacher/quizzes',
   TEACHER_RECORDINGS: '/teacher/recordings',
   TEACHER_REVENUE: '/teacher/revenue',
+  TEACHER_PAYMENT_APPROVALS: '/teacher/payments/approvals',
   TEACHER_REWARDS: '/teacher/rewards',
   TEACHER_REWARD_APPROVALS: '/teacher/rewards/approvals',
   TEACHER_ANNOUNCEMENTS: '/teacher/announcements',
