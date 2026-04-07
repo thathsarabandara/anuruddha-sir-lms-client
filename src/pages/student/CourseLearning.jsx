@@ -135,6 +135,12 @@ const StudentCourseLearning = () => {
   const [downloadingId, setDownloadingId] = useState(null);
   const [markingCompleteId, setMarkingCompleteId] = useState(null);
   const [quizStatusById, setQuizStatusById] = useState({});
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewText, setReviewText] = useState('');
+  const [reviewAnonymous, setReviewAnonymous] = useState(false);
+  const [reviewSubmitting, setReviewSubmitting] = useState(false);
+  const [reviewSubmitted, setReviewSubmitted] = useState(false);
 
   const showNotification = useCallback((message, type = 'info', duration = 5000) => {
     setNotification({ message, type, duration });
@@ -460,6 +466,35 @@ const StudentCourseLearning = () => {
       handleLessonClick(allLessons[currentLessonIndex + 1]);
     }
   }, [allLessons, currentLessonIndex, handleLessonClick]);
+
+  const submitReview = useCallback(async () => {
+    if (!courseId) return;
+
+    if (progress < 100) {
+      showNotification('Complete the course before leaving a review.', 'warning');
+      return;
+    }
+
+    try {
+      setReviewSubmitting(true);
+      await courseAPI.createReview(courseId, {
+        rating: reviewRating,
+        title: reviewTitle.trim() || undefined,
+        review_text: reviewText.trim() || undefined,
+        is_anonymous: reviewAnonymous,
+      });
+      setReviewSubmitted(true);
+      setReviewTitle('');
+      setReviewText('');
+      setReviewAnonymous(false);
+      showNotification('Thank you for your review.', 'success');
+    } catch (err) {
+      const message = err?.response?.data?.message || 'Failed to submit review.';
+      showNotification(message, 'error');
+    } finally {
+      setReviewSubmitting(false);
+    }
+  }, [courseId, progress, reviewAnonymous, reviewText, reviewTitle, reviewRating, showNotification]);
 
   const toggleSection = useCallback((sectionId) => {
     setExpandedSections((prev) => {
@@ -877,6 +912,86 @@ const StudentCourseLearning = () => {
                       >
                         Back to Courses
                       </button>
+                    </div>
+
+                    <div className="mt-8 bg-white/80 backdrop-blur rounded-xl border border-amber-200 p-6 text-left max-w-2xl mx-auto">
+                      <div className="flex items-center justify-between gap-3 mb-4">
+                        <div>
+                          <h4 className="text-lg font-bold text-slate-900">Leave a review</h4>
+                          <p className="text-sm text-slate-600">Share your experience with other students.</p>
+                        </div>
+                        {reviewSubmitted && (
+                          <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold">
+                            Submitted
+                          </span>
+                        )}
+                      </div>
+
+                      {!reviewSubmitted ? (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Rating</label>
+                            <div className="flex items-center gap-1">
+                              {[1, 2, 3, 4, 5].map((value) => (
+                                <button
+                                  key={value}
+                                  type="button"
+                                  onClick={() => setReviewRating(value)}
+                                  className="p-1"
+                                  aria-label={`${value} star rating`}
+                                >
+                                  <FaStar
+                                    className={
+                                      value <= reviewRating ? 'text-yellow-400' : 'text-slate-300'
+                                    }
+                                  />
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Title</label>
+                            <input
+                              type="text"
+                              value={reviewTitle}
+                              onChange={(event) => setReviewTitle(event.target.value)}
+                              placeholder="What stood out most?"
+                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-300"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Review</label>
+                            <textarea
+                              value={reviewText}
+                              onChange={(event) => setReviewText(event.target.value)}
+                              rows={4}
+                              placeholder="Tell others about your experience..."
+                              className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-amber-300 resize-none"
+                            />
+                          </div>
+
+                          <label className="flex items-center gap-2 text-sm text-slate-700">
+                            <input
+                              type="checkbox"
+                              checked={reviewAnonymous}
+                              onChange={(event) => setReviewAnonymous(event.target.checked)}
+                            />
+                            Post anonymously
+                          </label>
+
+                          <button
+                            onClick={submitReview}
+                            disabled={reviewSubmitting}
+                            className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg font-medium transition-colors text-sm"
+                          >
+                            {reviewSubmitting ? 'Submitting...' : 'Submit Review'}
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-sm text-slate-700">Your review has been saved.</p>
+                      )}
                     </div>
                   </div>
                 )}
