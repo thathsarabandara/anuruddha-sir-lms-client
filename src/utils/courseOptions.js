@@ -21,3 +21,9 @@ export const COURSE_TYPE_OPTIONS = [
   { value: 'quiz', label: 'Quiz' },
   { value: 'special', label: 'Special' },
 ];
+
+export const COURSE_LANGUAGE_OPTIONS = [
+  { value: 'en', label: 'English' },
+  { value: 'si', label: 'සිංහල - Sinhala' },
+  { value: 'ta', label: 'தமிழ் - Tamil' },
+];
