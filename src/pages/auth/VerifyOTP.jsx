@@ -1,15 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
 import { FaGraduationCap, FaEnvelope, FaRedo } from 'react-icons/fa';
-import { loginSuccess } from '../../app/slices/authSlice';
 import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import { authAPI } from '../../api';
 import { ROUTES } from '../../utils/constants';
 
 const VerifyOTP = () => {
   const navigate = useNavigate();
-  const dispatch = useDispatch();
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email');
   const roleParam = searchParams.get('role') || 'STUDENT';
@@ -78,13 +75,10 @@ const VerifyOTP = () => {
     setLoading(true);
 
     try {
-      const response = await authAPI.verifyOTP({ email, otp: otpCode });
-      const { token, user } = response.data;
+      await authAPI.verifyOTP({ email, otp: otpCode });
 
-      dispatch(loginSuccess({ token, user }));
-
-      // Redirect to student dashboard (default role after registration)
-      navigate(ROUTES.STUDENT_DASHBOARD);
+      // Keep users on a short pending page after verification.
+      navigate(`${ROUTES.ACCOUNT_PENDING}?email=${encodeURIComponent(email)}&role=${roleParam.toLowerCase()}`);
     } catch (err) {
       setError(err.message || 'Invalid OTP. Please try again.');
     } finally {
