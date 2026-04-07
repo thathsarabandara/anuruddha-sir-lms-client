@@ -61,7 +61,7 @@ const BankTransferPending = () => {
           <FaCheckCircle className="text-5xl text-green-600 mx-auto mb-4" />
           <h1 className="text-3xl font-bold text-green-900 mb-2">Bank Slip Received</h1>
           <p className="text-green-700 text-lg">
-            Your bank transfer has been recorded. We're verifying your payment.
+            Your bank deposit has been recorded. We're verifying your payment.
           </p>
         </div>
 
@@ -114,10 +114,10 @@ const BankTransferPending = () => {
               </div>
             </div>
 
-            {/* Bank Transfer Information */}
+            {/* Bank Deposit Information */}
             <div className="bg-white rounded-2xl border border-slate-200 p-6">
               <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-                <CiBank className="text-green-600" /> Bank Transfer Details
+                <CiBank className="text-green-600" /> Bank Deposit Details
               </h2>
 
               <div className="space-y-4 bg-green-50 rounded-xl p-4 border border-green-200 mb-6">
@@ -152,7 +152,7 @@ const BankTransferPending = () => {
               <div className="space-y-3 text-slate-700">
                 <div className="flex gap-3">
                   <span className="text-blue-600 font-bold">1.</span>
-                  <span>Our team will verify your bank transfer within 24 hours</span>
+                  <span>Our team will verify your bank deposit within 24 hours</span>
                 </div>
                 <div className="flex gap-3">
                   <span className="text-blue-600 font-bold">2.</span>
