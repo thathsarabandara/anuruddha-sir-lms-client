@@ -219,7 +219,7 @@ export const courseAPI = {
 			params: { course_id: courseId, lesson_id: lessonId },
 		}),
 
-	uploadVideoContentFile: (courseId, lessonId, file, extraData = {}) => {
+	uploadVideoContentFile: (courseId, lessonId, file, extraData = {}, onUploadProgress) => {
 		const formData = new FormData();
 		formData.append('video_file', file);
 
@@ -231,10 +231,11 @@ export const courseAPI = {
 
 		return axiosInstance.post(`${COURSE_BASE}/contents/video/upload`, formData, {
 			params: { course_id: courseId, lesson_id: lessonId },
+			...(onUploadProgress ? { onUploadProgress } : {}),
 		});
 	},
 
-	uploadPdfContentFile: (courseId, lessonId, file, extraData = {}) => {
+	uploadPdfContentFile: (courseId, lessonId, file, extraData = {}, onUploadProgress) => {
 		const formData = new FormData();
 		formData.append('pdf_file', file);
 
@@ -246,6 +247,7 @@ export const courseAPI = {
 
 		return axiosInstance.post(`${COURSE_BASE}/contents/pdf/upload`, formData, {
 			params: { course_id: courseId, lesson_id: lessonId },
+			...(onUploadProgress ? { onUploadProgress } : {}),
 		});
 	},
 
