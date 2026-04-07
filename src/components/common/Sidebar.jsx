@@ -55,6 +55,7 @@ const Sidebar = ({ isOpen = true, onClose = () => {} }) => {
           { name: 'Students', path: ROUTES.TEACHER_STUDENTS, icon: FaUsers },
           { name: 'Quizzes', path: ROUTES.TEACHER_QUIZZES, icon: FaFilePdf },
           { name: 'Revenue', path: ROUTES.TEACHER_REVENUE, icon: FaCreditCard },
+          { name: 'Payment Approvals', path: ROUTES.TEACHER_PAYMENT_APPROVALS, icon: FaClipboardList },
           { name: 'Rewards', path: ROUTES.TEACHER_REWARDS, icon: FaGem },
           { name: 'Announcements', path: ROUTES.TEACHER_ANNOUNCEMENTS, icon: TfiAnnouncement },
           { name: 'Profile', path: ROUTES.TEACHER_PROFILE, icon: FaUser },
