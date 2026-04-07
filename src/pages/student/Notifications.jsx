@@ -234,7 +234,7 @@ const StudentNotifications = () => {
           Loading notifications...
         </div>
       ) : filteredNotifications.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
+        <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center min-h-[500px]">
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-slate-100 text-slate-500">
             <FaBell />
           </div>
