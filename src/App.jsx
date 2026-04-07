@@ -116,6 +116,7 @@ function App() {
           <Route path={ROUTES.STUDENT_LIVE_CLASSES} element={<StudentLiveClasses />} />
           <Route path={ROUTES.STUDENT_QUIZZES} element={<StudentQuizzes />} />
           <Route path={ROUTES.STUDENT_QUIZ_DETAILS} element={<StudentQuizDetails />} />
+          <Route path="/student/quiz/:quizId" element={<TakeQuiz />} />
           <Route path="/student/quiz/:quizId/take" element={<TakeQuiz />} />
           <Route path="/student/quiz/:quizId/results/:attemptId" element={<QuizResults />} />
           <Route path={ROUTES.STUDENT_RECORDINGS} element={<StudentRecordings />} />
