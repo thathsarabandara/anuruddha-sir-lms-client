@@ -7,6 +7,19 @@ import axiosInstance from "./axios";
  */
 export const teacherAPI = {
   /**
+   * Get authenticated teacher profile
+   * @returns {Promise} Teacher profile data
+   */
+  getMyProfile: () => axiosInstance.get("/teachers/profile"),
+
+  /**
+   * Update authenticated teacher profile
+   * @param {Object|FormData} profileData - Updated profile payload
+   * @returns {Promise} Updated teacher profile
+   */
+  updateMyProfile: (profileData) => axiosInstance.put("/teachers/profile", profileData),
+
+  /**
    * Get teacher statistics
    * @returns {Promise} Teacher statistics
    */
