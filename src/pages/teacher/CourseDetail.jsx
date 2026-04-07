@@ -859,6 +859,28 @@ const CourseDetail = () => {
     }
   };
 
+  const handleToggleGenerateCertificates = async (nextValue) => {
+    const previousValue = Boolean(courseForm.generate_certificates);
+    setCourseForm((prev) => ({ ...prev, generate_certificates: Boolean(nextValue) }));
+
+    try {
+      setIsSubmitting(true);
+      await courseAPI.updateCourse(courseId, {
+        generate_certificates: Boolean(nextValue),
+      });
+      setCourse((prev) => ({ ...(prev || {}), generate_certificates: Boolean(nextValue) }));
+      showNotification(
+        nextValue ? 'Certificate auto-generation enabled' : 'Certificate auto-generation disabled',
+        'success'
+      );
+    } catch (err) {
+      setCourseForm((prev) => ({ ...prev, generate_certificates: previousValue }));
+      showNotification(getErrorMessage(err, 'Failed to update certificate settings'), 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleUploadThumbnail = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -2148,9 +2170,8 @@ const CourseDetail = () => {
                     <input
                       type="checkbox"
                       checked={courseForm.generate_certificates || false}
-                      onChange={(e) => {
-                        setCourseForm({ ...courseForm, generate_certificates: e.target.checked });
-                      }}
+                      onChange={(e) => handleToggleGenerateCertificates(e.target.checked)}
+                      disabled={isSubmitting}
                       className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500"
                     />
                     <span className={`ml-2 text-sm font-medium ${courseForm.generate_certificates ? 'text-green-600' : 'text-gray-600'}`}>
