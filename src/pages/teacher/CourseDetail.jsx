@@ -1,5 +1,5 @@
  
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { BiLoader } from 'react-icons/bi';
 import { FaEdit, FaStar, FaCheck, FaTimes, FaUser, FaEye, FaBook, FaGamepad, FaStar as FaRating, FaUsers, FaGripVertical } from 'react-icons/fa';
@@ -13,11 +13,11 @@ import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
 import EnrollmentKeyManager from '../../components/teacher/EnrollmentKeyManager';
 import { courseAPI } from '../../api/course';
+import { reviewAPI } from '../../api/review';
 import { quizAPI } from '../../api/quiz';
 import {
   COURSE_SUBJECT_OPTIONS,
   COURSE_GRADE_LEVEL_OPTIONS,
-  COURSE_TYPE_OPTIONS,
 } from '../../utils/courseOptions';
 
 const getErrorMessage = (err, fallback = 'Something went wrong') =>
@@ -66,6 +66,7 @@ const CourseDetail = () => {
   const tabs = [
     { key: 'overview', label: 'Overview' },
     { key: 'content', label: 'Content' },
+    { key: 'reviews', label: 'Reviews' },
     { key: 'enrollment-keys', label: 'Enrollment Keys' },
     { key: 'settings', label: 'Settings' },
   ];
@@ -78,10 +79,19 @@ const CourseDetail = () => {
   };
   const subjects = COURSE_SUBJECT_OPTIONS;
   const gradeLevels = COURSE_GRADE_LEVEL_OPTIONS;
-  const courseTypes = COURSE_TYPE_OPTIONS;
   const [enrolledStudents, setEnrolledStudents] = useState([]);
+  const [reviews, setReviews] = useState([]);
+  const [reviewTotal, setReviewTotal] = useState(0);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [reviewSearch, setReviewSearch] = useState('');
+  const [reviewRatingFilter, setReviewRatingFilter] = useState('ALL');
+  const [reviewStatusFilter, setReviewStatusFilter] = useState('ALL');
+  const [reviewSort, setReviewSort] = useState('newest');
   const [showStudentProfileModal, setShowStudentProfileModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [selectedStudentDetails, setSelectedStudentDetails] = useState(null);
+  const [loadingStudentDetails, setLoadingStudentDetails] = useState(false);
+  const [studentDetailsError, setStudentDetailsError] = useState(null);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showSectionModal, setShowSectionModal] = useState(false);
@@ -169,9 +179,40 @@ const CourseDetail = () => {
       bgColor: 'bg-yellow-100',
       textColor: 'text-yellow-600',
       description: 'course rating',
-      formatter: (value) => `${value} ★`,
+      formatter: (value) => `${value} `,
     },
   ];
+
+  const getStudentDisplayName = (row) =>
+    row?.name ||
+    [row?.first_name || row?.user?.first_name, row?.last_name || row?.user?.last_name]
+      .filter(Boolean)
+      .join(' ') ||
+    row?.username ||
+    row?.user?.username ||
+    row?.email ||
+    row?.user?.email ||
+    'N/A';
+
+  const getStudentProfileImage = (row) =>
+    getAbsoluteImageUrl(
+      row?.profile_picture ||
+        row?.profile_picture_url ||
+        row?.image ||
+        row?.user?.profile_picture ||
+        row?.user?.profile_picture_url ||
+        ''
+    );
+
+  const getPaymentMethodLabel = (row) => {
+    const rawMethod = String(row?.payment_method || row?.enrollment_method || '').toLowerCase();
+    if (rawMethod.includes('enrollment key') || rawMethod === 'enrollment_key') return 'Enrollment Key';
+    if (rawMethod === 'card') return 'Card';
+    if (rawMethod === 'bank_transfer') return 'Bank Transfer';
+    if (rawMethod === 'cash') return 'Cash';
+    if (rawMethod === 'payment') return 'Payment';
+    return row?.key_id ? 'Enrollment Key' : 'N/A';
+  };
 
   // DataTable columns for enrolled students
   const studentColumns = [
@@ -179,31 +220,40 @@ const CourseDetail = () => {
       key: 'name',
       label: 'Student Name',
       searchable: true,
-      render: (_, row) => (
+      render: (_, row) => {
+        const profileImage = getStudentProfileImage(row);
+        return (
         <div className="flex items-center">
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-            <FaUser className="text-blue-600" />
+          <div className="w-10 h-10 rounded-full overflow-hidden bg-blue-100 flex items-center justify-center">
+            {profileImage ? (
+              <img src={profileImage} alt={getStudentDisplayName(row)} className="w-full h-full object-cover" />
+            ) : (
+              <FaUser className="text-blue-600" />
+            )}
           </div>
           <div className="ml-3">
-            <div className="font-medium text-gray-900">{row.name}</div>
-            <div className="text-sm text-gray-500">{row.email}</div>
+            <div className="font-medium text-gray-900">{getStudentDisplayName(row)}</div>
+            <div className="text-sm text-gray-500">{row?.email || row?.user?.email || 'N/A'}</div>
           </div>
         </div>
-      ),
+      )},
     },
     {
       key: 'payment_method',
       label: 'Payment Method',
-      render: (_, row) => (
+      render: (_, row) => {
+        const method = getPaymentMethodLabel(row);
+        return (
         <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-          row.payment_method === 'CARD' ? 'bg-blue-100 text-blue-700' :
-          row.payment_method === 'BANK_TRANSFER' ? 'bg-green-100 text-green-700' :
-          row.payment_method === 'CASH' ? 'bg-yellow-100 text-yellow-700' :
+          method === 'Enrollment Key' ? 'bg-indigo-100 text-indigo-700' :
+          method === 'Card' ? 'bg-blue-100 text-blue-700' :
+          method === 'Bank Transfer' ? 'bg-green-100 text-green-700' :
+          method === 'Cash' ? 'bg-yellow-100 text-yellow-700' :
           'bg-gray-100 text-gray-700'
         }`}>
-          {row.payment_method || 'N/A'}
+          {method}
         </span>
-      ),
+      )},
     },
     {
       key: 'payment_status',
@@ -247,6 +297,8 @@ const CourseDetail = () => {
         <button
           onClick={() => {
             setSelectedStudent(row);
+            setSelectedStudentDetails(null);
+            setStudentDetailsError(null);
             setShowStudentProfileModal(true);
           }}
           className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
@@ -257,16 +309,278 @@ const CourseDetail = () => {
     },
   ];
 
+  const getStudentId = (student) =>
+    student?.user_id || student?.user?.user_id || student?.id || student?.user?.id || student?.student_id || null;
+
+  const formatDateValue = (value) => {
+    if (!value) return 'N/A';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  };
+
+  const formatDateOnlyValue = (value) => {
+    if (!value) return 'N/A';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleDateString();
+  };
+
+  const formatValue = (value, fallback = 'N/A') => {
+    if (value === null || value === undefined || value === '') return fallback;
+    return String(value);
+  };
+
+  const formatBooleanValue = (value) => (value ? 'Yes' : 'No');
+
+  const getReviewRating = (review) => {
+    const rawRating = review?.rating ?? review?.star_rating ?? review?.stars;
+    const numericRating = Number(rawRating);
+    return Number.isFinite(numericRating) ? numericRating : 0;
+  };
+
+  const getReviewStatus = (review) =>
+    String(review?.status || review?.review_status || 'PUBLISHED').toUpperCase();
+
+  const getReviewDateValue = (review) => {
+    const rawDate = review?.created_at || review?.createdAt || review?.updated_at || review?.updatedAt;
+    const date = rawDate ? new Date(rawDate) : null;
+    return date && !Number.isNaN(date.getTime()) ? date.getTime() : 0;
+  };
+
+  const filteredReviews = useMemo(() => {
+    const searchValue = String(reviewSearch || '').trim().toLowerCase();
+
+    const filtered = (reviews || []).filter((review) => {
+      const reviewerName = String(
+        review?.student_name ||
+          review?.user_name ||
+          review?.reviewer_name ||
+          review?.student?.name ||
+          review?.user?.name ||
+          ''
+      ).toLowerCase();
+      const reviewerEmail = String(review?.student_email || review?.user_email || review?.user?.email || '').toLowerCase();
+      const reviewText = String(review?.comment || review?.review || review?.review_text || review?.message || '').toLowerCase();
+      const reviewTitle = String(review?.title || '').toLowerCase();
+      const reviewRating = getReviewRating(review);
+      const reviewStatus = getReviewStatus(review);
+
+      const matchesSearch =
+        !searchValue ||
+        reviewerName.includes(searchValue) ||
+        reviewerEmail.includes(searchValue) ||
+        reviewText.includes(searchValue) ||
+        reviewTitle.includes(searchValue);
+      const matchesRating = reviewRatingFilter === 'ALL' || reviewRating >= Number(reviewRatingFilter);
+      const matchesStatus = reviewStatusFilter === 'ALL' || reviewStatus === reviewStatusFilter;
+
+      return matchesSearch && matchesRating && matchesStatus;
+    });
+
+    return filtered.sort((a, b) => {
+      if (reviewSort === 'highest') return getReviewRating(b) - getReviewRating(a);
+      if (reviewSort === 'lowest') return getReviewRating(a) - getReviewRating(b);
+      if (reviewSort === 'oldest') return getReviewDateValue(a) - getReviewDateValue(b);
+      return getReviewDateValue(b) - getReviewDateValue(a);
+    });
+  }, [reviews, reviewSearch, reviewRatingFilter, reviewStatusFilter, reviewSort]);
+
+  const selectedStudentProfile = {
+    userId: selectedStudentDetails?.user_id || selectedStudentDetails?.id || getStudentId(selectedStudent),
+    username:
+      selectedStudentDetails?.username ||
+      selectedStudent?.username ||
+      selectedStudent?.user?.username,
+    firstName:
+      selectedStudentDetails?.first_name ||
+      selectedStudent?.user?.first_name ||
+      selectedStudent?.first_name ||
+      '',
+    lastName:
+      selectedStudentDetails?.last_name ||
+      selectedStudent?.user?.last_name ||
+      selectedStudent?.last_name ||
+      '',
+    fullName:
+      selectedStudentDetails?.full_name ||
+      [
+        selectedStudentDetails?.first_name || selectedStudent?.user?.first_name || selectedStudent?.first_name,
+        selectedStudentDetails?.last_name || selectedStudent?.user?.last_name || selectedStudent?.last_name,
+      ]
+        .filter(Boolean)
+        .join(' ') ||
+      selectedStudent?.name ||
+      'N/A',
+    email:
+      selectedStudentDetails?.email ||
+      selectedStudent?.user?.email ||
+      selectedStudent?.email ||
+      'N/A',
+    phone:
+      selectedStudentDetails?.phone ||
+      selectedStudent?.user?.phone ||
+      selectedStudent?.phone ||
+      'N/A',
+    dateOfBirth:
+      selectedStudentDetails?.date_of_birth ||
+      selectedStudentDetails?.dateOfBirth ||
+      selectedStudent?.date_of_birth ||
+      selectedStudent?.dateOfBirth ||
+      'N/A',
+    gradeLevel:
+      selectedStudentDetails?.grade_level ||
+      selectedStudentDetails?.grade ||
+      selectedStudent?.grade_level ||
+      selectedStudent?.grade ||
+      'N/A',
+    school:
+      selectedStudentDetails?.school ||
+      selectedStudent?.school ||
+      'N/A',
+    address:
+      selectedStudentDetails?.address ||
+      selectedStudent?.address ||
+      'N/A',
+    parentName:
+      selectedStudentDetails?.parent_name ||
+      selectedStudent?.parent_name ||
+      'N/A',
+    parentContact:
+      selectedStudentDetails?.parent_contact ||
+      selectedStudent?.parent_contact ||
+      'N/A',
+    profilePicture:
+      selectedStudentDetails?.profile_picture_url ||
+      selectedStudentDetails?.profile_picture ||
+      selectedStudent?.image ||
+      selectedStudent?.profile_picture ||
+      selectedStudent?.user?.profile_picture_url ||
+      selectedStudent?.user?.profile_picture ||
+      null,
+    role:
+      Array.isArray(selectedStudentDetails?.roles) && selectedStudentDetails.roles.length
+        ? selectedStudentDetails.roles.join(', ')
+        : selectedStudentDetails?.role ||
+          selectedStudent?.role ||
+          'student',
+    emailVerified:
+      selectedStudentDetails?.email_verified ??
+      selectedStudent?.email_verified ??
+      selectedStudent?.user?.email_verified,
+    phoneVerified:
+      selectedStudentDetails?.phone_verified ??
+      selectedStudent?.phone_verified ??
+      selectedStudent?.user?.phone_verified,
+    createdAt:
+      selectedStudentDetails?.created_at ||
+      selectedStudent?.created_at ||
+      selectedStudent?.user?.created_at ||
+      null,
+    updatedAt:
+      selectedStudentDetails?.updated_at ||
+      selectedStudent?.updated_at ||
+      selectedStudent?.user?.updated_at ||
+      null,
+    accountStatus:
+      selectedStudentDetails?.account_status ||
+      selectedStudent?.account_status ||
+      {},
+    progress: selectedStudent?.progress ?? selectedStudentDetails?.progress ?? 0,
+    enrollmentId:
+      selectedStudent?.enrollment_id ||
+      selectedStudentDetails?.enrollment_id ||
+      selectedStudent?.id ||
+      'N/A',
+    enrollmentMethod:
+      selectedStudent?.enrollment_method ||
+      selectedStudentDetails?.enrollment_method ||
+      'N/A',
+    enrollmentStatus:
+      selectedStudent?.status ||
+      selectedStudentDetails?.status ||
+      'N/A',
+    enrolledAt:
+      selectedStudent?.enrolled_at ||
+      selectedStudent?.enrolled_date ||
+      selectedStudentDetails?.enrolled_at ||
+      selectedStudentDetails?.enrolled_date ||
+      null,
+    completedAt:
+      selectedStudent?.completed_at ||
+      selectedStudentDetails?.completed_at ||
+      null,
+    lastAccessed:
+      selectedStudent?.last_accessed ||
+      selectedStudentDetails?.last_accessed ||
+      null,
+    paymentMethod:
+      selectedStudent?.payment_method ||
+      selectedStudentDetails?.payment_method ||
+      'N/A',
+    paymentStatus:
+      selectedStudent?.payment_status ||
+      selectedStudentDetails?.payment_status ||
+      'N/A',
+    amountPaid:
+      selectedStudent?.amount_paid ||
+      selectedStudentDetails?.amount_paid ||
+      null,
+    transactionId:
+      selectedStudent?.transaction_id ||
+      selectedStudentDetails?.transaction_id ||
+      'N/A',
+    totalTimeSpentMinutes:
+      selectedStudent?.total_time_spent_minutes ||
+      selectedStudentDetails?.total_time_spent_minutes ||
+      0,
+    courseTitle: course?.title || 'Current course',
+  };
+
+  useEffect(() => {
+    const studentId = getStudentId(selectedStudent);
+    if (!showStudentProfileModal || !studentId) return;
+
+    let isActive = true;
+
+    const loadStudentDetails = async () => {
+      try {
+        setLoadingStudentDetails(true);
+        setStudentDetailsError(null);
+        const response = await courseAPI.getStudentDetails(courseId, studentId);
+        const profileData = response?.data?.data || response?.data || null;
+        if (isActive) {
+          setSelectedStudentDetails(profileData);
+        }
+      } catch (err) {
+        if (isActive) {
+          setSelectedStudentDetails(null);
+          setStudentDetailsError(getErrorMessage(err, 'Failed to load student details'));
+        }
+      } finally {
+        if (isActive) {
+          setLoadingStudentDetails(false);
+        }
+      }
+    };
+
+    loadStudentDetails();
+
+    return () => {
+      isActive = false;
+    };
+  }, [courseId, selectedStudent, showStudentProfileModal]);
+
   const loadCourseData = useCallback(async () => {
     try {
       setLoading(true);
       setLoadingStudents(true);
+      setLoadingReviews(true);
 
-      const [detailsRes, contentRes, statsRes, enrollmentsRes] = await Promise.all([
+      const [detailsRes, contentRes, statsRes, enrollmentsRes, reviewsRes] = await Promise.all([
         courseAPI.getCourseDetails(courseId),
         courseAPI.getCourseContent(courseId),
         courseAPI.getCourseStats(courseId).catch(() => null),
         courseAPI.getCourseEnrollments(courseId, { page: 1, limit: 200 }).catch(() => null),
+        reviewAPI.getReviews(courseId, { page: 1, limit: 200 }).catch(() => null),
       ]);
 
       const details = detailsRes?.data?.data || {};
@@ -276,6 +590,14 @@ const CourseDetail = () => {
       setCourse(details);
       setSections(contentData?.sections || []);
       setEnrolledStudents(Array.isArray(enrollmentRows) ? enrollmentRows : []);
+
+      const reviewRows =
+        reviewsRes?.data?.data?.reviews ||
+        reviewsRes?.data?.data?.items ||
+        reviewsRes?.data?.data ||
+        [];
+      setReviews(Array.isArray(reviewRows) ? reviewRows : []);
+      setReviewTotal(reviewsRes?.data?.pagination?.total || (Array.isArray(reviewRows) ? reviewRows.length : 0));
 
       setCourseForm({
         title: details?.title || '',
@@ -302,12 +624,59 @@ const CourseDetail = () => {
     } finally {
       setLoading(false);
       setLoadingStudents(false);
+      setLoadingReviews(false);
     }
   }, [courseId]);
 
   useEffect(() => {
     loadCourseData();
   }, [loadCourseData]);
+
+  const loadReviews = useCallback(async (queryParams = {}) => {
+    try {
+      setLoadingReviews(true);
+      const response = await reviewAPI.getReviews(courseId, queryParams);
+      const reviewRows =
+        response?.data?.data?.reviews ||
+        response?.data?.data?.items ||
+        response?.data?.data ||
+        [];
+      setReviews(Array.isArray(reviewRows) ? reviewRows : []);
+      setReviewTotal(response?.data?.pagination?.total || (Array.isArray(reviewRows) ? reviewRows.length : 0));
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to load reviews'), 'error');
+    } finally {
+      setLoadingReviews(false);
+    }
+  }, [courseId]);
+
+  useEffect(() => {
+    if (activeTab !== 'reviews') return;
+
+    const queryParams = {
+      page: 1,
+      limit: 200,
+      sort: reviewSort,
+    };
+
+    if (reviewSearch.trim()) {
+      queryParams.q = reviewSearch.trim();
+    }
+
+    if (reviewRatingFilter !== 'ALL') {
+      queryParams.rating_min = Number(reviewRatingFilter);
+    }
+
+    if (reviewStatusFilter !== 'ALL') {
+      queryParams.status = reviewStatusFilter;
+    }
+
+    const debounceTimer = setTimeout(() => {
+      loadReviews(queryParams);
+    }, 350);
+
+    return () => clearTimeout(debounceTimer);
+  }, [activeTab, reviewSearch, reviewRatingFilter, reviewStatusFilter, reviewSort, loadReviews]);
 
   const refreshCourseContent = async () => {
     const response = await courseAPI.getCourseContent(courseId);
@@ -1166,6 +1535,149 @@ const CourseDetail = () => {
               }}
               loading={loadingStudents}
             />
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'reviews' && (
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow p-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">Course Reviews</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  {reviewTotal} total reviews, {filteredReviews.length} matching current filters
+                </p>
+              </div>
+              <div className="text-sm text-gray-700 bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+                Average rating: <span className="font-semibold">{Number(courseStats.average_rating || 0).toFixed(1)} / 5</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mt-5">
+              <div className="md:col-span-2">
+                <label className="block text-xs font-medium text-gray-600 mb-1">Search</label>
+                <input
+                  type="text"
+                  value={reviewSearch}
+                  onChange={(e) => setReviewSearch(e.target.value)}
+                  placeholder="Search by student name, email, title, or review text"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Rating</label>
+                <select
+                  value={reviewRatingFilter}
+                  onChange={(e) => setReviewRatingFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="ALL">All ratings</option>
+                  <option value="5">5 stars</option>
+                  <option value="4">4 stars and above</option>
+                  <option value="3">3 stars and above</option>
+                  <option value="2">2 stars and above</option>
+                  <option value="1">1 star and above</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Status</label>
+                <select
+                  value={reviewStatusFilter}
+                  onChange={(e) => setReviewStatusFilter(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="ALL">All statuses</option>
+                  <option value="PUBLISHED">Published</option>
+                  <option value="PENDING">Pending</option>
+                  <option value="HIDDEN">Hidden</option>
+                  <option value="REJECTED">Rejected</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Sort</label>
+                <select
+                  value={reviewSort}
+                  onChange={(e) => setReviewSort(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="highest">Highest rating</option>
+                  <option value="lowest">Lowest rating</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            {loadingReviews && (
+              <div className="bg-white rounded-lg shadow p-6 text-gray-600">Loading reviews...</div>
+            )}
+
+            {!loadingReviews && filteredReviews.length === 0 && (
+              <div className="bg-white rounded-lg shadow p-6 text-gray-600">
+                No reviews found for the current search/filter criteria.
+              </div>
+            )}
+
+            {!loadingReviews && filteredReviews.map((review, idx) => {
+              const reviewerName =
+                review?.student_name ||
+                review?.user_name ||
+                review?.reviewer_name ||
+                review?.student?.name ||
+                review?.user?.name ||
+                'Unknown Student';
+              const reviewerEmail =
+                review?.student_email || review?.user_email || review?.user?.email || null;
+              const rating = getReviewRating(review);
+              const status = getReviewStatus(review);
+              const createdAt = review?.created_at || review?.createdAt || review?.updated_at || review?.updatedAt;
+              const reviewTitle = review?.title || null;
+              const reviewText = review?.comment || review?.review || review?.review_text || review?.message || '';
+
+              return (
+                <div key={review?.review_id || review?.id || idx} className="bg-white rounded-lg shadow p-5 border border-gray-100">
+                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{reviewerName}</h3>
+                      {reviewerEmail && <p className="text-sm text-gray-500">{reviewerEmail}</p>}
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700">
+                        <FaStar className="text-xs" /> {rating.toFixed(1)}
+                      </span>
+                      <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        status === 'PUBLISHED'
+                          ? 'bg-green-100 text-green-700'
+                          : status === 'PENDING'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : status === 'REJECTED'
+                              ? 'bg-red-100 text-red-700'
+                              : 'bg-gray-100 text-gray-700'
+                      }`}>
+                        {status}
+                      </span>
+                    </div>
+                  </div>
+
+                  {(reviewTitle || reviewText) && (
+                    <div className="mt-3">
+                      {reviewTitle && <p className="text-sm font-semibold text-gray-900">{reviewTitle}</p>}
+                      {reviewText && <p className="text-sm text-gray-700 whitespace-pre-wrap mt-1">{reviewText}</p>}
+                    </div>
+                  )}
+
+                  <div className="mt-3 text-xs text-gray-500">
+                    Reviewed on {createdAt ? formatDateValue(createdAt) : 'N/A'}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -2152,7 +2664,12 @@ const CourseDetail = () => {
             <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
               <h2 className="text-2xl font-bold text-gray-900">Student Profile</h2>
               <button
-                onClick={() => setShowStudentProfileModal(false)}
+                onClick={() => {
+                  setShowStudentProfileModal(false);
+                  setSelectedStudent(null);
+                  setSelectedStudentDetails(null);
+                  setStudentDetailsError(null);
+                }}
                 className="text-gray-500 hover:text-gray-700 text-2xl"
               >
                 ✕
@@ -2160,128 +2677,160 @@ const CourseDetail = () => {
             </div>
 
             <div className="p-6 space-y-6">
+              {loadingStudentDetails && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800">
+                  Loading current student details...
+                </div>
+              )}
+
+              {studentDetailsError && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  {studentDetailsError}
+                </div>
+              )}
+
               {/* Profile Header */}
               <div className="flex items-start gap-6">
-                <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0">
-                  {selectedStudent.image &&
-                    <img src={getAbsoluteImageUrl(selectedStudent.image)} alt='student_image' className='rounded-full w-24 h-24 object-cover'/>
-                  }
-                  {!selectedStudent.image &&
-                    <FaUser className="text-blue-600 text-sm" />
-                  }
+                <div className="w-24 h-24 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden">
+                  {selectedStudentProfile.profilePicture ? (
+                    <img
+                      src={getAbsoluteImageUrl(selectedStudentProfile.profilePicture)}
+                      alt="student profile"
+                      className="w-24 h-24 object-cover"
+                    />
+                  ) : (
+                    <FaUser className="text-white text-3xl" />
+                  )}
                 </div>
-                <div className="flex-1">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-1">{selectedStudent.user?.name || selectedStudent.name || 'N/A'}</h3>
-                  <p className="text-gray-600">{selectedStudent.user?.email || selectedStudent.email || 'N/A'}</p>
-                  <div className="mt-3 flex gap-4">
-                    <div>
-                      <span className="text-xs text-gray-500 uppercase tracking-wide">Status</span>
-                      <p className="font-semibold text-gray-900 mt-1">Active</p>
-                    </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-1 truncate">{selectedStudentProfile.fullName}</h3>
+                  <p className="text-gray-600 break-all">{selectedStudentProfile.email}</p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                      {formatValue(selectedStudentProfile.role, 'student')}
+                    </span>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${selectedStudentProfile.accountStatus?.is_banned ? 'bg-red-100 text-red-700' : selectedStudentProfile.accountStatus?.is_active === false ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700'}`}>
+                      {selectedStudentProfile.accountStatus?.is_banned ? 'Banned' : selectedStudentProfile.accountStatus?.is_active === false ? 'Inactive' : 'Active'}
+                    </span>
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
+                      {selectedStudentProfile.courseTitle}
+                    </span>
                   </div>
+                </div>
+              </div>
+
+              {/* Profile Details */}
+              <div className="border-t pt-6">
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Student Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    ['Student ID', selectedStudentProfile.userId],
+                    ['Username', selectedStudentProfile.username],
+                    ['First Name', selectedStudentProfile.firstName],
+                    ['Last Name', selectedStudentProfile.lastName],
+                    ['Full Name', selectedStudentProfile.fullName],
+                    ['Email', selectedStudentProfile.email],
+                    ['Phone', selectedStudentProfile.phone],
+                    ['Date of Birth', formatDateOnlyValue(selectedStudentProfile.dateOfBirth)],
+                    ['Grade', selectedStudentProfile.gradeLevel],
+                    ['School', selectedStudentProfile.school],
+                    ['Address', selectedStudentProfile.address],
+                    ['Parent Name', selectedStudentProfile.parentName],
+                    ['Parent Contact', selectedStudentProfile.parentContact],
+                    ['Email Verified', formatBooleanValue(selectedStudentProfile.emailVerified)],
+                    ['Phone Verified', formatBooleanValue(selectedStudentProfile.phoneVerified)],
+                    ['Created At', formatDateValue(selectedStudentProfile.createdAt)],
+                    ['Updated At', formatDateValue(selectedStudentProfile.updatedAt)],
+                  ].map(([label, value]) => (
+                    <div key={label} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <span className="text-xs text-gray-500 uppercase tracking-wide">{label}</span>
+                      <p className="font-semibold text-gray-900 mt-1 break-words">{value}</p>
+                    </div>
+                  ))}
                 </div>
               </div>
 
               {/* Enrollment Details */}
               <div className="border-t pt-6">
                 <h4 className="text-lg font-semibold text-gray-900 mb-4">Enrollment Details</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <span className="text-xs text-gray-500 uppercase tracking-wide">Enrolled Date</span>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[
+                    ['Enrollment ID', selectedStudentProfile.enrollmentId],
+                    ['Enrollment Method', selectedStudentProfile.enrollmentMethod],
+                    ['Enrollment Status', selectedStudentProfile.enrollmentStatus],
+                    ['Progress', `${selectedStudentProfile.progress}%`],
+                    ['Enrolled At', formatDateValue(selectedStudentProfile.enrolledAt)],
+                    ['Completed At', formatDateValue(selectedStudentProfile.completedAt)],
+                    ['Last Accessed', formatDateValue(selectedStudentProfile.lastAccessed)],
+                    ['Total Time Spent', `${selectedStudentProfile.totalTimeSpentMinutes || 0} mins`],
+                  ].map(([label, value]) => (
+                    <div key={label} className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                      <span className="text-xs text-gray-500 uppercase tracking-wide">{label}</span>
+                      <p className="font-semibold text-gray-900 mt-1 break-words">{value}</p>
+                    </div>
+                  ))}
+
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Payment Method</span>
+                    <p className="font-semibold text-gray-900 mt-1">{formatValue(selectedStudentProfile.paymentMethod)}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Payment Status</span>
+                    <p className="font-semibold text-gray-900 mt-1">{formatValue(selectedStudentProfile.paymentStatus)}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Amount Paid</span>
                     <p className="font-semibold text-gray-900 mt-1">
-                      {selectedStudent.enrolled_at ? new Date(selectedStudent.enrolled_at).toLocaleDateString() : 'N/A'}
+                      {selectedStudentProfile.amountPaid === null || selectedStudentProfile.amountPaid === undefined || selectedStudentProfile.amountPaid === ''
+                        ? 'N/A'
+                        : `Rs. ${selectedStudentProfile.amountPaid}`}
                     </p>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <span className="text-xs text-gray-500 uppercase tracking-wide">Enrollment ID</span>
-                    <p className="font-semibold text-gray-900 mt-1">{selectedStudent.enrollment_id || selectedStudent.id || 'N/A'}</p>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Transaction ID</span>
+                    <p className="font-semibold text-gray-900 mt-1 break-all">{formatValue(selectedStudentProfile.transactionId)}</p>
                   </div>
                 </div>
               </div>
 
-              {/* Payment Details */}
+              {/* Current Status */}
               <div className="border-t pt-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Payment Information</h4>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <span className="text-xs text-gray-500 uppercase tracking-wide">Payment Method</span>
-                    <div className="mt-2">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium inline-block ${
-                        selectedStudent.payment_method === 'CARD' ? 'bg-blue-100 text-blue-700' :
-                        selectedStudent.payment_method === 'BANK_TRANSFER' ? 'bg-green-100 text-green-700' :
-                        selectedStudent.payment_method === 'CASH' ? 'bg-yellow-100 text-yellow-700' :
-                        selectedStudent.payment_method === 'FREE' ? 'bg-gray-100 text-gray-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {selectedStudent.payment_method || 'N/A'}
-                      </span>
-                    </div>
+                <h4 className="text-lg font-semibold text-gray-900 mb-4">Current Status</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Account Status</span>
+                    <p className="font-semibold text-gray-900 mt-1">
+                      {selectedStudentProfile.accountStatus?.is_banned
+                        ? 'Banned'
+                        : selectedStudentProfile.accountStatus?.is_active === false
+                          ? 'Inactive'
+                          : 'Active'}
+                    </p>
                   </div>
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <span className="text-xs text-gray-500 uppercase tracking-wide">Payment Status</span>
-                    <div className="mt-2">
-                      <span className={`px-3 py-1 rounded-full text-sm font-medium inline-flex items-center gap-1 ${
-                        selectedStudent.payment_status === 'COMPLETED' || selectedStudent.payment_status === 'PAID' ? 'bg-green-100 text-green-700' :
-                        selectedStudent.payment_status === 'PENDING' ? 'bg-yellow-100 text-yellow-700' :
-                        selectedStudent.payment_status === 'FAILED' ? 'bg-red-100 text-red-700' :
-                        'bg-gray-100 text-gray-700'
-                      }`}>
-                        {selectedStudent.payment_status === 'COMPLETED' || selectedStudent.payment_status === 'PAID' ? <FaCheck className="text-xs" /> : null}
-                        {selectedStudent.payment_status || 'FREE'}
-                      </span>
-                    </div>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Ban Reason</span>
+                    <p className="font-semibold text-gray-900 mt-1 break-words">{formatValue(selectedStudentProfile.accountStatus?.ban_reason)}</p>
                   </div>
-                  {selectedStudent.amount_paid && (
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <span className="text-xs text-gray-500 uppercase tracking-wide">Amount Paid</span>
-                      <p className="font-semibold text-gray-900 mt-1">Rs. {selectedStudent.amount_paid}</p>
-                    </div>
-                  )}
-                  {selectedStudent.transaction_id && (
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <span className="text-xs text-gray-500 uppercase tracking-wide">Transaction ID</span>
-                      <p className="font-semibold text-gray-900 mt-1 text-sm break-all">{selectedStudent.transaction_id}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Contact Information */}
-              <div className="border-t pt-6">
-                <h4 className="text-lg font-semibold text-gray-900 mb-4">Contact Information</h4>
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Course Type</label>
-                    <select
-                      value={courseForm.course_type}
-                      onChange={(e) => setCourseForm({ ...courseForm, course_type: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    >
-                      {Array.isArray(courseTypes) && courseTypes.map((type) => (
-                        <option key={type.value || type.id} value={type.value || type.id}>
-                          {type.label || type.name}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Banned At</span>
+                    <p className="font-semibold text-gray-900 mt-1">{formatDateValue(selectedStudentProfile.accountStatus?.banned_at)}</p>
                   </div>
-
-                  <div className="bg-gray-50 p-4 rounded-lg">
-                    <span className="text-xs text-gray-500 uppercase tracking-wide">Email</span>
-                    <p className="font-semibold text-gray-900 mt-1">{selectedStudent.user?.email || selectedStudent.email || 'N/A'}</p>
+                  <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                    <span className="text-xs text-gray-500 uppercase tracking-wide">Ban Expires At</span>
+                    <p className="font-semibold text-gray-900 mt-1">{formatDateValue(selectedStudentProfile.accountStatus?.ban_expires_at)}</p>
                   </div>
-                  {selectedStudent.user?.phone && (
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                      <span className="text-xs text-gray-500 uppercase tracking-wide">Phone</span>
-                      <p className="font-semibold text-gray-900 mt-1">{selectedStudent.user.phone}</p>
-                    </div>
-                  )}
                 </div>
               </div>
 
               {/* Close Button */}
               <div className="border-t pt-6 flex justify-end">
                 <button
-                  onClick={() => setShowStudentProfileModal(false)}
+                  onClick={() => {
+                    setShowStudentProfileModal(false);
+                    setSelectedStudent(null);
+                    setSelectedStudentDetails(null);
+                    setStudentDetailsError(null);
+                  }}
                   className="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-semibold"
                 >
                   Close
