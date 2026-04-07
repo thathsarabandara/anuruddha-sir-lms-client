@@ -18,6 +18,8 @@ import { quizAPI } from '../../api/quiz';
 import {
   COURSE_SUBJECT_OPTIONS,
   COURSE_GRADE_LEVEL_OPTIONS,
+  COURSE_TYPE_OPTIONS,
+  COURSE_LANGUAGE_OPTIONS,
 } from '../../utils/courseOptions';
 
 const getErrorMessage = (err, fallback = 'Something went wrong') =>
@@ -79,6 +81,20 @@ const CourseDetail = () => {
   };
   const subjects = COURSE_SUBJECT_OPTIONS;
   const gradeLevels = COURSE_GRADE_LEVEL_OPTIONS;
+  
+  const subjectLabelMap = useMemo(() => {
+    return COURSE_SUBJECT_OPTIONS.reduce((acc, option) => {
+      acc[option.value] = option.label;
+      return acc;
+    }, {});
+  }, []);
+
+  const courseTypeLabelMap = useMemo(() => {
+    return COURSE_TYPE_OPTIONS.reduce((acc, option) => {
+      acc[option.value] = option.label;
+      return acc;
+    }, {});
+  }, []);
   const [enrolledStudents, setEnrolledStudents] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [reviewTotal, setReviewTotal] = useState(0);
@@ -113,10 +129,11 @@ const CourseDetail = () => {
     subject: '',
     grade_level: '',
     course_type: 'monthly',
+    price_type: 'FREE',
     price: '',
     status: 'DRAFT',
     visibility: 'PUBLIC',
-    language: 'SINHALA',
+    language: 'en',
     access_type: 'NORMAL',
     generate_certificates: false
   });
@@ -127,6 +144,8 @@ const CourseDetail = () => {
   });
   const [lessonForm, setLessonForm] = useState(getDefaultLessonForm());
   const [uploadingFile, _setUploadingFile] = useState(false);
+  const [uploadProgressLessonId, setUploadProgressLessonId] = useState(null);
+  const [uploadProgressPercent, setUploadProgressPercent] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [quizVerification, setQuizVerification] = useState({
     isLoading: false,
@@ -605,10 +624,11 @@ const CourseDetail = () => {
         subject: details?.subject || '',
         grade_level: details?.grade_level || details?.grade_level_name || '',
         course_type: details?.course_type || 'monthly',
+        price_type: details?.is_paid ? 'PAID' : 'FREE',
         price: details?.price || '',
         status: details?.status || 'DRAFT',
         visibility: details?.visibility || 'PUBLIC',
-        language: details?.language || 'SINHALA',
+        language: details?.language || 'en',
         access_type: details?.access_type || 'NORMAL',
         generate_certificates: Boolean(details?.generate_certificates),
       });
@@ -804,9 +824,11 @@ const CourseDetail = () => {
         subject: courseForm.subject || undefined,
         grade_level: courseForm.grade_level || undefined,
         course_type: courseForm.course_type || undefined,
-        price: courseForm.price || 0,
+        is_paid: courseForm.price_type === 'PAID',
+        price: courseForm.price_type === 'PAID' ? Number(courseForm.price || 0) : null,
         language: courseForm.language,
         access_type: courseForm.access_type,
+        generate_certificates: Boolean(courseForm.generate_certificates),
       });
 
       if (existingStatus !== nextStatus) {
@@ -1105,9 +1127,34 @@ const CourseDetail = () => {
 
     try {
       setIsSubmitting(true);
+      setUploadProgressLessonId(lessonId);
+      setUploadProgressPercent(0);
+
       const response = normalizedType === 'video'
-        ? await courseAPI.uploadVideoContentFile(courseId, lessonId, file, { title: file.name })
-        : await courseAPI.uploadPdfContentFile(courseId, lessonId, file, { title: file.name });
+        ? await courseAPI.uploadVideoContentFile(
+            courseId,
+            lessonId,
+            file,
+            { title: file.name },
+            (progressEvent) => {
+              const total = progressEvent?.total || 0;
+              if (!total) return;
+              const percent = Math.round((progressEvent.loaded * 100) / total);
+              setUploadProgressPercent(Math.max(0, Math.min(100, percent)));
+            }
+          )
+        : await courseAPI.uploadPdfContentFile(
+            courseId,
+            lessonId,
+            file,
+            { title: file.name },
+            (progressEvent) => {
+              const total = progressEvent?.total || 0;
+              if (!total) return;
+              const percent = Math.round((progressEvent.loaded * 100) / total);
+              setUploadProgressPercent(Math.max(0, Math.min(100, percent)));
+            }
+          );
 
       const uploadedUrl = normalizedType === 'video'
         ? response?.data?.data?.video_url
@@ -1136,6 +1183,8 @@ const CourseDetail = () => {
       );
     } finally {
       setIsSubmitting(false);
+      setUploadProgressLessonId(null);
+      setUploadProgressPercent(0);
     }
   };
 
@@ -1484,11 +1533,11 @@ const CourseDetail = () => {
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-gray-500">Subject:</span>
-                    <span className="ml-2 font-medium">{course?.subject}</span>
+                    <span className="ml-2 font-medium">{subjectLabelMap[course?.subject] || course?.subject || '-'}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">Grade Level:</span>
-                    <span className="ml-2 font-medium">{course?.grade_level}</span>
+                    <span className="ml-2 font-medium">{course?.grade_level ? `Grade ${course.grade_level}` : '-'}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">Price:</span>
@@ -1496,7 +1545,7 @@ const CourseDetail = () => {
                   </div>
                   <div>
                     <span className="text-gray-500">Course Type:</span>
-                    <span className="ml-2 font-medium">{course?.course_type}</span>
+                    <span className="ml-2 font-medium">{courseTypeLabelMap[course?.course_type] || course?.course_type || '-'}</span>
                   </div>
                   <div>
                     <span className="text-gray-500">Status:</span>
@@ -1781,8 +1830,12 @@ const CourseDetail = () => {
                                     accept="video/*"
                                     className="hidden"
                                     onChange={(e) => handleUploadLessonFile(lessonId, e.target.files[0], 'VIDEO')}
+                                    disabled={uploadProgressLessonId === lessonId}
                                   />
                                 </label>
+                              )}
+                              {String(lesson.lesson_type).toLowerCase() === 'video' && lesson.video_file && uploadProgressLessonId !== lessonId && (
+                                <span className="px-2 py-1 text-xs bg-green-600 text-white rounded">✓ Uploaded</span>
                               )}
                               {String(lesson.lesson_type).toLowerCase() === 'pdf' && !lesson.pdf_file && (
                                 <label className="px-2 py-1 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 cursor-pointer whitespace-nowrap">
@@ -1792,23 +1845,47 @@ const CourseDetail = () => {
                                     accept="application/pdf"
                                     className="hidden"
                                     onChange={(e) => handleUploadLessonFile(lessonId, e.target.files[0], 'PDF')}
+                                    disabled={uploadProgressLessonId === lessonId}
                                   />
                                 </label>
+                              )}
+                              {String(lesson.lesson_type).toLowerCase() === 'pdf' && lesson.pdf_file && uploadProgressLessonId !== lessonId && (
+                                <span className="px-2 py-1 text-xs bg-green-600 text-white rounded">✓ Uploaded</span>
                               )}
                               <button
                                 onClick={() => openEditLesson(section, lesson)}
                                 className="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 whitespace-nowrap"
+                                disabled={uploadProgressLessonId === lessonId}
                               >
                                 Edit
                               </button>
                               <button
                                 onClick={() => handleDeleteLesson(lessonId, lesson.title)}
                                 className="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 whitespace-nowrap"
+                                disabled={uploadProgressLessonId === lessonId}
                               >
                                 Delete
                               </button>
                             </div>
                           </div>
+
+                          {/* Upload Progress Bar */}
+                          {uploadProgressLessonId === lessonId && (
+                            <div className="px-4 py-2 bg-blue-50 border-t border-blue-200">
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="text-xs font-medium text-blue-700">
+                                  {String(lesson.lesson_type).toLowerCase() === 'video' ? 'Uploading Video' : 'Uploading PDF'}...
+                                </span>
+                                <span className="text-xs font-medium text-blue-600">{uploadProgressPercent}%</span>
+                              </div>
+                              <div className="w-full bg-blue-200 rounded-full h-2 overflow-hidden">
+                                <div
+                                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${uploadProgressPercent}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
                           
                           {/* File Preview Section */}
                           {lesson.video_file && (
@@ -1832,13 +1909,15 @@ const CourseDetail = () => {
                                   Play Video
                                 </button>
                               </div>
-                              <label className="text-xs text-gray-600 cursor-pointer inline-block px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 whitespace-nowrap">
+                              <label className="text-xs text-gray-600 cursor-pointer inline-block px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{ opacity: uploadProgressLessonId === lessonId ? 0.5 : 1, pointerEvents: uploadProgressLessonId === lessonId ? 'none' : 'auto' }}>
                                 Replace Video
                                 <input
                                   type="file"
                                   accept="video/*"
                                   className="hidden"
                                   onChange={(e) => handleUploadLessonFile(lessonId, e.target.files[0], 'VIDEO')}
+                                  disabled={uploadProgressLessonId === lessonId}
                                 />
                               </label>
                             </div>
@@ -1871,13 +1950,15 @@ const CourseDetail = () => {
                                   Download PDF
                                 </a>
                               </div>
-                              <label className="text-xs text-gray-600 cursor-pointer inline-block px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 whitespace-nowrap">
+                              <label className="text-xs text-gray-600 cursor-pointer inline-block px-3 py-1 bg-gray-200 rounded hover:bg-gray-300 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+                                style={{ opacity: uploadProgressLessonId === lessonId ? 0.5 : 1, pointerEvents: uploadProgressLessonId === lessonId ? 'none' : 'auto' }}>
                                 Replace PDF
                                 <input
                                   type="file"
                                   accept="application/pdf"
                                   className="hidden"
                                   onChange={(e) => handleUploadLessonFile(lessonId, e.target.files[0], 'PDF')}
+                                  disabled={uploadProgressLessonId === lessonId}
                                 />
                               </label>
                             </div>
@@ -2135,6 +2216,19 @@ const CourseDetail = () => {
                       ))}
                     </select>
                   </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                    <select
+                      value={courseForm.language}
+                      onChange={(e) => setCourseForm({ ...courseForm, language: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      {COURSE_LANGUAGE_OPTIONS.map((lang) => (
+                        <option key={lang.value} value={lang.value}>{lang.label}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -2153,6 +2247,41 @@ const CourseDetail = () => {
                   </div>
 
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Course Type</label>
+                    <select
+                      value={courseForm.course_type}
+                      onChange={(e) => setCourseForm({ ...courseForm, course_type: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      {COURSE_TYPE_OPTIONS.map((type) => (
+                        <option key={type.value || type.id} value={type.value || type.id}>
+                          {type.label || type.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Price Type</label>
+                    <select
+                      value={courseForm.price_type}
+                      onChange={(e) =>
+                        setCourseForm({
+                          ...courseForm,
+                          price_type: e.target.value,
+                          price: e.target.value === 'PAID' ? courseForm.price : 0,
+                        })
+                      }
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="FREE">Free</option>
+                      <option value="PAID">Paid</option>
+                    </select>
+                  </div>
+
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Price (Rs.)</label>
                     <input
                       type="number"
@@ -2161,6 +2290,7 @@ const CourseDetail = () => {
                       className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       min="0"
                       step="0.01"
+                      disabled={courseForm.price_type !== 'PAID'}
                     />
                   </div>
                 </div>
