@@ -1,11 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { updateUser } from '../../app/slices/authSlice';
-import { isValidEmail, isValidPhone } from '../../utils/helpers';
-import { CgProfile } from "react-icons/cg";
-import { IoLockClosed } from "react-icons/io5";
-import { FaBell } from "react-icons/fa";
+import { isValidPhone } from '../../utils/helpers';
+import { CgProfile } from 'react-icons/cg';
+import { IoLockClosed } from 'react-icons/io5';
+import { FaBell } from 'react-icons/fa';
 import Notification from '../../components/common/Notification';
+import { authAPI } from '../../api';
+import { studentAPI } from '../../api/student';
+
+const buildProfileFormData = (profile = {}) => ({
+  first_name: profile?.first_name || '',
+  last_name: profile?.last_name || '',
+  email: profile?.email || '',
+  phone: profile?.phone || '',
+  date_of_birth: profile?.date_of_birth || '',
+  school: profile?.school || '',
+  grade_level: profile?.grade_level || '',
+  address: profile?.address || '',
+  parent_name: profile?.parent_name || '',
+  parent_contact: profile?.parent_contact || '',
+  profile_picture: profile?.profile_picture || '',
+});
 
 const StudentProfile = () => {
   const { user } = useSelector((state) => state.auth);
@@ -13,32 +29,74 @@ const StudentProfile = () => {
 
   const [activeTab, setActiveTab] = useState('profile');
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({
-    firstName: user?.first_name || '',
-    lastName: user?.last_name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    dateOfBirth: user?.date_of_birth || '',
-    school: user?.school || '',
-    grade: user?.grade_level || '',
-    address: user?.address || '',
-    parentName: user?.parent_name || '',
-    parentContact: user?.parent_contact || '',
-  });
-
+  const [isLoadingProfile, setIsLoadingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [profile, setProfile] = useState(user || null);
+  const [profilePictureFile, setProfilePictureFile] = useState(null);
+  const [profilePicturePreview, setProfilePicturePreview] = useState(user?.profile_picture || '');
+  const [formData, setFormData] = useState(buildProfileFormData(user));
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
-
   const [errors, setErrors] = useState({});
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  };
+
+  useEffect(() => {
+    const loadProfile = async () => {
+      setIsLoadingProfile(true);
+      try {
+        const response = await studentAPI.getMyProfile();
+        const profileData = response?.data?.data || response?.data || {};
+
+        setProfile(profileData);
+        setFormData(buildProfileFormData(profileData));
+        setProfilePicturePreview(profileData.profile_picture || '');
+
+        dispatch(
+          updateUser({
+            first_name: profileData.first_name,
+            last_name: profileData.last_name,
+            email: profileData.email,
+            phone: profileData.phone,
+            profile_picture: profileData.profile_picture,
+            date_of_birth: profileData.date_of_birth,
+            school: profileData.school,
+            grade_level: profileData.grade_level,
+            address: profileData.address,
+            parent_name: profileData.parent_name,
+            parent_contact: profileData.parent_contact,
+          })
+        );
+      } catch (err) {
+        showNotification(err?.message || 'Failed to load student profile', 'error');
+      } finally {
+        setIsLoadingProfile(false);
+      }
+    };
+
+    loadProfile();
+  }, [dispatch]);
 
   const handleInputChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+  };
+
+  const handleProfilePictureChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setProfilePictureFile(file);
+    setProfilePicturePreview(URL.createObjectURL(file));
   };
 
   const handlePasswordChange = (e) => {
@@ -51,15 +109,15 @@ const StudentProfile = () => {
   const validateProfile = () => {
     const newErrors = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
+    if (!formData.first_name.trim()) {
+      newErrors.first_name = 'First name is required';
     }
 
-    if (!isValidEmail(formData.email)) {
-      newErrors.email = 'Invalid email address';
+    if (!formData.last_name.trim()) {
+      newErrors.last_name = 'Last name is required';
     }
 
-    if (!isValidPhone(formData.phone)) {
+    if (formData.phone && !isValidPhone(formData.phone)) {
       newErrors.phone = 'Invalid Sri Lankan phone number';
     }
 
@@ -67,22 +125,77 @@ const StudentProfile = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSaveProfile = () => {
-    if (validateProfile()) {
-      dispatch(updateUser(formData));
+  const handleSaveProfile = async () => {
+    if (!validateProfile()) return;
+
+    setIsSavingProfile(true);
+    try {
+      const payload = new FormData();
+      payload.append('first_name', formData.first_name);
+      payload.append('last_name', formData.last_name);
+      payload.append('phone', formData.phone || '');
+      payload.append('date_of_birth', formData.date_of_birth || '');
+      payload.append('school', formData.school || '');
+      payload.append('grade_level', formData.grade_level || '');
+      payload.append('address', formData.address || '');
+      payload.append('parent_name', formData.parent_name || '');
+      payload.append('parent_contact', formData.parent_contact || '');
+
+      if (profilePictureFile) {
+        payload.append('profile_picture', profilePictureFile);
+      }
+
+      const response = await studentAPI.updateMyProfile(payload);
+      const updated = response?.data?.data || response?.data || {};
+
+      setProfile(updated);
+      setFormData(buildProfileFormData(updated));
+      setProfilePicturePreview(updated.profile_picture || '');
+      setProfilePictureFile(null);
+
+      dispatch(
+        updateUser({
+          first_name: updated.first_name,
+          last_name: updated.last_name,
+          email: updated.email,
+          phone: updated.phone,
+          profile_picture: updated.profile_picture,
+          date_of_birth: updated.date_of_birth,
+          school: updated.school,
+          grade_level: updated.grade_level,
+          address: updated.address,
+          parent_name: updated.parent_name,
+          parent_contact: updated.parent_contact,
+        })
+      );
+
       setIsEditing(false);
-      // Show success message
+      showNotification('Profile updated successfully', 'success');
+    } catch (err) {
+      showNotification(err?.message || 'Failed to update profile', 'error');
+    } finally {
+      setIsSavingProfile(false);
     }
   };
 
-  const handleChangePassword = () => {
+  const handleCancelEdit = () => {
+    setFormData(buildProfileFormData(profile || user || {}));
+    setProfilePictureFile(null);
+    setProfilePicturePreview((profile || user || {})?.profile_picture || '');
+    setErrors({});
+    setIsEditing(false);
+  };
+
+  const handleChangePassword = async () => {
     const newErrors = {};
 
     if (!passwordData.currentPassword) {
       newErrors.currentPassword = 'Current password is required';
     }
 
-    if (passwordData.newPassword.length < 6) {
+    if (!passwordData.newPassword) {
+      newErrors.newPassword = 'New password is required';
+    } else if (passwordData.newPassword.length < 6) {
       newErrors.newPassword = 'Password must be at least 6 characters';
     }
 
@@ -92,14 +205,29 @@ const StudentProfile = () => {
 
     setErrors(newErrors);
 
-    if (Object.keys(newErrors).length === 0) {
-      // API call to change password
+    if (Object.keys(newErrors).length !== 0) {
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+    try {
+      await authAPI.changePassword({
+        current_password: passwordData.currentPassword,
+        new_password: passwordData.newPassword,
+        confirm_password: passwordData.confirmPassword,
+      });
+
       setPasswordData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
       });
-      // Show success message
+
+      showNotification('Password updated successfully', 'success');
+    } catch (err) {
+      showNotification(err?.message || 'Failed to update password', 'error');
+    } finally {
+      setIsUpdatingPassword(false);
     }
   };
 
@@ -108,12 +236,6 @@ const StudentProfile = () => {
     { id: 2, title: 'Whatsapp Notifications', description: 'Receive Whatsapp Updates', enabled: true },
     { id: 3, title: 'In app Notifications', description: 'Receive In app Updates', enabled: true },
   ];
-
-  const [notification, setNotification] = useState(null);
-
-  const showNotification = (message, type = 'info', duration = 5000) => {
-    setNotification({ message, type, duration });
-  };
 
   return (
     <div className="p-8">
@@ -127,22 +249,35 @@ const StudentProfile = () => {
           />
         </div>
       )}
+
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">My Profile</h1>
         <p className="text-gray-600">Manage your account settings and preferences</p>
+        {isLoadingProfile && <p className="text-sm text-gray-500 mt-2">Loading profile...</p>}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        {/* Sidebar */}
         <div className="lg:col-span-1">
           <div className="card">
             <div className="text-center mb-6">
-              <div className="w-24 h-24 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-3xl font-bold">
-                {user?.first_name?.charAt(0) || ''}
-              </div>
-              <h3 className="font-bold text-lg text-gray-900">{user?.first_name + ' ' + user?.last_name || ''}</h3>
-              <p className="text-sm font-bold text-gray-600 mt-1">{user?.role || ''}</p>
-              <p className="text-xs font-bold">{user?.username || ''}</p>
+              {profilePicturePreview || formData.profile_picture ? (
+                <img
+                  src={profilePicturePreview || formData.profile_picture}
+                  alt="Student profile"
+                  className="w-24 h-24 rounded-full mx-auto mb-3 object-cover border border-gray-200"
+                />
+              ) : (
+                <div className="w-24 h-24 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full mx-auto mb-3 flex items-center justify-center text-white text-3xl font-bold">
+                  {(profile?.first_name || formData.first_name || user?.first_name || '').charAt(0)}
+                </div>
+              )}
+
+              <h3 className="font-bold text-lg text-gray-900">
+                {(profile?.first_name || formData.first_name || user?.first_name || '')}{' '}
+                {(profile?.last_name || formData.last_name || user?.last_name || '')}
+              </h3>
+              <p className="text-sm font-bold text-gray-600 mt-1">{profile?.role || user?.role || 'student'}</p>
+              <p className="text-xs font-bold">{profile?.username || user?.username || ''}</p>
             </div>
 
             <div className="space-y-2">
@@ -180,61 +315,65 @@ const StudentProfile = () => {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="lg:col-span-3">
-          {/* Profile Information */}
           {activeTab === 'profile' && (
             <div className="card">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Profile Information</h2>
                 {!isEditing ? (
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="btn-outline px-4 py-2"
-                  >
+                  <button onClick={() => setIsEditing(true)} className="btn-outline px-4 py-2">
                     Edit Profile
                   </button>
                 ) : (
                   <div className="flex space-x-2">
                     <button
-                      onClick={() => setIsEditing(false)}
+                      onClick={handleCancelEdit}
                       className="px-4 py-2 border-2 border-gray-300 rounded-lg hover:bg-gray-50"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleSaveProfile}
-                      className="btn-primary px-4 py-2"
+                      disabled={isSavingProfile}
+                      className="btn-primary px-4 py-2 disabled:opacity-60"
                     >
-                      Save Changes
+                      {isSavingProfile ? 'Saving...' : 'Save Changes'}
                     </button>
                   </div>
                 )}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Profile Picture</label>
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,image/webp,image/gif"
+                    onChange={handleProfilePictureChange}
+                    disabled={!isEditing}
+                    className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
+                  />
+                </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    First Name
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
                   <input
                     type="text"
                     name="first_name"
-                    value={formData.firstName}
+                    value={formData.first_name}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
                   />
                   {errors.first_name && <p className="text-red-600 text-sm mt-1">{errors.first_name}</p>}
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Last Name
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
                   <input
                     type="text"
                     name="last_name"
-                    value={formData.lastName}
+                    value={formData.last_name}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
@@ -243,24 +382,18 @@ const StudentProfile = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Email Address
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Email Address</label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
-                    onChange={handleInputChange}
-                    disabled={!isEditing}
-                    className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
+                    disabled
+                    className="input-field bg-gray-50"
                   />
-                  {errors.email && <p className="text-red-600 text-sm mt-1">{errors.email}</p>}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Phone Number
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                   <input
                     type="tel"
                     name="phone"
@@ -273,13 +406,11 @@ const StudentProfile = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Date of Birth
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Date of Birth</label>
                   <input
                     type="date"
-                    name="dateOfBirth"
-                    value={formData.dateOfBirth}
+                    name="date_of_birth"
+                    value={formData.date_of_birth}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
@@ -287,9 +418,7 @@ const StudentProfile = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    School
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">School</label>
                   <input
                     type="text"
                     name="school"
@@ -301,39 +430,35 @@ const StudentProfile = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Grade
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Grade</label>
                   <input
                     type="text"
-                    name="grade"
-                    value={formData.grade}
+                    name="grade_level"
+                    value={formData.grade_level}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
                   />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Parent Name
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Parent Name</label>
                   <input
                     type="text"
-                    name="parentName"
-                    value={formData.parentName}
+                    name="parent_name"
+                    value={formData.parent_name}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
                   />
                 </div>
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Parent Contact
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Parent Contact</label>
                   <input
                     type="text"
-                    name="grade"
-                    value={formData.parentContact}
+                    name="parent_contact"
+                    value={formData.parent_contact}
                     onChange={handleInputChange}
                     disabled={!isEditing}
                     className={`input-field ${!isEditing ? 'bg-gray-50' : ''}`}
@@ -341,9 +466,7 @@ const StudentProfile = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Address
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
                   <input
                     type="text"
                     name="address"
@@ -357,7 +480,6 @@ const StudentProfile = () => {
             </div>
           )}
 
-          {/* Security */}
           {activeTab === 'security' && (
             <div className="card">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Security Settings</h2>
@@ -367,9 +489,7 @@ const StudentProfile = () => {
                   <h3 className="text-lg font-bold text-gray-900 mb-4">Change Password</h3>
                   <div className="space-y-4">
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Current Password
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
                       <input
                         type="password"
                         name="currentPassword"
@@ -383,9 +503,7 @@ const StudentProfile = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        New Password
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
                       <input
                         type="password"
                         name="newPassword"
@@ -399,9 +517,7 @@ const StudentProfile = () => {
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Confirm New Password
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
                       <input
                         type="password"
                         name="confirmPassword"
@@ -416,9 +532,10 @@ const StudentProfile = () => {
 
                     <button
                       onClick={handleChangePassword}
-                      className="btn-primary px-6 py-2"
+                      disabled={isUpdatingPassword}
+                      className="btn-primary px-6 py-2 disabled:opacity-60"
                     >
-                      Update Password
+                      {isUpdatingPassword ? 'Updating...' : 'Update Password'}
                     </button>
                   </div>
                 </div>
@@ -426,22 +543,21 @@ const StudentProfile = () => {
             </div>
           )}
 
-          {/* Notifications */}
           {activeTab === 'notifications' && (
             <div className="card">
               <h2 className="text-2xl font-bold text-gray-900 mb-6">Notification Settings</h2>
 
               <div className="space-y-4">
-                {notifications.map((notification) => (
-                  <div key={notification.id} className="flex items-center justify-between py-3 border-b">
+                {notifications.map((notificationItem) => (
+                  <div key={notificationItem.id} className="flex items-center justify-between py-3 border-b">
                     <div>
-                      <h4 className="text-large text-gray-900">{notification.title}</h4>
-                      <p className="text-sm text-gray-600">{notification.description}</p>
+                      <h4 className="text-large text-gray-900">{notificationItem.title}</h4>
+                      <p className="text-sm text-gray-600">{notificationItem.description}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
                         type="checkbox"
-                        defaultChecked={notification.enabled}
+                        defaultChecked={notificationItem.enabled}
                         className="sr-only peer"
                       />
                       <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary-600"></div>
