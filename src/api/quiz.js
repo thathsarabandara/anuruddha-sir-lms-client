@@ -18,8 +18,8 @@ export const quizAPI = {
    * Get all quizzes for the current user (teacher)
    * @returns {Promise} List of quizzes
    */
-  getAllQuizzes: () =>
-    axiosInstance.get("/quiz/"),
+  getAllQuizzes: (params = {}) =>
+    axiosInstance.get("/quiz/", { params }),
 
   /**
    * Get quizzes for a specific course
