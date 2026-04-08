@@ -1,6 +1,6 @@
  
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { BiLoader } from 'react-icons/bi';
 import { FaEdit, FaStar, FaCheck, FaTimes, FaUser, FaEye, FaBook, FaGamepad, FaStar as FaRating, FaUsers, FaGripVertical } from 'react-icons/fa';
 import QuizSearchModal from '../../components/teacher/QuizSearchModal';
@@ -28,7 +28,10 @@ const getErrorMessage = (err, fallback = 'Something went wrong') =>
 const CourseDetail = () => {
   const { courseId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+  const isAdminView = location.pathname.startsWith('/admin/');
+  const coursesBasePath = isAdminView ? '/admin/courses' : '/teacher/courses';
   const mode = searchParams.get('mode') || 'view';
   const getDefaultLessonForm = () => ({
     title: '',
@@ -1481,7 +1484,7 @@ const CourseDetail = () => {
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
-            onClick={() => navigate('/teacher/courses')}
+            onClick={() => navigate(coursesBasePath)}
             className="text-gray-600 hover:text-gray-900"
           >
             ← Back
@@ -1494,7 +1497,7 @@ const CourseDetail = () => {
         <div className="flex gap-2">
           {mode === 'view' && (
             <button
-              onClick={() => navigate(`/teacher/courses/${courseId}?mode=edit`)}
+              onClick={() => navigate(`${coursesBasePath}/${courseId}?mode=edit`)}
               className="px-4 py-2 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 flex items-center gap-2"
             >
               <FaEdit /> Edit Course
