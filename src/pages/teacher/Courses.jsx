@@ -300,9 +300,9 @@ const TeacherCourses = () => {
         <span className={`px-2 py-1 text-xs rounded-full font-semibold ${
           value === 'published'
             ? 'bg-green-100 text-green-700'
-            : value === 'archived'
-              ? 'bg-gray-200 text-gray-700'
-              : 'bg-yellow-100 text-yellow-700'
+            : value === 'draft'
+              ? 'bg-yellow-100 text-yellow-700'
+              : 'bg-gray-200 text-gray-700'
         }`}>
           {String(value || 'draft').toUpperCase()}
         </span>
@@ -472,7 +472,6 @@ const TeacherCourses = () => {
             <option value="">All Statuses</option>
             <option value="draft">Draft</option>
             <option value="published">Published</option>
-            <option value="archived">Archived</option>
           </select>
 
           <select
