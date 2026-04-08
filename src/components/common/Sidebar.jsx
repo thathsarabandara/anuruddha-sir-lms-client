@@ -68,6 +68,7 @@ const Sidebar = ({ isOpen = true, onClose = () => {} }) => {
           { name: 'Payments', path: ROUTES.ADMIN_PAYMENTS, icon: FaCreditCard },
           { name: 'Quizzes', path: ROUTES.ADMIN_QUIZZES, icon: FaFilePdf },
           { name: 'Certificates', path: ROUTES.ADMIN_CERTIFICATES, icon: FaTrophy },
+          { name: 'Announcements', path: ROUTES.ADMIN_ANNOUNCEMENTS, icon: TfiAnnouncement },
           { name: 'Admin Management', path: ROUTES.ADMIN_MANAGEMENT, icon: MdManageAccounts },
           { name: 'Reports', path: ROUTES.ADMIN_REPORTS, icon: FaChartBar },
           { name: 'Settings', path: ROUTES.ADMIN_SETTINGS, icon: IoSettings },
