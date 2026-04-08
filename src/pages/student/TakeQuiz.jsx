@@ -80,6 +80,16 @@ const parseSavedAnswer = (questionType, savedValue) => {
   return String(savedValue);
 };
 
+const isCourseRelatedStartError = (error) => {
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    message.includes('course not found') ||
+    message.includes('quiz is not assigned to this course') ||
+    message.includes('you must be enrolled in this course') ||
+    message.includes('course is not assigned')
+  );
+};
+
 const TakeQuiz = () => {
   const { quizId } = useParams();
   const navigate = useNavigate();
@@ -140,6 +150,9 @@ const TakeQuiz = () => {
         if (isInProgressConflict) {
           attemptResponse = await quizAPI.getActiveAttempt(quizId);
           showNotification('Resumed your in-progress quiz attempt.', 'info', 3000);
+        } else if (courseId && isCourseRelatedStartError(startError)) {
+          // If the provided course context is stale or mismatched, retry once without it.
+          attemptResponse = await quizAPI.startQuizAttempt(quizId);
         } else {
           throw startError;
         }
