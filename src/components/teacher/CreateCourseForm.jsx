@@ -162,7 +162,6 @@ export const CreateCourseForm = ({
               >
                 <option value="DRAFT">Draft</option>
                 <option value="PUBLISHED">Published</option>
-                <option value="ARCHIVED">Archived</option>
               </select>
             </div>
 
