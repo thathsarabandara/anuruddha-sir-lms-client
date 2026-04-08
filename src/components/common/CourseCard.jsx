@@ -115,11 +115,12 @@ const CourseCard = ({
           {/* Admin: Status Badge */}
           {userType === 'admin' && course.status && (
             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              course.is_banned ? 'bg-red-100 text-red-700' :
               course.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' :
               course.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-700' :
               'bg-gray-100 text-gray-700'
             }`}>
-              {course.status.toUpperCase()}
+              {course.is_banned ? 'BANNED' : course.status.toUpperCase()}
             </span>
           )}
 
@@ -140,11 +141,12 @@ const CourseCard = ({
           {/* Teacher: Status Badge */}
           {userType === 'teacher' && course.status && (
             <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
+              course.is_banned ? 'bg-red-100 text-red-700' :
               course.status === 'PUBLISHED' ? 'bg-green-100 text-green-700' :
               course.status === 'DRAFT' ? 'bg-yellow-100 text-yellow-700' :
               'bg-gray-100 text-gray-700'
             }`}>
-              {course.status}
+              {course.is_banned ? 'BANNED' : course.status}
             </span>
           )}
         </div>
