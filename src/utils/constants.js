@@ -141,6 +141,7 @@ export const ROUTES = {
   ADMIN_QUIZZES: '/admin/quizzes',
   ADMIN_CERTIFICATES: '/admin/certificates',
   ADMIN_REWARDS: '/admin/rewards',
+  ADMIN_ANNOUNCEMENTS: '/admin/announcements',
   ADMIN_MANAGEMENT: '/admin/management',
   ADMIN_REPORTS: '/admin/reports',
   ADMIN_SETTINGS: '/admin/settings',
