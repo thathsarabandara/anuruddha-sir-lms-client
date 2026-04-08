@@ -29,6 +29,13 @@ export const API_ENDPOINTS = {
   TEACHERS: '/teachers',
   QUIZZES: '/quizzes',
   PAYMENTS: '/payments',
+  CERTIFICATES: {
+    USER: '/users/certificates',
+    DETAILS: (certificateId) => `/certificates/${certificateId}`,
+    DOWNLOAD: (certificateId) => `/certificates/${certificateId}/download`,
+    SHARE: (certificateId) => `/certificates/${certificateId}/share`,
+    VERIFY: (certificateCode) => `/certificates/verify/${certificateCode}`,
+  },
   RECORDINGS: '/recordings',
   REWARDS: '/rewards',
   NOTIFICATIONS: '/notifications',
