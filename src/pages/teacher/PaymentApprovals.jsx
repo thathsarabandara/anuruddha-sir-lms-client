@@ -63,6 +63,7 @@ const PaymentApprovals = () => {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('all');
   const [selectedPayment, setSelectedPayment] = useState(null);
+  const [receiptPreviewPayment, setReceiptPreviewPayment] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
 
   const showNotification = (message, type = 'info') => {
@@ -156,11 +157,14 @@ const PaymentApprovals = () => {
           const hasReceipt = row?.receipt?.has_receipt;
           if (!hasReceipt) return <span className="text-xs text-gray-500">No receipt</span>;
 
-          const receiptUrl = row?.receipt?.url || paymentAPI.getReceiptFileUrl(row.transaction_id);
           return (
-            <a href={receiptUrl} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline text-sm font-medium">
+            <button
+              type="button"
+              onClick={() => setReceiptPreviewPayment(row)}
+              className="text-primary-600 hover:underline text-sm font-medium"
+            >
               View Receipt
-            </a>
+            </button>
           );
         },
       },
@@ -270,14 +274,13 @@ const PaymentApprovals = () => {
                   Close
                 </button>
                 {selectedPayment?.receipt?.has_receipt && (
-                  <a
-                    href={selectedPayment?.receipt?.url || paymentAPI.getReceiptFileUrl(selectedPayment.transaction_id)}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => setReceiptPreviewPayment(selectedPayment)}
                     className="px-4 py-2 rounded-lg border border-blue-300 text-blue-700 hover:bg-blue-50"
                   >
                     View Receipt Image
-                  </a>
+                  </button>
                 )}
               </div>
 
@@ -301,6 +304,53 @@ const PaymentApprovals = () => {
                   />
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {receiptPreviewPayment && (
+        <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm p-4 flex items-center justify-center">
+          <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xl font-bold">Receipt Preview</h3>
+                <p className="text-sm text-emerald-100">Hover the image to zoom</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setReceiptPreviewPayment(null)}
+                className="text-white/90 hover:text-white text-sm px-3 py-1 rounded-md border border-white/40"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="p-6 bg-slate-50">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+                <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Student</p>
+                    <p className="font-semibold text-slate-900">{receiptPreviewPayment?.student?.name || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Course</p>
+                    <p className="font-semibold text-slate-900">{receiptPreviewPayment?.course?.title || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs uppercase tracking-wide text-slate-500 font-semibold">Transaction</p>
+                    <p className="font-semibold text-slate-900 text-sm">{receiptPreviewPayment?.transaction_id || 'N/A'}</p>
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center">
+                  <img
+                    src={receiptPreviewPayment?.receipt?.url || paymentAPI.getReceiptFileUrl(receiptPreviewPayment.transaction_id)}
+                    alt="Receipt preview"
+                    className="max-h-[75vh] w-auto max-w-full object-contain transition-transform duration-300 ease-out hover:scale-125 hover:cursor-zoom-in"
+                  />
+                </div>
+              </div>
             </div>
           </div>
         </div>
