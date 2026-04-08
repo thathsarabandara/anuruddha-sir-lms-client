@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft, FaCheck, FaTimes, FaTrophy, FaClock, FaClipboardCheck, FaExclamationCircle } from 'react-icons/fa';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
 import Notification from '../../components/common/Notification';
@@ -8,6 +8,16 @@ import { quizAPI } from '../../api/quiz';
 const QuizResults = () => {
   const { quizId, attemptId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const courseId = new URLSearchParams(location.search).get('course_id');
+
+  const navigateBackToCourse = () => {
+    if (courseId) {
+      navigate(`/student/course/${courseId}/learn`);
+      return;
+    }
+    navigate('/student/courses');
+  };
   
   const [results, setResults] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -79,8 +89,8 @@ const QuizResults = () => {
           <FaExclamationCircle className="mx-auto text-red-500 text-5xl mb-4" />
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Results Not Available</h2>
           <p className="text-gray-600 mb-4">Unable to load quiz results.</p>
-          <button onClick={() => navigate('/student/quizzes')} className="btn-primary">
-            Back to Quizzes
+          <button onClick={navigateBackToCourse} className="btn-primary">
+            Back to Courses
           </button>
         </div>
       </div>
@@ -106,10 +116,10 @@ const QuizResults = () => {
       <div className="max-w-5xl mx-auto">
         {/* Header */}
         <button 
-          onClick={() => navigate('/student/quizzes')} 
+          onClick={navigateBackToCourse}
           className="btn-secondary mb-6 flex items-center gap-2"
         >
-          <FaArrowLeft /> Back to Quizzes
+          <FaArrowLeft /> Back to Courses
         </button>
 
         {/* Score Card */}
@@ -186,6 +196,7 @@ const QuizResults = () => {
           
           {questions_with_answers.map((item, index) => {
             const { question, user_answer, is_correct, earned_marks } = item;
+            const normalizedType = String(question?.question_type || '').toLowerCase();
             const selectedOptionIds = Array.isArray(user_answer?.selected_options)
               ? user_answer.selected_options.map(String)
               : [];
@@ -232,13 +243,15 @@ const QuizResults = () => {
                 </div>
 
                 {/* MCQ/True-False Options */}
-                {(question.question_type === 'MCQ_SINGLE' || 
-                  question.question_type === 'MCQ_MULTIPLE' || 
-                  question.question_type === 'TRUE_FALSE') && (
+                {(normalizedType === 'mcq_single' ||
+                  normalizedType === 'mcq_multiple' ||
+                  normalizedType === 'true_false' ||
+                  normalizedType === 'multiple_choice' ||
+                  normalizedType === 'multiple_answer') && (
                   <div className="space-y-2">
                     {question.options?.map((option) => {
                       const optionId = String(option.id);
-                      const isUserAnswer = question.question_type === 'MCQ_MULTIPLE'
+                      const isUserAnswer = normalizedType === 'mcq_multiple' || normalizedType === 'multiple_answer'
                         ? selectedOptionIds.includes(optionId)
                         : selectedOptionId === optionId;
                       const isCorrect = option.is_correct;
@@ -277,8 +290,7 @@ const QuizResults = () => {
                 )}
 
                 {/* Text Answers */}
-                {(question.question_type === 'SHORT_ANSWER' || 
-                  question.question_type === 'LONG_ANSWER') && (
+                {(normalizedType === 'short_answer' || normalizedType === 'long_answer' || normalizedType === 'essay') && (
                   <div className="space-y-3">
                     <div className="p-4 bg-blue-50 border-2 border-blue-200 rounded-lg">
                       <div className="text-sm font-medium text-gray-700 mb-1">Your Answer:</div>
@@ -307,14 +319,19 @@ const QuizResults = () => {
         {/* Action Buttons */}
         <div className="flex justify-center gap-4 mt-8">
           <button 
-            onClick={() => navigate('/student/quizzes')} 
+            onClick={navigateBackToCourse}
             className="btn-secondary px-8"
           >
-            Back to Quizzes
+            Back to Courses
           </button>
           {!(passed) && (
             <button 
-              onClick={() => navigate(`/student/quiz/${quizId}/take`)} 
+              onClick={() => {
+                const retryUrl = courseId
+                  ? `/student/quiz/${quizId}/take?course_id=${encodeURIComponent(courseId)}`
+                  : `/student/quiz/${quizId}/take`;
+                navigate(retryUrl);
+              }}
               className="btn-primary px-8"
             >
               Retry Quiz
