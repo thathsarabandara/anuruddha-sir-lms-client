@@ -29,6 +29,7 @@ const StudentPayments = () => {
   const [uploadingId, setUploadingId] = useState(null);
   const [notification, setNotification] = useState(null);
   const [invoicePreviewPayment, setInvoicePreviewPayment] = useState(null);
+  const [receiptPreviewPayment, setReceiptPreviewPayment] = useState(null);
   const [loading, setLoading] = useState(false);
   const [payments, setPayments] = useState([]);
   const [stats, setStats] = useState({
@@ -322,8 +323,7 @@ const StudentPayments = () => {
   };
 
   const handleViewSlip = (payment) => {
-    const receiptUrl = paymentAPI.getReceiptFileUrl(payment.transaction_id);
-    window.open(receiptUrl, '_blank', 'noopener,noreferrer');
+    setReceiptPreviewPayment(payment);
   };
 
   const loadPayments = async () => {
@@ -635,7 +635,7 @@ const StudentPayments = () => {
                   <input
                     id={`payment-slip-${payment.transaction_id}`}
                     type="file"
-                    accept="image/*,.pdf"
+                    accept="image/*"
                     className="hidden"
                     onChange={(event) => handleUploadReceipt(payment, event.target.files?.[0])}
                   />
@@ -872,6 +872,53 @@ const StudentPayments = () => {
                       icon={<FaDownload />}
                     />
                   </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {receiptPreviewPayment && (
+        <div className="fixed inset-0 z-50 bg-slate-900/70 backdrop-blur-sm p-4 flex items-center justify-center">
+          <div className="w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="px-6 py-5 bg-gradient-to-r from-emerald-600 to-teal-600 text-white flex items-center justify-between gap-3">
+              <div>
+                <h3 className="text-xl font-bold">Payment Slip Preview</h3>
+                <p className="text-sm text-emerald-100">Hover the slip to zoom in</p>
+              </div>
+              <button
+                type="button"
+                className="text-white/90 hover:text-white text-sm px-3 py-1 rounded-md border border-white/40"
+                onClick={() => setReceiptPreviewPayment(null)}
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="p-6 bg-slate-50">
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+                <div className="flex items-center justify-between gap-4 mb-4 flex-wrap">
+                  <div>
+                    <p className="text-sm text-slate-500">Invoice No.</p>
+                    <p className="font-semibold text-slate-900">{receiptPreviewPayment.invoice_no}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-500">Course</p>
+                    <p className="font-semibold text-slate-900">{receiptPreviewPayment?.course?.title || 'Course Payment'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-slate-500">Status</p>
+                    <p className="font-semibold text-slate-900">{isReceiptUploaded(receiptPreviewPayment) ? 'Slip Uploaded' : 'Pending'}</p>
+                  </div>
+                </div>
+
+                <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-100 flex items-center justify-center">
+                  <img
+                    src={receiptPreviewPayment?.receipt?.url || paymentAPI.getReceiptFileUrl(receiptPreviewPayment.transaction_id)}
+                    alt="Payment slip preview"
+                    className="max-h-[70vh] w-auto max-w-full object-contain transition-transform duration-300 ease-out hover:scale-125 hover:cursor-zoom-in"
+                  />
                 </div>
               </div>
             </div>
