@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { FaCheck, FaEye, FaIdCard, FaSearchMinus, FaSearchPlus, FaTimes, FaWallet } from 'react-icons/fa';
+import { FaCheck, FaEye, FaIdCard, FaTimes, FaWallet } from 'react-icons/fa';
 
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
@@ -64,7 +64,6 @@ const PaymentApprovals = () => {
   const [status, setStatus] = useState('all');
   const [selectedPayment, setSelectedPayment] = useState(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [mediaZoom, setMediaZoom] = useState(1);
 
   const showNotification = (message, type = 'info') => {
     setNotification({ message, type, duration: 4000 });
@@ -87,18 +86,6 @@ const PaymentApprovals = () => {
   useEffect(() => {
     fetchApprovals();
   }, [fetchApprovals]);
-
-  useEffect(() => {
-    setMediaZoom(1);
-  }, [selectedPayment]);
-
-  const getReceiptUrl = (payment) => payment?.receipt?.url || paymentAPI.getReceiptFileUrl(payment?.transaction_id);
-
-  const isVideoReceipt = (url = '') => /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url);
-
-  const handleZoomIn = () => setMediaZoom((prev) => Math.min(Number((prev + 0.25).toFixed(2)), 2.5));
-
-  const handleZoomOut = () => setMediaZoom((prev) => Math.max(Number((prev - 0.25).toFixed(2)), 1));
 
   const handleApprove = async (row) => {
     setActionLoading(true);
@@ -244,143 +231,76 @@ const PaymentApprovals = () => {
 
       {selectedPayment && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-4xl shadow-2xl border border-gray-100 max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur border-b border-gray-100 px-6 py-4 flex items-center justify-between">
+          <div className="bg-white rounded-xl w-full max-w-2xl p-6">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">Payment Details</h2>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">Student Payment Details</h2>
-                <p className="text-sm text-gray-500">Review student payment evidence and confirm enrollment.</p>
+                <p className="text-xs text-gray-500">Student</p>
+                <p className="font-semibold">{selectedPayment?.student?.name || 'N/A'}</p>
               </div>
-              <button
-                onClick={() => setSelectedPayment(null)}
-                className="h-9 w-9 inline-flex items-center justify-center rounded-full border border-gray-300 text-gray-600 hover:bg-gray-100"
-                aria-label="Close details popup"
-              >
-                <FaTimes />
-              </button>
+              <div>
+                <p className="text-xs text-gray-500">Course</p>
+                <p className="font-semibold">{selectedPayment?.course?.title || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Amount</p>
+                <p className="font-semibold">Rs. {Number(selectedPayment?.total || 0).toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Extracted Ref</p>
+                <p className="font-semibold">{selectedPayment?.receipt?.extracted?.reference_number || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Extracted Amount</p>
+                <p className="font-semibold">{selectedPayment?.receipt?.extracted?.amount || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500">Extracted Date</p>
+                <p className="font-semibold">{selectedPayment?.receipt?.extracted?.payment_date || 'N/A'}</p>
+              </div>
             </div>
 
-            <div className="p-6 space-y-6">
-              <div className="rounded-xl border border-blue-100 bg-gradient-to-r from-blue-50 to-cyan-50 p-4">
-                <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Student</p>
-                <p className="text-lg font-bold text-gray-900 mt-1">{selectedPayment?.student?.name || 'N/A'}</p>
-                <p className="text-sm text-gray-600">{selectedPayment?.student?.email || 'No email available'}</p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                  <p className="text-xs text-gray-500">Course</p>
-                  <p className="font-semibold text-gray-900">{selectedPayment?.course?.title || 'N/A'}</p>
-                </div>
-                <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                  <p className="text-xs text-gray-500">Amount</p>
-                  <p className="font-semibold text-gray-900">Rs. {Number(selectedPayment?.total || 0).toLocaleString()}</p>
-                </div>
-                <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                  <p className="text-xs text-gray-500">Extracted Ref</p>
-                  <p className="font-semibold text-gray-900">{selectedPayment?.receipt?.extracted?.reference_number || 'N/A'}</p>
-                </div>
-                <div className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                  <p className="text-xs text-gray-500">Extracted Amount</p>
-                  <p className="font-semibold text-gray-900">{selectedPayment?.receipt?.extracted?.amount || 'N/A'}</p>
-                </div>
-                <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 md:col-span-2">
-                  <p className="text-xs text-gray-500">Extracted Date</p>
-                  <p className="font-semibold text-gray-900">{selectedPayment?.receipt?.extracted?.payment_date || 'N/A'}</p>
-                </div>
-              </div>
-
-              {selectedPayment?.receipt?.has_receipt && (
-                <div className="rounded-xl border border-gray-200 bg-white p-4">
-                  <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
-                    <p className="text-sm font-semibold text-gray-900">Receipt Preview</p>
-                    <div className="flex items-center gap-2">
-                      {!isVideoReceipt(getReceiptUrl(selectedPayment)) && (
-                        <>
-                          <button
-                            onClick={handleZoomOut}
-                            className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-40"
-                            disabled={mediaZoom <= 1}
-                            title="Zoom out"
-                          >
-                            <FaSearchMinus />
-                          </button>
-                          <button
-                            onClick={handleZoomIn}
-                            className="h-9 w-9 inline-flex items-center justify-center rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-40"
-                            disabled={mediaZoom >= 2.5}
-                            title="Zoom in"
-                          >
-                            <FaSearchPlus />
-                          </button>
-                          <span className="text-xs text-gray-500 w-12 text-center">{Math.round(mediaZoom * 100)}%</span>
-                        </>
-                      )}
-                      <a
-                        href={getReceiptUrl(selectedPayment)}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-3 py-2 rounded-lg border border-blue-300 text-blue-700 text-sm font-semibold hover:bg-blue-50"
-                      >
-                        Open in New Tab
-                      </a>
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-900/5 border border-gray-200 rounded-lg overflow-auto max-h-[420px] p-3">
-                    {isVideoReceipt(getReceiptUrl(selectedPayment)) ? (
-                      <video
-                        controls
-                        className="w-full max-h-[380px] rounded-lg bg-black"
-                        src={getReceiptUrl(selectedPayment)}
-                      >
-                        <track kind="captions" />
-                      </video>
-                    ) : (
-                      <img
-                        src={getReceiptUrl(selectedPayment)}
-                        alt="Payment receipt"
-                        className="rounded-lg mx-auto"
-                        style={{
-                          transform: `scale(${mediaZoom})`,
-                          transformOrigin: 'top center',
-                          transition: 'transform 150ms ease-out',
-                          maxWidth: '100%',
-                        }}
-                      />
-                    )}
-                  </div>
-                </div>
-              )}
-
-              <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSelectedPayment(null)}
                   className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50"
                 >
                   Close
                 </button>
-
-                {selectedPayment?.status === 'pending' && (
-                  <div className="flex items-center gap-2">
-                    <ButtonWithLoader
-                      label="Reject"
-                      loadingLabel="Rejecting..."
-                      isLoading={actionLoading}
-                      onClick={() => handleReject(selectedPayment)}
-                      variant="danger"
-                      icon={<FaTimes />}
-                    />
-                    <ButtonWithLoader
-                      label="Approve"
-                      loadingLabel="Approving..."
-                      isLoading={actionLoading}
-                      onClick={() => handleApprove(selectedPayment)}
-                      variant="success"
-                      icon={<FaCheck />}
-                    />
-                  </div>
+                {selectedPayment?.receipt?.has_receipt && (
+                  <a
+                    href={selectedPayment?.receipt?.url || paymentAPI.getReceiptFileUrl(selectedPayment.transaction_id)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2 rounded-lg border border-blue-300 text-blue-700 hover:bg-blue-50"
+                  >
+                    View Receipt Image
+                  </a>
                 )}
               </div>
+
+              {selectedPayment?.status === 'pending' && (
+                <div className="flex items-center gap-2">
+                  <ButtonWithLoader
+                    label="Reject"
+                    loadingLabel="Rejecting..."
+                    isLoading={actionLoading}
+                    onClick={() => handleReject(selectedPayment)}
+                    variant="danger"
+                    icon={<FaTimes />}
+                  />
+                  <ButtonWithLoader
+                    label="Approve"
+                    loadingLabel="Approving..."
+                    isLoading={actionLoading}
+                    onClick={() => handleApprove(selectedPayment)}
+                    variant="success"
+                    icon={<FaCheck />}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </div>
