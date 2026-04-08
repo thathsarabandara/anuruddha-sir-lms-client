@@ -71,6 +71,7 @@ import AdminCourses from './pages/admin/Courses';
 import AdminPayments from './pages/admin/Payments';
 import AdminQuizzes from './pages/admin/Quizzes';
 import AdminCertificates from './pages/admin/Certificates';
+import AdminAnnouncements from './pages/admin/Announcements';
 import AdminManagement from './pages/admin/Management';
 import AdminReports from './pages/admin/Reports';
 import AdminSettings from './pages/admin/Settings';
@@ -164,9 +165,14 @@ function App() {
           <Route path={ROUTES.ADMIN_STUDENTS} element={<AdminStudents />} />
           <Route path={ROUTES.ADMIN_TEACHERS} element={<AdminTeachers />} />
           <Route path={ROUTES.ADMIN_COURSES} element={<AdminCourses />} />
+          <Route path="/admin/courses/:courseId" element={<TeacherCourseDetail />} />
+          <Route path="/admin/courses/:courseId/content" element={<TeacherCourseDetail />} />
+          <Route path="/admin/courses/:courseId/reviews" element={<TeacherCourseDetail />} />
+          <Route path="/admin/courses/:courseId/enrollment-keys" element={<TeacherCourseDetail />} />
           <Route path={ROUTES.ADMIN_PAYMENTS} element={<AdminPayments />} />
           <Route path={ROUTES.ADMIN_QUIZZES} element={<AdminQuizzes />} />
           <Route path={ROUTES.ADMIN_CERTIFICATES} element={<AdminCertificates />} />
+          <Route path={ROUTES.ADMIN_ANNOUNCEMENTS} element={<AdminAnnouncements />} />
           <Route path={ROUTES.ADMIN_MANAGEMENT} element={<AdminManagement />} />
           <Route path={ROUTES.ADMIN_REPORTS} element={<AdminReports />} />
           <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettings />} />
