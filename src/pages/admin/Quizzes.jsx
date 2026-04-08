@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
+  FaBan,
   FaBook,
   FaChartBar,
   FaCheckCircle,
@@ -54,12 +55,12 @@ const AdminQuizzes = () => {
       description: 'Unpublished quizzes',
     },
     {
-      label: 'Questions',
-      statsKey: 'questions',
-      icon: FaChartBar,
-      bgColor: 'bg-purple-100',
-      textColor: 'text-purple-600',
-      description: 'Total question count',
+      label: 'Banned Questions',
+      statsKey: 'banned_questions',
+      icon: FaBan,
+      bgColor: 'bg-red-100',
+      textColor: 'text-red-600',
+      description: 'Questions in banned quizzes',
     },
   ];
 
@@ -67,21 +68,25 @@ const AdminQuizzes = () => {
     const colors = {
       published: 'bg-green-100 text-green-700',
       draft: 'bg-gray-100 text-gray-700',
+      banned: 'bg-red-100 text-red-700',
     };
     return colors[status] || colors.draft;
   };
 
   const stats = useMemo(() => {
     const total = quizzes.length;
-    const published = quizzes.filter((quiz) => quiz.is_published).length;
-    const draft = total - published;
-    const questions = quizzes.reduce((sum, quiz) => sum + (quiz.total_questions || 0), 0);
+    const published = quizzes.filter((quiz) => quiz.is_published && !quiz.is_banned).length;
+    const banned = quizzes.filter((quiz) => quiz.is_banned).length;
+    const draft = total - published - banned;
+    const bannedQuestions = quizzes
+      .filter((quiz) => quiz.is_banned)
+      .reduce((sum, quiz) => sum + (quiz.total_questions || 0), 0);
 
     return {
       total: String(total),
       published: String(published),
       draft: String(draft),
-      questions: String(questions),
+      banned_questions: String(bannedQuestions),
     };
   }, [quizzes]);
 
@@ -178,6 +183,43 @@ const AdminQuizzes = () => {
     }
   };
 
+  const handleBanQuiz = async () => {
+    if (!selectedQuiz) return;
+    const reason = prompt('Enter ban reason for this quiz:') || 'Banned by admin';
+    setActionLoading(true);
+    try {
+      await quizAPI.banQuiz(selectedQuiz.quiz_id, { ban_reason: reason });
+      setNotification({ type: 'success', message: 'Quiz banned successfully' });
+      setSelectedQuiz((prev) => (prev ? { ...prev, is_banned: true, ban_reason: reason, status: 'banned' } : prev));
+      await fetchQuizzes();
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: error.response?.data?.message || 'Failed to ban quiz',
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUnbanQuiz = async () => {
+    if (!selectedQuiz) return;
+    setActionLoading(true);
+    try {
+      await quizAPI.unbanQuiz(selectedQuiz.quiz_id);
+      setNotification({ type: 'success', message: 'Quiz unbanned successfully' });
+      setSelectedQuiz((prev) => (prev ? { ...prev, is_banned: false, ban_reason: null, status: prev.is_published ? 'published' : 'draft' } : prev));
+      await fetchQuizzes();
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: error.response?.data?.message || 'Failed to unban quiz',
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="p-8">
       {notification && (
@@ -240,9 +282,10 @@ const AdminQuizzes = () => {
             filterOptions: [
               { label: 'Published', value: 'published' },
               { label: 'Draft', value: 'draft' },
+              { label: 'Banned', value: 'banned' },
             ],
             render: (value, quiz) => {
-              const status = value || (quiz.is_published ? 'published' : 'draft');
+              const status = value || (quiz.is_banned ? 'banned' : (quiz.is_published ? 'published' : 'draft'));
               return (
                 <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(status)}`}>
                   {status.toUpperCase()}
@@ -292,8 +335,8 @@ const AdminQuizzes = () => {
               <div className="pb-6 border-b">
                 <div className="flex items-start justify-between mb-3">
                   <h3 className="text-xl font-bold text-gray-900">{selectedQuiz.title}</h3>
-                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedQuiz.status || (selectedQuiz.is_published ? 'published' : 'draft'))}`}>
-                    {(selectedQuiz.status || (selectedQuiz.is_published ? 'published' : 'draft')).toUpperCase()}
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${getStatusColor(selectedQuiz.status || (selectedQuiz.is_banned ? 'banned' : (selectedQuiz.is_published ? 'published' : 'draft')))}`}>
+                    {(selectedQuiz.status || (selectedQuiz.is_banned ? 'banned' : (selectedQuiz.is_published ? 'published' : 'draft'))).toUpperCase()}
                   </span>
                 </div>
                 <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
@@ -360,15 +403,38 @@ const AdminQuizzes = () => {
               </div>
 
               <div className="flex space-x-3 pt-4">
-                <ButtonWithLoader
-                  label={selectedQuiz.is_published ? 'Move To Draft' : 'Publish Quiz'}
-                  loadingLabel={selectedQuiz.is_published ? 'Updating...' : 'Publishing...'}
-                  isLoading={actionLoading}
-                  onClick={handleTogglePublish}
-                  icon={<FaCheckCircle />}
-                  variant={selectedQuiz.is_published ? 'warning' : 'success'}
-                  fullWidth
-                />
+                {!selectedQuiz.is_banned && (
+                  <ButtonWithLoader
+                    label={selectedQuiz.is_published ? 'Move To Draft' : 'Publish Quiz'}
+                    loadingLabel={selectedQuiz.is_published ? 'Updating...' : 'Publishing...'}
+                    isLoading={actionLoading}
+                    onClick={handleTogglePublish}
+                    icon={<FaCheckCircle />}
+                    variant={selectedQuiz.is_published ? 'warning' : 'success'}
+                    fullWidth
+                  />
+                )}
+                {selectedQuiz.is_banned ? (
+                  <ButtonWithLoader
+                    label="Unban Quiz"
+                    loadingLabel="Updating..."
+                    isLoading={actionLoading}
+                    onClick={handleUnbanQuiz}
+                    icon={<FaCheckCircle />}
+                    variant="success"
+                    fullWidth
+                  />
+                ) : (
+                  <ButtonWithLoader
+                    label="Ban Quiz"
+                    loadingLabel="Banning..."
+                    isLoading={actionLoading}
+                    onClick={handleBanQuiz}
+                    icon={<FaBan />}
+                    variant="danger"
+                    fullWidth
+                  />
+                )}
                 <button onClick={() => setShowDetailsModal(false)} className="px-6 btn-outline">
                   Close
                 </button>
