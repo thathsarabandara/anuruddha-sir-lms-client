@@ -16,6 +16,7 @@ import {
 const StudentCourses = () => {
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const getCourseId = useCallback((course) => String(course?.course_id || course?.id || ''), []);
   const gradeLevels = COURSE_GRADE_LEVEL_OPTIONS.map((grade) => ({
     id: grade.value,
     name: grade.label,
@@ -121,8 +122,22 @@ const StudentCourses = () => {
 
     const response = await courseAPI.getCourses(params);
     const rows = response?.data?.data || [];
-    setNewCourses(Array.isArray(rows) ? rows.map((row) => mapCourse(row)) : []);
-  }, [debouncedSearchQuery, filters.subjects, filters.grades, filters.types, mapCourse]);
+    const uniqueRows = Array.isArray(rows)
+      ? Array.from(
+          rows
+            .map((row) => mapCourse(row))
+            .reduce((acc, course) => {
+              const courseId = getCourseId(course);
+              if (courseId && !acc.has(courseId)) {
+                acc.set(courseId, course);
+              }
+              return acc;
+            }, new Map())
+            .values()
+        )
+      : [];
+    setNewCourses(uniqueRows);
+  }, [debouncedSearchQuery, filters.subjects, filters.grades, filters.types, mapCourse, getCourseId]);
 
   const loadMyCourses = useCallback(async () => {
     const pageSize = 100;
@@ -153,17 +168,43 @@ const StudentCourses = () => {
     );
     const completedRows = normalizedRows.filter((row) => row.status === 'completed');
 
-    setEnrolledCourses(Array.isArray(allEnrolled) ? allEnrolled.map((row) => mapCourse(row)) : []);
-    setCompletedCourses(
-      Array.isArray(completedRows)
-        ? completedRows.map((row) =>
-            mapCourse(row, {
-              certificate: true,
-            })
-          )
-        : []
-    );
-  }, [mapCourse, normalizeEnrollmentStatus]);
+    const uniqueEnrolled = Array.isArray(allEnrolled)
+      ? Array.from(
+          allEnrolled
+            .map((row) => mapCourse(row))
+            .reduce((acc, course) => {
+              const courseId = getCourseId(course);
+              if (courseId && !acc.has(courseId)) {
+                acc.set(courseId, course);
+              }
+              return acc;
+            }, new Map())
+            .values()
+        )
+      : [];
+
+    const uniqueCompleted = Array.isArray(completedRows)
+      ? Array.from(
+          completedRows
+            .map((row) =>
+              mapCourse(row, {
+                certificate: true,
+              })
+            )
+            .reduce((acc, course) => {
+              const courseId = getCourseId(course);
+              if (courseId && !acc.has(courseId)) {
+                acc.set(courseId, course);
+              }
+              return acc;
+            }, new Map())
+            .values()
+        )
+      : [];
+
+    setEnrolledCourses(uniqueEnrolled);
+    setCompletedCourses(uniqueCompleted);
+  }, [mapCourse, normalizeEnrollmentStatus, getCourseId]);
 
   useEffect(() => {
     const loadDiscoverCourses = async () => {
@@ -221,19 +262,28 @@ const StudentCourses = () => {
   }, [searchQuery, filters]);
 
   // Apply filters
-  const filteredNewCourses = useMemo(() => applyFilters(newCourses), [applyFilters, newCourses]);
-  const filteredEnrolledCourses = useMemo(() => applyFilters(enrolledCourses), [applyFilters, enrolledCourses]);
-  const filteredCompletedCourses = useMemo(() => applyFilters(completedCourses), [applyFilters, completedCourses]);
-
   const enrolledCourseIds = useMemo(
-    () => new Set(enrolledCourses.map((course) => String(course.id)).filter(Boolean)),
-    [enrolledCourses]
+    () => new Set(enrolledCourses.map((course) => getCourseId(course)).filter(Boolean)),
+    [enrolledCourses, getCourseId]
   );
 
   const completedCourseIds = useMemo(
-    () => new Set(completedCourses.map((course) => String(course.id)).filter(Boolean)),
-    [completedCourses]
+    () => new Set(completedCourses.map((course) => getCourseId(course)).filter(Boolean)),
+    [completedCourses, getCourseId]
   );
+
+  const visibleNewCourses = useMemo(
+    () =>
+      newCourses.filter((course) => {
+        const courseId = getCourseId(course);
+        return courseId && !enrolledCourseIds.has(courseId) && !completedCourseIds.has(courseId);
+      }),
+    [newCourses, enrolledCourseIds, completedCourseIds, getCourseId]
+  );
+
+  const filteredNewCourses = useMemo(() => applyFilters(visibleNewCourses), [applyFilters, visibleNewCourses]);
+  const filteredEnrolledCourses = useMemo(() => applyFilters(enrolledCourses), [applyFilters, enrolledCourses]);
+  const filteredCompletedCourses = useMemo(() => applyFilters(completedCourses), [applyFilters, completedCourses]);
 
   const currentFilteredCount = 
     activeTab === 'new' ? filteredNewCourses.length :
