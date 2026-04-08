@@ -1,4 +1,5 @@
 import axiosInstance from './axios';
+import { API_ENDPOINTS } from '../utils/constants';
 
 /**
  * Certificate Management API
@@ -14,5 +15,19 @@ export const certificateAPI = {
     axiosInstance.post('/certificates/admin/issue', payload),
 
   getCertificateDetails: (certificateId) =>
-    axiosInstance.get(`/certificates/${certificateId}`),
+    axiosInstance.get(API_ENDPOINTS.CERTIFICATES.DETAILS(certificateId)),
+
+  getMyCertificates: (params = {}) =>
+    axiosInstance.get(API_ENDPOINTS.CERTIFICATES.USER, { params }),
+
+  downloadCertificate: (certificateId) =>
+    axiosInstance.get(API_ENDPOINTS.CERTIFICATES.DOWNLOAD(certificateId), {
+      responseType: 'blob',
+    }),
+
+  shareCertificate: (certificateId, payload = {}) =>
+    axiosInstance.post(API_ENDPOINTS.CERTIFICATES.SHARE(certificateId), payload),
+
+  verifyCertificate: (certificateCode) =>
+    axiosInstance.get(API_ENDPOINTS.CERTIFICATES.VERIFY(certificateCode)),
 };
