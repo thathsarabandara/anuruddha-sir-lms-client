@@ -32,6 +32,7 @@ const CourseDetail = () => {
   const [searchParams] = useSearchParams();
   const isAdminView = location.pathname.startsWith('/admin/');
   const coursesBasePath = isAdminView ? '/admin/courses' : '/teacher/courses';
+
   const mode = searchParams.get('mode') || 'view';
   const getDefaultLessonForm = () => ({
     title: '',
@@ -352,6 +353,8 @@ const CourseDetail = () => {
   };
 
   const formatBooleanValue = (value) => (value ? 'Yes' : 'No');
+
+
 
   const getReviewRating = (review) => {
     const rawRating = review?.rating ?? review?.star_rating ?? review?.stars;
@@ -839,8 +842,6 @@ const CourseDetail = () => {
           await courseAPI.publishCourse(courseId);
         } else if (nextStatus === 'DRAFT') {
           await courseAPI.unpublishCourse(courseId);
-        } else if (nextStatus === 'ARCHIVED') {
-          await courseAPI.archiveCourse(courseId);
         }
       }
 
@@ -1513,6 +1514,16 @@ const CourseDetail = () => {
           )}
         </div>
       </div>
+
+      {/* Tabs */}
+      {course?.is_banned && (
+        <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4">
+          <h3 className="text-sm font-semibold text-red-700">This course is banned by admin</h3>
+          <p className="mt-1 text-sm text-red-600">
+            Reason: {course?.ban_reason || 'Banned by admin'}
+          </p>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="border-b border-gray-200 mb-6">
@@ -2329,7 +2340,6 @@ const CourseDetail = () => {
                     >
                       <option value="DRAFT">Draft</option>
                       <option value="PUBLISHED">Published</option>
-                      <option value="ARCHIVED">Archived</option>
                     </select>
                   </div>
 
