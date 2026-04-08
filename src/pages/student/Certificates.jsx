@@ -1,5 +1,5 @@
 import { FaAward, FaCheck, FaFilePdf, FaGraduationCap, FaLink, FaTrophy, FaBook, FaEye } from 'react-icons/fa';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
@@ -9,6 +9,11 @@ const StudentCertificates = () => {
   const [filter, setFilter] = useState('issued');
   const [searchTerm, setSearchTerm] = useState('');
   const [downloadingId, setDownloadingId] = useState(null);
+  const [notification, setNotification] = useState(null);
+
+  const showNotification = useCallback((message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
+  }, []);
   
   const certificatesMetricsConfig = [
     {
@@ -161,7 +166,7 @@ const StudentCertificates = () => {
         </div>
       )
     }
-  ], []);
+  ], [downloadingId]);
 
   // Define table columns for in progress certificates
   const inProgressColumns = useMemo(() => [
@@ -201,8 +206,21 @@ const StudentCertificates = () => {
       key: 'estimatedDate',
       label: 'Est. Date',
       render: (_, row) => row.estimatedDate
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (_, row) => (
+        <button
+          type="button"
+          onClick={() => showNotification(`Continuing ${row.course}`, 'info', 2500)}
+          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-xs font-semibold transition-colors"
+        >
+          Continue
+        </button>
+      )
     }
-  ], []);
+  ], [showNotification]);
 
   // Define table columns for achievements
   const achievementsColumns = useMemo(() => [
@@ -230,13 +248,6 @@ const StudentCertificates = () => {
     { id: 3, title: 'Consistent Learner', icon: '⭐', earned: 'Dec 5, 2025' },
     { id: 4, title: 'Quick Learner', icon: '⚡', earned: 'Nov 28, 2025' },
   ];
-
-  const [notification, setNotification] = useState(null);
-
-  const showNotification = (message, type = 'info', duration = 5000) => {
-    setNotification({ message, type, duration });
-  };
-
   return (
     <div className="p-8">
         {notification && (
