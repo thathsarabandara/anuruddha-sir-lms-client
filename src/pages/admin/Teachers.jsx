@@ -609,55 +609,6 @@ const AdminTeachers = () => {
                 >
                   <FaKey /> Reset
                 </button>
-                
-                {teacher.account_status.is_active === true && teacher.account_status.is_banned === false && (
-                  <button
-                    onClick={() => {
-                      setSelectedTeacher(teacher);
-                      setShowSuspendModal(true);
-                    }}
-                    className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
-                  >
-                    <FaBan /> Ban
-                  </button>
-                )}
-                
-                {teacher.account_status.is_banned === true && teacher.account_status.is_active === false && (
-                  <button
-                    onClick={() => {
-                      setSelectedTeacher(teacher);
-                      handleReactivate();
-                    }}
-                    disabled={reactivateLoading}
-                    className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
-                  >
-                    <FaCheck /> Activate
-                  </button>
-                )}
-                
-                {teacher.account_status.is_active === false && teacher.account_status.is_banned === false && (
-                  <>
-                    <button
-                      onClick={() => {
-                        setSelectedTeacher(teacher);
-                        handleApprove();
-                      }}
-                      disabled={approveLoading}
-                      className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
-                    >
-                      <FaCheck /> Approve
-                    </button>
-                    <button
-                      onClick={() => {
-                        setSelectedTeacher(teacher);
-                        setShowRejectModal(true);
-                      }}
-                      className="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
-                    >
-                      <FaBan /> Reject
-                    </button>
-                  </>
-                )}
               </div>
             ),
           },
