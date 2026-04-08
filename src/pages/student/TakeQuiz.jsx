@@ -85,6 +85,13 @@ const TakeQuiz = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const courseId = new URLSearchParams(location.search).get('course_id');
+  const navigateBackToCourse = useCallback(() => {
+    if (courseId) {
+      navigate(`/student/course/${courseId}/learn`);
+      return;
+    }
+    navigate('/student/courses');
+  }, [courseId, navigate]);
   const [quiz, setQuiz] = useState(null);
   const [attempt, setAttempt] = useState(null);
   const [questions, setQuestions] = useState([]);
@@ -104,12 +111,15 @@ const TakeQuiz = () => {
   const lastSaveRef = useRef({});
   const dirtyAnswersRef = useRef(new Set());
   const autoSubmittedRef = useRef(false);
+  const initInProgressRef = useRef(false);
 
   const showNotification = (message, type = 'info', duration = 5000) => {
     setNotification({ message, type, duration });
   };
 
   const startQuizAttempt = useCallback(async () => {
+    if (initInProgressRef.current) return;
+    initInProgressRef.current = true;
     setLoading(true);
 
     try {
@@ -120,8 +130,14 @@ const TakeQuiz = () => {
         // Required flow: always attempt to create/validate an attempt first.
         attemptResponse = await quizAPI.startQuizAttempt(quizId, courseId);
       } catch (startError) {
-        // If an attempt already exists, resume it instead of failing.
-        if (startError?.status === 409) {
+        // 409 can mean either in-progress attempt OR max attempts reached.
+        const status = startError?.status;
+        const conflictMessage = String(startError?.message || '').toLowerCase();
+        const isInProgressConflict =
+          status === 409 && (conflictMessage.includes('in-progress') || conflictMessage.includes('already have'));
+
+        // Resume only when conflict is truly about an existing in-progress attempt.
+        if (isInProgressConflict) {
           attemptResponse = await quizAPI.getActiveAttempt(quizId);
           showNotification('Resumed your in-progress quiz attempt.', 'info', 3000);
         } else {
@@ -176,6 +192,7 @@ const TakeQuiz = () => {
       showNotification(error?.message || 'Failed to start quiz attempt', 'error');
       setQuiz(null);
     } finally {
+      initInProgressRef.current = false;
       setLoading(false);
     }
   }, [quizId, courseId]);
@@ -193,12 +210,17 @@ const TakeQuiz = () => {
       return false;
     }
 
-    await quizAPI.saveAnswer(attempt.attempt_id, payload);
+    try {
+      await quizAPI.saveAnswer(attempt.attempt_id, payload);
 
-    const serialized = serializeAnswer(value);
-    lastSaveRef.current[questionId] = serialized;
-    dirtyAnswersRef.current.delete(questionId);
-    return true;
+      const serialized = serializeAnswer(value);
+      lastSaveRef.current[questionId] = serialized;
+      dirtyAnswersRef.current.delete(questionId);
+      return true;
+    } catch (error) {
+      console.error(`Failed to save answer for question ${questionId}:`, error);
+      throw error;
+    }
   }, [attempt, answers, questions]);
 
   const saveAnswersToServer = useCallback(async (showSavedToast = true) => {
@@ -238,22 +260,33 @@ const TakeQuiz = () => {
     setSubmitting(true);
 
     try {
+      // Save any remaining unsaved answers
       await saveAnswersToServer(false);
-      await quizAPI.submitQuiz(attempt.attempt_id);
-
+      
+      // Submit the quiz
+      const submitResult = await quizAPI.submitQuiz(attempt.attempt_id);
+      
       showNotification(
         autoSubmit ? 'Time is up. Quiz submitted automatically.' : 'Quiz submitted successfully!',
         'success'
       );
       autoSubmittedRef.current = true;
 
-      navigate(`/student/quiz/${quizId}/results/${attempt.attempt_id}`);
+      // Navigate after a brief delay to ensure the message is visible
+      setTimeout(() => {
+        const nextUrl = courseId
+          ? `/student/quiz/${quizId}/results/${attempt.attempt_id}?course_id=${encodeURIComponent(courseId)}`
+          : `/student/quiz/${quizId}/results/${attempt.attempt_id}`;
+        navigate(nextUrl);
+      }, 300);
     } catch (error) {
+      console.error('Quiz submission error:', error);
       showNotification(error?.message || 'Failed to submit quiz', 'error');
+      autoSubmittedRef.current = false;
     } finally {
       setSubmitting(false);
     }
-  }, [attempt, submitting, saveAnswersToServer, navigate, quizId]);
+  }, [attempt, submitting, saveAnswersToServer, navigate, quizId, courseId]);
 
   useEffect(() => {
     submitHandlerRef.current = handleSubmit;
@@ -295,11 +328,13 @@ const TakeQuiz = () => {
       const remaining = Math.max(0, Math.floor((timerDeadlineRef.current - Date.now()) / 1000));
       setTimeRemaining(remaining);
 
-      if (remaining <= 0) {
+      // Only auto-submit if time limit is set and reached, but don't prevent user from manually submitting
+      if (remaining <= 0 && quiz?.duration_minutes > 0) {
         clearInterval(timerRef.current);
-        if (!autoSubmittedRef.current) {
+        if (!autoSubmittedRef.current && !submitting) {
           autoSubmittedRef.current = true;
-          submitHandlerRef.current?.(true);
+          // Schedule submission on next tick to avoid race conditions
+          setTimeout(() => submitHandlerRef.current?.(true), 100);
         }
       }
     }, 1000);
@@ -307,7 +342,7 @@ const TakeQuiz = () => {
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
     };
-  }, [attempt?.attempt_id]);
+  }, [attempt?.attempt_id, quiz?.duration_minutes, submitting]);
 
   useEffect(() => {
     if (attempt?.attempt_id) {
@@ -372,7 +407,7 @@ const TakeQuiz = () => {
   }
 
   if (!quiz) {
-    return <div className="flex flex-col items-center justify-center min-h-screen"><h1 className="text-2xl font-bold mb-4">Quiz not found</h1><button onClick={() => navigate('/student/quizzes')} className="px-6 py-2 bg-blue-600 text-white rounded-lg">Back to Quizzes</button></div>;
+    return <div className="flex flex-col items-center justify-center min-h-screen"><h1 className="text-2xl font-bold mb-4">Quiz not found</h1><button onClick={navigateBackToCourse} className="px-6 py-2 bg-blue-600 text-white rounded-lg">Back to Courses</button></div>;
   }
 
   const currentQuestion = questions[currentQuestionIndex];
