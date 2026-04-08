@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ROUTES, ROLES } from './utils/constants';
 
 // Layouts
@@ -35,9 +35,6 @@ import StudentDashboard from './pages/student/Dashboard';
 import StudentCourses from './pages/student/Courses';
 import StudentCoursesDiscover from './pages/student/CoursesDiscover';
 import StudentCourseLearning from './pages/student/CourseLearning';
-import StudentLiveClasses from './pages/student/LiveClasses';
-import StudentQuizzes from './pages/student/Quizzes';
-import StudentQuizDetails from './pages/student/QuizDetails';
 import TakeQuiz from './pages/student/TakeQuiz';
 import QuizResults from './pages/student/QuizResults';
 import StudentCertificates from './pages/student/Certificates';
@@ -115,10 +112,9 @@ function App() {
           <Route path={ROUTES.STUDENT_COURSES} element={<StudentCourses />} />
           <Route path="/student/courses/discover" element={<StudentCoursesDiscover />} />
           <Route path="/student/course/:courseId/learn" element={<StudentCourseLearning />} />
-          <Route path={ROUTES.STUDENT_LIVE_CLASSES} element={<StudentLiveClasses />} />
-          <Route path={ROUTES.STUDENT_QUIZZES} element={<StudentQuizzes />} />
-          <Route path={ROUTES.STUDENT_QUIZ_DETAILS} element={<StudentQuizDetails />} />
-          <Route path="/student/quiz/:quizId" element={<TakeQuiz />} />
+          <Route path={ROUTES.STUDENT_QUIZZES} element={<Navigate to={ROUTES.STUDENT_COURSES} replace />} />
+          <Route path={ROUTES.STUDENT_QUIZ_DETAILS} element={<Navigate to={ROUTES.STUDENT_COURSES} replace />} />
+          <Route path="/student/quiz/:quizId" element={<Navigate to={ROUTES.STUDENT_COURSES} replace />} />
           <Route path="/student/quiz/:quizId/take" element={<TakeQuiz />} />
           <Route path="/student/quiz/:quizId/results/:attemptId" element={<QuizResults />} />
           <Route path={ROUTES.STUDENT_CERTIFICATES} element={<StudentCertificates />} />
