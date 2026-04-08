@@ -1,9 +1,8 @@
-import { FaBook, FaChartLine, FaFire, FaTrophy, FaClock, FaCheckCircle, FaGraduationCap, FaAward, FaFileAlt, FaCheckCircle as FaCheck, FaRulerCombined, FaLeaf, FaStar, FaShare, FaDownload, FaArrowRight, FaBolt } from 'react-icons/fa';
+import { FaBook, FaChartLine, FaFire, FaTrophy, FaClock, FaCheckCircle, FaGraduationCap, FaAward, FaFileAlt, FaCheckCircle as FaCheck, FaStar, FaShare, FaDownload, FaArrowRight, FaBolt } from 'react-icons/fa';
 import { Pie, Bar, Line } from 'react-chartjs-2';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler } from 'chart.js';
-import { RiEnglishInput } from 'react-icons/ri';
-import { MdOutlineLanguage } from 'react-icons/md';
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import StatCard from '../../components/common/StatCard';
 import ProgressStat from '../../components/student/PorgressStat';
 import QuizCard from '../../components/student/QuizCard';
@@ -13,74 +12,78 @@ import Notification from '../../components/common/Notification';
 ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, PointElement, LineElement, Filler);
 
 const StudentDashboard = () => {
-  // Grade 5 Scholarship Subjects
-  const subjects = [
+  const navigate = useNavigate();
+
+  // Recent Courses Progress
+  const recentCourses = [
     {
-      id: 1,
-      name: 'Mathematics',
-      sinhala: 'ගණිතය',
-      progress: 82,
-      score: 85,
+      id: 'recent-course-1',
+      name: 'Advanced Python Programming',
+      sinhala: 'Completed recently',
+      progress: 96,
+      score: 92,
       color: 'from-blue-500 to-blue-600',
-      icon: FaRulerCombined,
+      icon: FaAward,
       totalLessons: 24,
-      completedLessons: 20,
-      avgQuizScore: 85,
-      nextClass: 'Today, 4:00 PM'
+      completedLessons: 23,
+      avgQuizScore: 92,
+      nextClass: 'Review Session: Today, 4:00 PM'
     },
     {
-      id: 2,
-      name: 'Sinhala',
-      sinhala: 'සිංහල',
-      progress: 75,
-      score: 78,
+      id: 'recent-course-2',
+      name: 'JavaScript Fundamentals',
+      sinhala: 'In progress',
+      progress: 84,
+      score: 88,
       color: 'from-purple-500 to-purple-600',
       icon: FaBook,
       totalLessons: 22,
-      completedLessons: 17,
-      avgQuizScore: 78,
-      nextClass: 'Tomorrow, 3:00 PM'
+      completedLessons: 18,
+      avgQuizScore: 88,
+      nextClass: 'Live Class: Tomorrow, 3:00 PM'
     },
     {
-      id: 3,
-      name: 'Environmental',
-      sinhala: 'පරිසරය',
-      progress: 68,
-      score: 72,
+      id: 'recent-course-3',
+      name: 'Web Development Basics',
+      sinhala: 'Last viewed yesterday',
+      progress: 78,
+      score: 85,
       color: 'from-green-500 to-green-600',
-      icon: FaLeaf,
+      icon: FaFileAlt,
       totalLessons: 20,
-      completedLessons: 14,
-      avgQuizScore: 72,
-      nextClass: 'Dec 23, 5:00 PM'
+      completedLessons: 16,
+      avgQuizScore: 85,
+      nextClass: 'Mentor Hour: Dec 23, 5:00 PM'
     },
     {
-      id: 4,
-      name: 'English',
-      sinhala: 'ඉංග්‍රීසි',
-      progress: 70,
-      score: 75,
+      id: 'recent-course-4',
+      name: 'Data Structures',
+      sinhala: 'Started this week',
+      progress: 72,
+      score: 79,
       color: 'from-red-500 to-red-600',
-      icon: RiEnglishInput,
+      icon: FaChartLine,
       totalLessons: 21,
       completedLessons: 15,
-      avgQuizScore: 75,
-      nextClass: 'Dec 22, 2:00 PM'
+      avgQuizScore: 79,
+      nextClass: 'Practice Lab: Dec 22, 2:00 PM'
     },
     {
-      id: 5,
-      name: 'Tamil',
-      sinhala: 'දෙමළ',
-      progress: 60,
-      score: 68,
+      id: 'recent-course-5',
+      name: 'Cloud Computing Essentials',
+      sinhala: 'Added recently',
+      progress: 63,
+      score: 74,
       color: 'from-orange-500 to-orange-600',
-      icon: MdOutlineLanguage,
+      icon: FaCheck,
       totalLessons: 20,
       completedLessons: 12,
-      avgQuizScore: 68,
-      nextClass: 'Dec 24, 4:00 PM'
+      avgQuizScore: 74,
+      nextClass: 'Q&A Session: Dec 24, 4:00 PM'
     }
   ];
+
+  const topEnrolledCourses = recentCourses.slice(0, 3);
 
   const studentMetricsConfig = [
     {
@@ -176,44 +179,6 @@ const StudentDashboard = () => {
       duration: 80,
       icon: '🌿'
     }
-  ];
-
-  // Record Requests
-  const recordRequests = [
-    {
-      id: 1,
-      type: 'Certificate',
-      subject: 'Overall Performance',
-      status: 'pending',
-      requestDate: 'Dec 18, 2025',
-      expectedDate: 'Dec 20, 2025'
-    },
-    {
-      id: 2,
-      type: 'Transcript',
-      subject: 'Mathematics',
-      status: 'approved',
-      requestDate: 'Dec 15, 2025',
-      expectedDate: 'Dec 20, 2025'
-    },
-    {
-      id: 3,
-      type: 'Progress Report',
-      subject: 'All Subjects',
-      status: 'approved',
-      requestDate: 'Dec 10, 2025',
-      expectedDate: 'Dec 15, 2025'
-    }
-  ];
-
-  // Rewards & Badges
-  const rewards = [
-    { id: 1, name: 'Quick Learner', icon: '⚡', unlocked: true, description: 'Complete 5 lessons in a day' },
-    { id: 2, name: 'Quiz Master', icon: '🏆', unlocked: true, description: 'Score 90%+ on 3 quizzes' },
-    { id: 3, name: 'Consistent Performer', icon: '🔥', unlocked: true, description: 'Maintain 18 day streak' },
-    { id: 4, name: 'All Subject Expert', icon: '⭐', unlocked: false, description: 'Complete all 5 subjects' },
-    { id: 5, name: 'Perfect Attendance', icon: '✅', unlocked: false, description: 'Attend all live classes' },
-    { id: 6, name: 'Grade 5 Champion', icon: '👑', unlocked: false, description: 'Top score in mixed paper' }
   ];
 
   // Quiz Attempts (Recent)
@@ -382,82 +347,14 @@ const StudentDashboard = () => {
     }
   ];
 
-  // Activity Feed
-  const activityFeed = [
-    {
-      activityId: 'act1',
-      activityType: 'quiz_completed',
-      description: 'Completed quiz: Python Unit 1 Test',
-      resourceTitle: 'Python Unit 1 Test',
-      score: 85,
-      timestamp: 'Mar 9, 3:30 PM',
-      icon: '🎯'
-    },
-    {
-      activityId: 'act2',
-      activityType: 'course_viewed',
-      description: 'Viewed course: Data Science Basics',
-      resourceTitle: 'Data Science Basics',
-      timestamp: 'Mar 8, 2:15 PM',
-      icon: '📚'
-    },
-    {
-      activityId: 'act3',
-      activityType: 'achievement_unlocked',
-      description: 'Achievement Unlocked: Quiz Master',
-      resourceTitle: 'Quiz Master Badge',
-      timestamp: 'Mar 7, 4:45 PM',
-      icon: '🏆'
-    },
-    {
-      activityId: 'act4',
-      activityType: 'lesson_started',
-      description: 'Lesson Started: Advanced Python',
-      resourceTitle: 'Advanced Python',
-      timestamp: 'Mar 6, 1:20 PM',
-      icon: '📝'
-    },
-    {
-      activityId: 'act5',
-      activityType: 'course_completed',
-      description: 'Course Completed: JavaScript Fundamentals',
-      resourceTitle: 'JavaScript Fundamentals',
-      timestamp: 'Mar 5, 5:00 PM',
-      icon: '✅'
-    },
-    {
-      activityId: 'act6',
-      activityType: 'message_received',
-      description: 'Message from Teacher: Great work!',
-      resourceTitle: 'Teacher Message',
-      timestamp: 'Mar 4, 9:30 AM',
-      icon: '📧'
-    },
-    {
-      activityId: 'act7',
-      activityType: 'certificate_earned',
-      description: 'Certificate Earned: Python Basics',
-      resourceTitle: 'Python Basics Certificate',
-      timestamp: 'Mar 3, 2:00 PM',
-      icon: '🎓'
-    },
-    {
-      activityId: 'act8',
-      activityType: 'streak_started',
-      description: 'Learning Streak Started: 12 Days',
-      resourceTitle: '12-Day Streak',
-      timestamp: 'Feb 26, 10:00 AM',
-      icon: '🔥'
-    }
-  ];
 
   // Chart Data - Subject Distribution
   const subjectScoresData = {
-    labels: subjects.map(s => s.name),
+    labels: recentCourses.map(course => course.name),
     datasets: [
       {
         label: 'Average Score (%)',
-        data: subjects.map(s => s.avgQuizScore),
+        data: recentCourses.map(course => course.avgQuizScore),
         backgroundColor: [
           'rgba(59, 130, 246, 0.7)',
           'rgba(168, 85, 247, 0.7)',
@@ -479,11 +376,11 @@ const StudentDashboard = () => {
 
   // Chart Data - Progress Distribution
   const progressDistributionData = {
-    labels: subjects.map(s => s.name),
+    labels: recentCourses.map(course => course.name),
     datasets: [
       {
         label: 'Lessons Completed (%)',
-        data: subjects.map(s => Math.round((s.completedLessons / s.totalLessons) * 100)),
+        data: recentCourses.map(course => Math.round((course.completedLessons / course.totalLessons) * 100)),
         backgroundColor: 'rgba(59, 130, 246, 0.6)',
         borderColor: 'rgb(59, 130, 246)',
         borderWidth: 2
@@ -553,10 +450,6 @@ const StudentDashboard = () => {
   };
 
   const [notification, setNotification] = useState(null);
-
-  const showNotification = (message, type = 'info', duration = 5000) => {
-    setNotification({ message, type, duration });
-  };
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
@@ -590,16 +483,56 @@ const StudentDashboard = () => {
         {/* Key Stats Grid */}
         <StatCard stats={studentStats} metricsConfig={studentMetricsConfig} />
 
-        {/* Subject Progress Cards */}
-        <div className="mb-10">
+        {/* Top Enrolled Courses */}
+        <div className="mb-10 mt-8">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-slate-900">Subject Progress</h2>
-            <div className="text-sm text-slate-600">5 Subjects | Mixed Paper Format</div>
+            <h2 className="text-2xl font-bold text-slate-900">Top 3 Enrolled Courses</h2>
+            <div className="text-sm text-slate-600">Continue where you left off</div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {subjects.map((subject , index) => (
-              <ProgressStat key={index} name={subject.name} sinhala={subject.sinhala} progress={subject.progress} color={subject.color} icon={subject.icon} totalLessons={subject.totalLessons} completedLessons={subject.completedLessons} avgQuizScore={subject.avgQuizScore} nextClass={subject.nextClass} />
+            {topEnrolledCourses.map((course) => (
+              <div key={course.id} className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-md transition-all">
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-slate-900">{course.name}</h3>
+                    <p className="text-sm text-slate-500">{course.sinhala}</p>
+                  </div>
+                  <span className="text-sm font-semibold text-slate-700">{course.progress}%</span>
+                </div>
+
+                <div className="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-4">
+                  <div className={`h-full bg-gradient-to-r ${course.color}`} style={{ width: `${course.progress}%` }}></div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-slate-600 mb-5">
+                  <span>{course.completedLessons}/{course.totalLessons} lessons</span>
+                  <span>Avg: {course.avgQuizScore}%</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => navigate('/student/courses')}
+                  className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                >
+                  Continue
+                  <FaArrowRight size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Subject Progress Cards */}
+        <div className="mb-10">
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-slate-900">Recent Courses</h2>
+            <div className="text-sm text-slate-600">5 Recent Courses | Activity Snapshot</div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {recentCourses.map((course) => (
+              <ProgressStat key={course.id} name={course.name} sinhala={course.sinhala} progress={course.progress} color={course.color} icon={course.icon} totalLessons={course.totalLessons} completedLessons={course.completedLessons} avgQuizScore={course.avgQuizScore} nextClass={course.nextClass} />
             ))}
           </div>
         </div>
@@ -607,7 +540,7 @@ const StudentDashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-10 mb-10">
           {/* Subject Scores Chart */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">Subject Scores Distribution</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-6">Recent Course Scores</h2>
             <div className="flex items-center justify-center h-80">
               <Pie data={subjectScoresData} options={chartOptions} />
             </div>
@@ -615,7 +548,7 @@ const StudentDashboard = () => {
 
           {/* Progress Distribution Chart */}
           <div className="bg-white rounded-2xl border border-slate-200 p-6">
-            <h2 className="text-xl font-bold text-slate-900 mb-6">Lessons Completed by Subject</h2>
+            <h2 className="text-xl font-bold text-slate-900 mb-6">Lessons Completed by Course</h2>
             <div className="flex items-center justify-centerh-80">
               <Bar data={progressDistributionData} options={chartOptions} />
             </div>
@@ -661,7 +594,7 @@ const StudentDashboard = () => {
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-lg">✓</span>
-                <span className="text-slate-700">Complete all 5 subjects regularly</span>
+                <span className="text-slate-700">Review your 5 most recent courses regularly</span>
               </div>
               <div className="flex items-start gap-2">
                 <span className="text-lg">✓</span>
@@ -686,75 +619,6 @@ const StudentDashboard = () => {
             {upcomingQuizzes.map((quiz) => (
               <QuizCard key={quiz.id} subject={quiz.subject} title={quiz.title} difficulty={quiz.difficulty} date={quiz.date} time={quiz.time} questions={quiz.questions} duration={quiz.duration} />
             ))}
-          </div>
-        </div>
-
-        {/* Record Requests & Rewards Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-10 mb-10">
-          {/* Record Requests */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900">Record Requests</h2>
-              <FaFileAlt className="text-slate-400 text-xl" />
-            </div>
-
-            <div className="space-y-3">
-              {recordRequests.map((request) => (
-                <div
-                  key={request.id}
-                  className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200 hover:border-slate-300 transition-all"
-                >
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="font-semibold text-slate-900">{request.type}</p>
-                      <span
-                        className={`text-xs font-bold px-2 py-1 rounded-full ${
-                          request.status === 'pending'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-green-100 text-green-700'
-                        }`}
-                      >
-                        {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600">{request.subject}</p>
-                    <p className="text-xs text-slate-500 mt-1">
-                      Requested: {request.requestDate} • Expected: {request.expectedDate}
-                    </p>
-                  </div>
-                  {request.status === 'approved' ? (
-                    <FaCheck className="text-green-500 text-lg ml-2" />
-                  ) : (
-                    <FaClock className="text-yellow-500 text-lg ml-2" />
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Rewards & Badges */}
-          <div className="bg-white rounded-2xl border border-slate-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-slate-900">Your Achievements</h2>
-              <FaAward className="text-slate-400 text-xl" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {rewards.map((reward) => (
-                <div
-                  key={reward.id}
-                  className={`p-4 rounded-xl border transition-all text-center ${
-                    reward.unlocked
-                      ? 'bg-gradient-to-br from-amber-50 to-yellow-50 border-amber-200 hover:border-amber-300'
-                      : 'bg-slate-50 border-slate-200 opacity-60'
-                  }`}
-                >
-                  <div className="text-3xl mb-2">{reward.icon}</div>
-                  <p className="text-xs font-bold text-slate-900">{reward.name}</p>
-                  <p className="text-xs text-slate-600 mt-1">{reward.description}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 
@@ -919,48 +783,6 @@ const StudentDashboard = () => {
                 </div>
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* Activity Feed Section */}
-        <div className="mt-10 mb-10">
-          <h2 className="text-2xl font-bold text-slate-900 mb-6">Learning Timeline</h2>
-          
-          <div className="bg-white rounded-2xl border border-slate-200 p-6">
-            <div className="space-y-4">
-              {activityFeed.map((activity, index) => (
-                <div key={activity.activityId} className="flex gap-4 pb-4 relative">
-                  {/* Timeline line */}
-                  {index !== activityFeed.length - 1 && (
-                    <div className="absolute left-6 top-12 bottom-0 w-0.5 bg-gradient-to-b from-blue-200 to-slate-200"></div>
-                  )}
-
-                  {/* Timeline dot */}
-                  <div className="flex-shrink-0 relative">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-100 to-blue-50 border-2 border-blue-300 flex items-center justify-center text-lg z-10">
-                      {activity.icon}
-                    </div>
-                  </div>
-
-                  {/* Activity content */}
-                  <div className="flex-1 pt-1">
-                    <p className="font-semibold text-slate-900">{activity.description}</p>
-                    <p className="text-sm text-slate-600 mt-1">{activity.resourceTitle}</p>
-                    {activity.score && (
-                      <p className="text-sm text-green-600 font-medium mt-1">Score: {activity.score}%</p>
-                    )}
-                    <p className="text-xs text-slate-500 mt-2">{activity.timestamp}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="text-center pt-6 border-t border-slate-200">
-              <button className="text-blue-600 hover:text-blue-700 font-semibold text-sm flex items-center gap-2 mx-auto">
-                View All Activities
-                <FaArrowRight size={12} />
-              </button>
-            </div>
           </div>
         </div>
       </div>
