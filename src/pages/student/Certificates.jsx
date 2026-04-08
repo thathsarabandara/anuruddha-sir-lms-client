@@ -1,4 +1,4 @@
-import { FaAward, FaCheck, FaFilePdf, FaGraduationCap, FaLink, FaTrophy, FaBook, FaEye } from 'react-icons/fa';
+import { FaAward, FaCheck, FaFilePdf, FaGraduationCap, FaLink, FaBook, FaEye } from 'react-icons/fa';
 import { useState, useMemo, useCallback } from 'react';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
@@ -31,14 +31,6 @@ const StudentCertificates = () => {
       bgColor: 'bg-green-100',
       textColor: 'text-green-600',
       description: 'Courses finished',
-    },
-    {
-      label: 'Achievements',
-      statsKey: 'achievements',
-      icon: FaTrophy,
-      bgColor: 'bg-yellow-100',
-      textColor: 'text-yellow-600',
-      description: 'Special awards',
     },
     {
       label: 'Average Score',
@@ -222,32 +214,6 @@ const StudentCertificates = () => {
     }
   ], [showNotification]);
 
-  // Define table columns for achievements
-  const achievementsColumns = useMemo(() => [
-    {
-      key: 'title',
-      label: 'Achievement',
-      render: (_, row) => (
-        <div className="flex items-center gap-3">
-          <div className="text-2xl">{row.icon}</div>
-          <p className="font-semibold text-gray-900">{row.title}</p>
-        </div>
-      )
-    },
-    {
-      key: 'earned',
-      label: 'Date Earned',
-      render: (_, row) => row.earned
-    }
-  ], []);
-    
-
-  const achievements = [
-    { id: 1, title: 'Top Performer', icon: '🏆', earned: 'Dec 15, 2025' },
-    { id: 2, title: 'Quiz Champion', icon: '📚', earned: 'Dec 10, 2025' },
-    { id: 3, title: 'Consistent Learner', icon: '⭐', earned: 'Dec 5, 2025' },
-    { id: 4, title: 'Quick Learner', icon: '⚡', earned: 'Nov 28, 2025' },
-  ];
   return (
     <div className="p-8">
         {notification && (
@@ -267,7 +233,7 @@ const StudentCertificates = () => {
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   My Certificates
                 </h1>
-                <p className="text-slate-600 mt-1">Showcase your achievements and download certificates</p>
+                <p className="text-slate-600 mt-1">Track and download your certificates</p>
               </div>
               <div className="text-5xl"><FaGraduationCap className="text-blue-600" /></div>
             </div>
@@ -279,7 +245,6 @@ const StudentCertificates = () => {
         stats={{
           totalCertificates: (certificates.length + inProgressCertificates.length).toString(),
           completions: certificates.length.toString(),
-          achievements: achievements.length.toString(),
           avgScore: '91.5%',
         }}
         metricsConfig={certificatesMetricsConfig}
@@ -306,16 +271,6 @@ const StudentCertificates = () => {
           }`}
         >
           In Progress ({inProgressCertificates.length})
-        </button>
-        <button
-          onClick={() => setFilter('achievements')}
-          className={`pb-3 px-4 font-semibold transition-all ${
-            filter === 'achievements'
-              ? 'text-blue-600 border-b-2 border-blue-600'
-              : 'text-slate-600 hover:text-slate-900'
-          }`}
-        >
-          Achievements ({achievements.length})
         </button>
       </div>
 
@@ -357,30 +312,11 @@ const StudentCertificates = () => {
         </div>
       )}
 
-      {/* Achievements Table */}
-      {filter === 'achievements' && (
-        <div className="bg-white rounded-xl border border-slate-200 shadow mb-8">
-          <DataTable
-            columns={achievementsColumns}
-            data={achievements}
-            config={{
-              itemsPerPage: 10,
-              searchPlaceholder: 'Search achievements...',
-              hideSearch: false,
-              emptyMessage: 'No achievements yet',
-              searchValue: searchTerm,
-              onSearchChange: (value) => setSearchTerm(value),
-            }}
-            loading={false}
-          />
-        </div>
-      )}
-
       {/* Share Section */}
       <div className="card bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 mt-8">
         <div className="text-center">
           <div className="text-4xl mb-3">🎉</div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">Share Your Achievements!</h3>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Share Your Certificates!</h3>
           <p className="text-gray-600 mb-4">
             Let your friends and family know about your success
           </p>
