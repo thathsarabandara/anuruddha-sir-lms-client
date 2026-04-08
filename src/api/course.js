@@ -59,15 +59,6 @@ export const courseAPI = {
 			params: { course_id: courseId },
 		}),
 
-	archiveCourse: (courseId, data = {}) =>
-		axiosInstance.put(`${COURSE_BASE}/archive`, data, {
-			params: { course_id: courseId },
-		}),
-
-	unarchiveCourse: (courseId, data = {}) =>
-		axiosInstance.put(`${COURSE_BASE}/unarchive`, data, {
-			params: { course_id: courseId },
-		}),
 
 	setCoursePrivate: (courseId, data = {}) =>
 		axiosInstance.put(`${COURSE_BASE}/private`, data, {
@@ -76,6 +67,16 @@ export const courseAPI = {
 
 	setCoursePublic: (courseId, data = {}) =>
 		axiosInstance.put(`${COURSE_BASE}/public`, data, {
+			params: { course_id: courseId },
+		}),
+
+	banCourse: (courseId, data = {}) =>
+		axiosInstance.put(`${COURSE_BASE}/ban`, data, {
+			params: { course_id: courseId },
+		}),
+
+	unbanCourse: (courseId, data = {}) =>
+		axiosInstance.put(`${COURSE_BASE}/unban`, data, {
 			params: { course_id: courseId },
 		}),
 
