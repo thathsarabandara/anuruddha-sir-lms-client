@@ -1,24 +1,36 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaZoom, FaWhatsapp, FaCC, FaCog} from 'react-icons/fa';
-import { CredentialsForm, LoadingSpinner } from '../components/IntegrationComponents';
+import { FaZoom, FaWhatsapp, FaCC, FaCog, FaSave, FaSync } from 'react-icons/fa';
+import {
+  CredentialsForm,
+  LoadingSpinner,
+  IntegrationStatusCard,
+} from '../components/IntegrationComponents';
 import Notification from '../../components/common/Notification';
+
 
 const AdminIntegrationSettings = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('zoom');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
   const [notification, setNotification] = useState(null);
-  const [integrationStatus, setIntegrationStatus] = useState(dummyIntegrationStatus);
+
   const showNotification = (message, type = 'info', duration = 5000) => {
     setNotification({ message, type, duration });
   };
+
   const handleError = (errorMsg) => {
+    setError(errorMsg);
     showNotification(errorMsg, 'error');
   };
+
   const handleSuccess = (successMsg) => {
+    setSuccess(successMsg);
     showNotification(successMsg, 'success');
   };
+
   const dummyIntegrationStatus = {
     zoom: { 
       configured: true, 
@@ -35,6 +47,87 @@ const AdminIntegrationSettings = () => {
       updated_at: new Date().toISOString(),
     },
   };
+
+  const [integrationStatus, setIntegrationStatus] = useState(dummyIntegrationStatus);
+
+  useEffect(() => {
+    // Initialize with dummy data
+    setIsLoading(false);
+  }, []);
+
+  const handleSaveZoomCredentials = async (formData) => {
+    try {
+      setIsLoading(true);
+      // Simulate API call with dummy data
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const updatedStatus = {
+        ...integrationStatus,
+        zoom: {
+          configured: true,
+          client_id: formData.client_id,
+          updated_at: new Date().toISOString(),
+        }
+      };
+      setIntegrationStatus(updatedStatus);
+      handleSuccess('Zoom credentials saved successfully!');
+    } catch (err) {
+      handleError('Failed to save Zoom credentials');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSaveWhatsAppCredentials = async (formData) => {
+    try {
+      setIsLoading(true);
+      // Simulate API call with dummy data
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const updatedStatus = {
+        ...integrationStatus,
+        whatsapp: {
+          configured: true,
+          app_id: formData.app_id,
+          updated_at: new Date().toISOString(),
+        }
+      };
+      setIntegrationStatus(updatedStatus);
+      handleSuccess('WhatsApp credentials saved successfully!');
+    } catch (err) {
+      handleError('Failed to save WhatsApp credentials');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSavePayHereCredentials = async (formData) => {
+    try {
+      setIsLoading(true);
+      // Simulate API call with dummy data
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      const updatedStatus = {
+        ...integrationStatus,
+        payhere: {
+          configured: true,
+          merchant_id: formData.merchant_id,
+          updated_at: new Date().toISOString(),
+        }
+      };
+      setIntegrationStatus(updatedStatus);
+      handleSuccess('PayHere credentials saved successfully!');
+    } catch (err) {
+      handleError('Failed to save PayHere credentials');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (isLoading && !integrationStatus) {
+    return <LoadingSpinner text="Loading integration settings..." />;
+  }
+
   const zoomFields = [
     {
       name: 'client_id',
@@ -139,80 +232,6 @@ const AdminIntegrationSettings = () => {
       help: 'Webhook endpoint for payment notifications',
     },
   ];
-
-  useEffect(() => {
-    setIsLoading(false);
-  }, []);
-
-  const handleSaveZoomCredentials = async (formData) => {
-    try {
-      setIsLoading(true);
-      // Simulate API call with dummy data
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const updatedStatus = {
-        ...integrationStatus,
-        zoom: {
-          configured: true,
-          client_id: formData.client_id,
-          updated_at: new Date().toISOString(),
-        }
-      };
-      setIntegrationStatus(updatedStatus);
-      handleSuccess('Zoom credentials saved successfully!');
-    } catch {
-      handleError('Failed to save Zoom credentials');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSaveWhatsAppCredentials = async (formData) => {
-    try {
-      setIsLoading(true);
-      // Simulate API call with dummy data
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const updatedStatus = {
-        ...integrationStatus,
-        whatsapp: {
-          configured: true,
-          app_id: formData.app_id,
-          updated_at: new Date().toISOString(),
-        }
-      };
-      setIntegrationStatus(updatedStatus);
-      handleSuccess('WhatsApp credentials saved successfully!');
-    } catch {
-      handleError('Failed to save WhatsApp credentials');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleSavePayHereCredentials = async (formData) => {
-    try {
-      setIsLoading(true);
-      // Simulate API call with dummy data
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      const updatedStatus = {
-        ...integrationStatus,
-        payhere: {
-          configured: true,
-          merchant_id: formData.merchant_id,
-          updated_at: new Date().toISOString(),
-        }
-      };
-      setIntegrationStatus(updatedStatus);
-      handleSuccess('PayHere credentials saved successfully!');
-    } catch {
-      handleError('Failed to save PayHere credentials');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-  
 
   return (
     <div className="min-h-screen bg-slate-50 p-8">

@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import Notification from '../../components/common/Notification';
-import { FaBook, FaClock, FaDollarSign, FaGraduationCap, FaUserGraduate, FaUsers, FaVideo, FaChartLine, FaAward, FaFire, FaLightbulb, FaCheckCircle, FaComments, FaCertificate } from 'react-icons/fa';
+import { FaBook, FaClock, FaDollarSign, FaGraduationCap, FaUsers, FaVideo, FaChartLine, FaAward, FaFire, FaLightbulb, FaCheckCircle, FaCertificate } from 'react-icons/fa';
 import { IoIosTrendingUp } from 'react-icons/io';
-import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, Legend, AreaChart, Area } from 'recharts';
+import { PieChart, Pie, Cell, ResponsiveContainer, XAxis, YAxis, CartesianGrid, Tooltip, AreaChart, Area } from 'recharts';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 
@@ -260,8 +260,6 @@ const TeacherDashboard = () => {
       </div>
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 md:px-6 lg:px-8 py-6 md:py-8 space-y-6">
-        <ErrorComponent message={error} />
-        <SuccessComponent message={success} />
         
         {/* Core Stats */}
         <StatCard stats={dashboardStats} metricsConfig={statsMetricsConfig} loading={statLoading}/>

@@ -5,6 +5,7 @@ import { useCart } from '../../hooks/useCart';
 import { getAbsoluteImageUrl } from '../../utils/helpers';
 import { ROUTES } from '../../utils/constants';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 const CartPage = () => {
   const navigate = useNavigate();
@@ -193,14 +194,15 @@ const CartPage = () => {
                       </p>
 
                       {/* Remove Button */}
-                      <button
+                      <ButtonWithLoader
+                        label="Remove"
+                        loadingLabel="Removing..."
+                        isLoading={removingItemId === item.id}
                         onClick={() => handleRemoveItem(item.id)}
-                        disabled={removingItemId === item.id}
-                        className="flex items-center gap-2 px-4 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-all font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <FaTrash className="text-sm" /> 
-                        {removingItemId === item.id ? 'Removing...' : 'Remove'}
-                      </button>
+                        variant="danger"
+                        size="sm"
+                        icon={<FaTrash className="text-sm" />}
+                      />
                     </div>
                   </div>
                 </div>

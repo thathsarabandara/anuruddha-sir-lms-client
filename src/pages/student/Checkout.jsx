@@ -4,6 +4,7 @@ import { FaArrowLeft, FaCreditCard, FaFileInvoice, FaSpinner, FaCheckCircle, FaT
 import { useCart, useCheckout } from '../../hooks/useCart';
 import { CiBank } from 'react-icons/ci';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 const CheckoutPage = () => {
   const navigate = useNavigate();
@@ -90,23 +91,35 @@ const CheckoutPage = () => {
   const isFreeCheckout = parseFloat(totalAmount) === 0;
 
   // Handle free course enrollment
-  const handleFreeEnrollment = () => {
+  const handleFreeEnrollment = async () => {
     setProcessing(true);
     setCheckoutError(null);
 
-    // Simulate API delay with dummy data
-    setTimeout(() => {
-      showNotification('Enrolled successfully!', 'success');
-      setCheckoutResult({
-        type: 'success',
-        title: 'Enrollment Successful! 🎉',
-        message: 'You have been enrolled in the course',
-        enrollments: [],
-        order: { id: 'order-001' }
-      });
-      setCountdownTimer(7);
+    try {
+      const result = await checkout('free', couponCode || null, parseFloat(tax) || 0);
+
+      if (result.success) {
+        showNotification('Enrolled successfully!', 'success');
+        setCheckoutResult({
+          type: 'success',
+          title: 'Enrollment Successful! 🎉',
+          message: result.message || 'You have been enrolled in the course(s)',
+          enrollments: result.enrollments || [],
+          order: result.order,
+          payment: result.payment,
+        });
+        setCountdownTimer(7);
+      } else {
+        setCheckoutResult({
+          type: 'error',
+          title: 'Enrollment Failed',
+          message: result.message || 'Unable to complete checkout',
+        });
+        setCountdownTimer(7);
+      }
+    } finally {
       setProcessing(false);
-    }, 500);
+    }
   };
 
   // Handle coupon validation
@@ -146,8 +159,8 @@ const CheckoutPage = () => {
         
         setCheckoutResult({
           type: 'success',
-          title: 'Redirecting to PayHere',
-          message: 'Please complete your payment on the PayHere gateway. You will be redirected shortly...',
+          title: 'Checkout Created',
+          message: 'Your checkout is ready. Follow the payment process to confirm enrollment for paid courses.',
           isPayHere: true
         });
         setCountdownTimer(7);
@@ -531,20 +544,14 @@ const CheckoutPage = () => {
                   onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
                   className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
-                <button
+                <ButtonWithLoader
+                  label="Apply"
+                  loadingLabel="Validating..."
+                  isLoading={validatingCoupon}
                   onClick={handleValidateCoupon}
-                  disabled={validatingCoupon || !couponCode.trim()}
-                  className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition font-semibold flex items-center gap-2"
-                >
-                  {validatingCoupon ? (
-                    <>
-                      <FaSpinner className="animate-spin" />
-                      Validating...
-                    </>
-                  ) : (
-                    'Apply'
-                  )}
-                </button>
+                  disabled={!couponCode.trim()}
+                  variant="primary"
+                />
               </div>
             </div>
           </div>
@@ -596,30 +603,15 @@ const CheckoutPage = () => {
               </div>
 
               {/* Payment Button */}
-              <button
+              <ButtonWithLoader
+                label={isFreeCheckout ? "✓ Enroll Free" : paymentMethod === 'payhere' ? "Pay with PayHere" : "Complete Transfer"}
+                loadingLabel="Processing..."
+                isLoading={processing || checkoutLoading}
                 onClick={handleCheckout}
-                disabled={processing || checkoutLoading}
-                className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-bold py-3 rounded-lg transition transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 flex items-center justify-center gap-2"
-              >
-                {processing || checkoutLoading ? (
-                  <>
-                    <FaSpinner className="animate-spin" />
-                    Processing...
-                  </>
-                ) : isFreeCheckout ? (
-                  <>
-                    ✓ Enroll Free
-                  </>
-                ) : paymentMethod === 'payhere' ? (
-                  <>
-                    <FaCreditCard /> Pay with PayHere
-                  </>
-                ) : paymentMethod === 'bank' ? (
-                  <>
-                    <CiBank /> Complete Transfer
-                  </>
-                ) : null}
-              </button>
+                variant="primary"
+                fullWidth
+                size="lg"
+              />
 
               {/* Info */}
               <p className="text-xs text-slate-500 text-center mt-4">

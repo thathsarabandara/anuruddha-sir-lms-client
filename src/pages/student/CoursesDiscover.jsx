@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Notification from '../../components/common/Notification';
+import { COURSE_SUBJECT_OPTIONS, COURSE_GRADE_LEVEL_OPTIONS } from '../../utils/courseOptions';
 
 // Dummy Courses Data
 const getDummyCourses = (filters = {}) => {
@@ -10,9 +11,9 @@ const getDummyCourses = (filters = {}) => {
       title: 'Advanced Python Programming',
       slug: 'advanced-python-programming',
       description: 'Master advanced Python concepts including OOP, decorators, generators, and async programming.',
-      subject: 'Programming',
+      subject: 'ganithaya',
       category: 'Programming',
-      grade_level: '10',
+      grade_level: '5',
       instructor: { id: 'inst-1', name: 'John Smith', email: 'john@example.com' },
       average_rating: 4.8,
       total_reviews: 245,
@@ -30,9 +31,9 @@ const getDummyCourses = (filters = {}) => {
       title: 'Web Development Fundamentals',
       slug: 'web-development-fundamentals',
       description: 'Learn HTML, CSS, JavaScript, and create modern responsive websites from scratch.',
-      subject: 'Web Development',
+      subject: 'english',
       category: 'Web Development',
-      grade_level: '9',
+      grade_level: '4',
       instructor: { id: 'inst-2', name: 'Sarah Lee', email: 'sarah@example.com' },
       average_rating: 4.7,
       total_reviews: 198,
@@ -50,9 +51,9 @@ const getDummyCourses = (filters = {}) => {
       title: 'Data Science with Python',
       slug: 'data-science-with-python',
       description: 'Learn data analysis, visualization, and machine learning with Pandas, NumPy, and Scikit-learn.',
-      subject: 'Data Science',
+      subject: 'all-shishyathwaya',
       category: 'Data Science',
-      grade_level: '11',
+      grade_level: '5',
       instructor: { id: 'inst-3', name: 'Mike Johnson', email: 'mike@example.com' },
       average_rating: 4.9,
       total_reviews: 312,
@@ -70,9 +71,9 @@ const getDummyCourses = (filters = {}) => {
       title: 'React & Redux Mastery',
       slug: 'react-redux-mastery',
       description: 'Build dynamic React applications using hooks, Redux for state management, and modern patterns.',
-      subject: 'Web Development',
+      subject: 'english',
       category: 'Frontend',
-      grade_level: '10',
+      grade_level: '4',
       instructor: { id: 'inst-4', name: 'Emma Brown', email: 'emma@example.com' },
       average_rating: 4.8,
       total_reviews: 287,
@@ -90,9 +91,9 @@ const getDummyCourses = (filters = {}) => {
       title: 'Database Design & SQL',
       slug: 'database-design-sql',
       description: 'Master relational databases, SQL queries, normalization, and database optimization techniques.',
-      subject: 'Databases',
+      subject: 'ganithaya',
       category: 'Databases',
-      grade_level: '10',
+      grade_level: '3',
       instructor: { id: 'inst-5', name: 'Alex Brown', email: 'alex@example.com' },
       average_rating: 4.6,
       total_reviews: 156,
@@ -110,9 +111,9 @@ const getDummyCourses = (filters = {}) => {
       title: 'Cloud Computing with AWS',
       slug: 'cloud-computing-aws',
       description: 'Learn AWS services including EC2, S3, Lambda, and build scalable cloud applications.',
-      subject: 'Cloud',
+      subject: 'all-shishyathwaya',
       category: 'Cloud Computing',
-      grade_level: '11',
+      grade_level: '5',
       instructor: { id: 'inst-6', name: 'David Wilson', email: 'david@example.com' },
       average_rating: 4.7,
       total_reviews: 203,
@@ -130,9 +131,9 @@ const getDummyCourses = (filters = {}) => {
       title: 'JavaScript ES6+ Essentials',
       slug: 'javascript-es6-essentials',
       description: 'Master modern JavaScript with ES6+ features, async programming, and best practices.',
-      subject: 'Programming',
+      subject: 'sinhala',
       category: 'Programming',
-      grade_level: '9',
+      grade_level: '2',
       instructor: { id: 'inst-7', name: 'Lisa Anderson', email: 'lisa@example.com' },
       average_rating: 4.7,
       total_reviews: 224,
@@ -150,9 +151,9 @@ const getDummyCourses = (filters = {}) => {
       title: 'Machine Learning Fundamentals',
       slug: 'machine-learning-fundamentals',
       description: 'Introduction to machine learning: supervised learning, classification, regression, and evaluation.',
-      subject: 'Data Science',
+      subject: 'parisaraya',
       category: 'Machine Learning',
-      grade_level: '11',
+      grade_level: '4',
       instructor: { id: 'inst-8', name: 'Robert Green', email: 'robert@example.com' },
       average_rating: 4.8,
       total_reviews: 267,
@@ -170,9 +171,9 @@ const getDummyCourses = (filters = {}) => {
       title: 'Mobile App Development with React Native',
       slug: 'mobile-app-development-react-native',
       description: 'Build native mobile applications for iOS and Android using React Native framework.',
-      subject: 'Mobile Development',
+      subject: 'demala',
       category: 'Mobile Development',
-      grade_level: '10',
+      grade_level: '3',
       instructor: { id: 'inst-9', name: 'Jennifer Lee', email: 'jennifer@example.com' },
       average_rating: 4.6,
       total_reviews: 178,
@@ -190,9 +191,9 @@ const getDummyCourses = (filters = {}) => {
       title: 'DevOps and Container Technology',
       slug: 'devops-container-technology',
       description: 'Learn Docker, Kubernetes, CI/CD pipelines, and modern DevOps practices for deployment.',
-      subject: 'DevOps',
+      subject: 'all-shishyathwaya',
       category: 'DevOps',
-      grade_level: '11',
+      grade_level: '5',
       instructor: { id: 'inst-10', name: 'James Miller', email: 'james@example.com' },
       average_rating: 4.7,
       total_reviews: 189,
@@ -227,10 +228,6 @@ const getDummyCourses = (filters = {}) => {
     filtered = filtered.filter(course => course.grade_level === filters.grade_level);
   }
 
-  if (filters.category) {
-    filtered = filtered.filter(course => course.category === filters.category);
-  }
-
   if (filters.price_type === 'free') {
     filtered = filtered.filter(course => course.price === 0);
   } else if (filters.price_type === 'paid') {
@@ -253,42 +250,24 @@ const getDummyCourses = (filters = {}) => {
   return filtered;
 };
 
-// Dummy Categories, Subjects, and Grade Levels
-const getDummyCategories = () => [
-  { id: 'cat-1', name: 'Programming' },
-  { id: 'cat-2', name: 'Web Development' },
-  { id: 'cat-3', name: 'Data Science' },
-  { id: 'cat-4', name: 'Machine Learning' },
-  { id: 'cat-5', name: 'Cloud Computing' },
-  { id: 'cat-6', name: 'DevOps' },
-  { id: 'cat-7', name: 'Mobile Development' },
-  { id: 'cat-8', name: 'Frontend' },
-  { id: 'cat-9', name: 'Backend' },
-  { id: 'cat-10', name: 'Databases' }
-];
-
 const getDummySubjects = () => [
-  { id: 'sub-1', name: 'Programming' },
-  { id: 'sub-2', name: 'Web Development' },
-  { id: 'sub-3', name: 'Data Science' },
-  { id: 'sub-4', name: 'Cloud' },
-  { id: 'sub-5', name: 'DevOps' },
-  { id: 'sub-6', name: 'Mobile Development' },
-  { id: 'sub-7', name: 'Databases' }
+  ...COURSE_SUBJECT_OPTIONS.map((subject) => ({
+    id: subject.value,
+    name: subject.label,
+  }))
 ];
 
 const getDummyGradeLevels = () => [
-  { id: 'grade-9', name: 'Grade 9' },
-  { id: 'grade-10', name: 'Grade 10' },
-  { id: 'grade-11', name: 'Grade 11' },
-  { id: 'grade-12', name: 'Grade 12' }
+  ...COURSE_GRADE_LEVEL_OPTIONS.map((grade) => ({
+    id: grade.value,
+    name: grade.label,
+  }))
 ];
 
 const StudentCoursesDiscover = () => {
   const navigate = useNavigate();
   const [courses, setCourses] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [categories, setCategories] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [gradeLevels, setGradeLevels] = useState([]);
 
@@ -296,7 +275,6 @@ const StudentCoursesDiscover = () => {
     search: '',
     subject: '',
     grade_level: '',
-    category: '',
     price_type: '',
     sort_by: 'latest'
   });
@@ -310,7 +288,6 @@ const StudentCoursesDiscover = () => {
     const fetchUtilityData = async () => {
       try {
         // Use dummy data instead of API calls
-        setCategories(getDummyCategories());
         setSubjects(getDummySubjects());
         setGradeLevels(getDummyGradeLevels());
       } catch (err) {
@@ -399,19 +376,6 @@ const StudentCoursesDiscover = () => {
               onChange={(e) => setFilters({ ...filters, search: e.target.value })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
-          </div>
-
-          <div>
-            <select
-              value={filters.category}
-              onChange={(e) => setFilters({ ...filters, category: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Categories</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.name}</option>
-              ))}
-            </select>
           </div>
 
           <div>
@@ -506,11 +470,8 @@ const StudentCoursesDiscover = () => {
               {/* Content */}
               <div className="p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                    {course.category?.name}
-                  </span>
                   <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded">
-                    {course.subject?.name}
+                    {course.subject}
                   </span>
                 </div>
 

@@ -1,363 +1,429 @@
-import { API_ENDPOINTS } from "../utils/constants";
-import axiosInstance from "./axios";
+import axiosInstance from './axios';
+
+const COURSE_BASE = '/course';
 
 /**
  * Course Management API
- * All endpoints for course CRUD, enrollment, and management
+ * All endpoints for courses, enrollment, content, analytics, and reviews
  */
 export const courseAPI = {
-  // ──────────────────────────────────────────────────────────────────────────
-  // Course CRUD Operations
-  // ──────────────────────────────────────────────────────────────────────────
+	// ---------------------------------------------------------------------------
+	// Course CRUD
+	// ---------------------------------------------------------------------------
 
-  /**
-   * Create a new course
-   * @param {Object} courseData - Course details (title, description, category_id, etc.)
-   * @returns {Promise} Created course data
-   */
-  createCourse: (courseData) =>
-    axiosInstance.post("/courses", courseData),
+	createCourse: (courseData) => axiosInstance.post(`${COURSE_BASE}/`, courseData),
 
-  /**
-   * Search/list published courses
-   * @param {string} query - Search query
-   * @param {string} categoryId - Filter by category
-   * @param {string} courseType - Filter by course type
-   * @param {string} difficulty - Filter by difficulty level
-   * @param {string} language - Filter by language
-   * @param {boolean} isPaid - Filter by paid/free
-   * @param {number} page - Page number (default: 1)
-   * @param {number} limit - Items per page (default: 20)
-   * @returns {Promise} Paginated course list
-   */
-  searchCourses: (query = "", categoryId = "", courseType = "", difficulty = "", language = "", isPaid = null, page = 1, limit = 20) =>
-    axiosInstance.get("/courses", {
-      params: {
-        q: query,
-        category_id: categoryId,
-        course_type: courseType,
-        difficulty,
-        language,
-        is_paid: isPaid,
-        page,
-        limit,
-      },
-    }),
+	getCourses: (queryParams = {}) => axiosInstance.get(`${COURSE_BASE}/`, { params: queryParams }),
 
-  /**
-   * Get all course categories
-   * @returns {Promise} List of categories
-   */
-  getCategories: () =>
-    axiosInstance.get("/courses/categories"),
+	getTeacherCourses: (queryParams = {}) =>
+		axiosInstance.get(`${COURSE_BASE}/teacher/courses`, { params: queryParams }),
 
-  /**
-   * Get detailed information about a specific course
-   * @param {string} courseId - Course ID
-   * @returns {Promise} Course details
-   */
-  getCourse: (courseId) =>
-    axiosInstance.get(`/courses/${courseId}`),
+	getCourseDetails: (courseId) =>
+		axiosInstance.get(`${COURSE_BASE}/details`, { params: { course_id: courseId } }),
 
-  /**
-   * Update course details
-   * @param {string} courseId - Course ID
-   * @param {Object} updateData - Fields to update
-   * @returns {Promise} Updated course data
-   */
-  updateCourse: (courseId, updateData) =>
-    axiosInstance.put(`/courses/${courseId}`, updateData),
+	updateCourse: (courseId, updateData) =>
+		axiosInstance.put(`${COURSE_BASE}/update`, updateData, {
+			params: { course_id: courseId },
+		}),
 
-  /**
-   * Delete a course
-   * @param {string} courseId - Course ID
-   * @returns {Promise} Deletion confirmation
-   */
-  deleteCourse: (courseId) =>
-    axiosInstance.delete(`/courses/${courseId}`),
+	uploadCourseThumbnail: (courseId, file, onUploadProgress) => {
+		const formData = new FormData();
+		formData.append('thumbnail', file);
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Course Status & Visibility
-  // ──────────────────────────────────────────────────────────────────────────
+		return axiosInstance.post(`${COURSE_BASE}/thumbnail/upload`, formData, {
+			params: { course_id: courseId },
+			headers: { 'Content-Type': 'multipart/form-data' },
+			...(onUploadProgress ? { onUploadProgress } : {}),
+		});
+	},
 
-  /**
-   * Publish a draft course
-   * @param {string} courseId - Course ID
-   * @param {Object} data - Publish details (reason, etc.)
-   * @returns {Promise} Published course data
-   */
-  publishCourse: (courseId, data = {}) =>
-    axiosInstance.put(`/courses/${courseId}/publish`, data),
+	deleteCourseThumbnail: (courseId) =>
+		axiosInstance.delete(`${COURSE_BASE}/thumbnail`, {
+			params: { course_id: courseId },
+		}),
 
-  /**
-   * Unpublish a published course
-   * @param {string} courseId - Course ID
-   * @param {Object} data - Unpublish details (reason, etc.)
-   * @returns {Promise} Unpublished course data
-   */
-  unpublishCourse: (courseId, data = {}) =>
-    axiosInstance.put(`/courses/${courseId}/unpublish`, data),
+	deleteCourse: (courseId) =>
+		axiosInstance.delete(`${COURSE_BASE}/delete`, { params: { course_id: courseId } }),
 
-  /**
-   * Archive a course
-   * @param {string} courseId - Course ID
-   * @returns {Promise} Archived course data
-   */
-  archiveCourse: (courseId) =>
-    axiosInstance.put(`/courses/${courseId}/archive`, {}),
+	// ---------------------------------------------------------------------------
+	// Course Status & Visibility
+	// ---------------------------------------------------------------------------
 
-  /**
-   * Unarchive a course
-   * @param {string} courseId - Course ID
-   * @returns {Promise} Unarchived course data
-   */
-  unarchiveCourse: (courseId) =>
-    axiosInstance.put(`/courses/${courseId}/unarchive`, {}),
+	publishCourse: (courseId, data = {}) =>
+		axiosInstance.put(`${COURSE_BASE}/publish`, data, {
+			params: { course_id: courseId },
+		}),
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Enrollment Management
-  // ──────────────────────────────────────────────────────────────────────────
+	unpublishCourse: (courseId, data = {}) =>
+		axiosInstance.put(`${COURSE_BASE}/unpublish`, data, {
+			params: { course_id: courseId },
+		}),
 
-  /**
-   * Get course enrollment key
-   * @param {string} courseId - Course ID
-   * @returns {Promise} Enrollment key details
-   */
-  getCourseEnrollmentKey: (courseId) =>
-    axiosInstance.get(`/courses/${courseId}/enrollment-key`),
+	archiveCourse: (courseId, data = {}) =>
+		axiosInstance.put(`${COURSE_BASE}/archive`, data, {
+			params: { course_id: courseId },
+		}),
 
-  /**
-   * Generate new enrollment key
-   * @param {string} courseId - Course ID
-   * @returns {Promise} New enrollment key
-   */
-  generateEnrollmentKey: (courseId) =>
-    axiosInstance.post(`/courses/${courseId}/enrollment-key/generate`, {}),
+	unarchiveCourse: (courseId, data = {}) =>
+		axiosInstance.put(`${COURSE_BASE}/unarchive`, data, {
+			params: { course_id: courseId },
+		}),
 
-  /**
-   * Enroll in a course
-   * @param {string} courseId - Course ID
-   * @param {Object} enrollmentData - Enrollment details (enrollment_key, etc.)
-   * @returns {Promise} Enrollment confirmation
-   */
-  enrollCourse: (courseId, enrollmentData = {}) =>
-    axiosInstance.post(`/courses/${courseId}/enroll`, enrollmentData),
+	setCoursePrivate: (courseId, data = {}) =>
+		axiosInstance.put(`${COURSE_BASE}/private`, data, {
+			params: { course_id: courseId },
+		}),
 
-  /**
-   * Unenroll from a course
-   * @param {string} courseId - Course ID
-   * @returns {Promise} Unenrollment confirmation
-   */
-  unenrollCourse: (courseId) =>
-    axiosInstance.post(`/courses/${courseId}/unenroll`, {}),
+	setCoursePublic: (courseId, data = {}) =>
+		axiosInstance.put(`${COURSE_BASE}/public`, data, {
+			params: { course_id: courseId },
+		}),
 
-  /**
-   * Get enrolled students in a course
-   * @param {string} courseId - Course ID
-   * @param {number} page - Page number
-   * @param {number} limit - Items per page
-   * @returns {Promise} List of enrolled students
-   */
-  getEnrolledStudents: (courseId, page = 1, limit = 20) =>
-    axiosInstance.get(`/courses/${courseId}/students`, {
-      params: { page, limit },
-    }),
+	// ---------------------------------------------------------------------------
+	// Enrollment & Dashboard Stats
+	// ---------------------------------------------------------------------------
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Course Content (Sections and Lessons)
-  // ──────────────────────────────────────────────────────────────────────────
+	enrollInCourse: (courseId, enrollmentData = {}) =>
+		axiosInstance.post(`${COURSE_BASE}/enroll`, enrollmentData, {
+			params: { course_id: courseId },
+		}),
 
-  /**
-   * Get course sections
-   * @param {string} courseId - Course ID
-   * @returns {Promise} List of course sections
-   */
-  getCourseSections: (courseId) =>
-    axiosInstance.get(`/courses/${courseId}/sections`),
+	unenrollFromCourse: (courseId, userId) =>
+		axiosInstance.delete(`${COURSE_BASE}/enroll`, {
+			params: { course_id: courseId, ...(userId ? { user_id: userId } : {}) },
+		}),
 
-  /**
-   * Create a new section in a course
-   * @param {string} courseId - Course ID
-   * @param {Object} sectionData - Section details (title, description, etc.)
-   * @returns {Promise} Created section
-   */
-  createSection: (courseId, sectionData) =>
-    axiosInstance.post(`/courses/${courseId}/sections`, sectionData),
+	getMyCourses: (queryParams = {}) =>
+		axiosInstance.get(`${COURSE_BASE}/users/my-courses`, { params: queryParams }),
 
-  /**
-   * Update a course section
-   * @param {string} courseId - Course ID
-   * @param {string} sectionId - Section ID
-   * @param {Object} updateData - Fields to update
-   * @returns {Promise} Updated section
-   */
-  updateSection: (courseId, sectionId, updateData) =>
-    axiosInstance.put(`/courses/${courseId}/sections/${sectionId}`, updateData),
+	getTeacherDashboardStats: () => axiosInstance.get(`${COURSE_BASE}/stats`),
 
-  /**
-   * Delete a course section
-   * @param {string} courseId - Course ID
-   * @param {string} sectionId - Section ID
-   * @returns {Promise} Deletion confirmation
-   */
-  deleteSection: (courseId, sectionId) =>
-    axiosInstance.delete(`/courses/${courseId}/sections/${sectionId}`),
+	getCourseStats: (courseId) =>
+		axiosInstance.get(`${COURSE_BASE}/stats`, {
+			params: { course_id: courseId },
+		}),
 
-  /**
-   * Get lessons in a section
-   * @param {string} courseId - Course ID
-   * @param {string} sectionId - Section ID
-   * @returns {Promise} List of lessons
-   */
-  getSectionLessons: (courseId, sectionId) =>
-    axiosInstance.get(`/courses/${courseId}/sections/${sectionId}/lessons`),
+	getCourseEnrollments: (courseId, queryParams = {}) =>
+		axiosInstance.get(`${COURSE_BASE}/courses/enrollments`, {
+			params: { course_id: courseId, ...queryParams },
+		}),
 
-  /**
-   * Create a new lesson in a section
-   * @param {string} courseId - Course ID
-   * @param {string} sectionId - Section ID
-   * @param {Object} lessonData - Lesson details (title, content, type, etc.)
-   * @returns {Promise} Created lesson
-   */
-  createLesson: (courseId, sectionId, lessonData) =>
-    axiosInstance.post(`/courses/${courseId}/sections/${sectionId}/lessons`, lessonData),
+	// ---------------------------------------------------------------------------
+	// Enrollment Keys
+	// ---------------------------------------------------------------------------
 
-  /**
-   * Update a lesson
-   * @param {string} courseId - Course ID
-   * @param {string} sectionId - Section ID
-   * @param {string} lessonId - Lesson ID
-   * @param {Object} updateData - Fields to update
-   * @returns {Promise} Updated lesson
-   */
-  updateLesson: (courseId, sectionId, lessonId, updateData) =>
-    axiosInstance.put(`/courses/${courseId}/sections/${sectionId}/lessons/${lessonId}`, updateData),
+	createEnrollmentKey: (courseId, keyData) =>
+		axiosInstance.post(`${COURSE_BASE}/enrollment-keys`, keyData, {
+			params: { course_id: courseId },
+		}),
 
-  /**
-   * Delete a lesson
-   * @param {string} courseId - Course ID
-   * @param {string} sectionId - Section ID
-   * @param {string} lessonId - Lesson ID
-   * @returns {Promise} Deletion confirmation
-   */
-  deleteLesson: (courseId, sectionId, lessonId) =>
-    axiosInstance.delete(`/courses/${courseId}/sections/${sectionId}/lessons/${lessonId}`),
+	getEnrollmentKeys: (courseId, queryParams = {}) =>
+		axiosInstance.get(`${COURSE_BASE}/enrollment-keys`, {
+			params: { course_id: courseId, ...queryParams },
+		}),
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Course Progress & Completion
-  // ──────────────────────────────────────────────────────────────────────────
+	deactivateEnrollmentKey: (courseId, keyId) =>
+		axiosInstance.put(
+			`${COURSE_BASE}/enrollment-keys/deactivate`,
+			{},
+			{ params: { course_id: courseId, key_id: keyId } }
+		),
 
-  /**
-   * Get student progress in a course
-   * @param {string} courseId - Course ID
-   * @returns {Promise} Progress details
-   */
-  getCourseProgress: (courseId) =>
-    axiosInstance.get(`/courses/${courseId}/progress`),
+	updateEnrollmentKey: (courseId, keyId, keyData) =>
+		axiosInstance.put(`${COURSE_BASE}/enrollment-keys`, keyData, {
+			params: { course_id: courseId, key_id: keyId },
+		}),
 
-  /**
-   * Mark lesson as complete
-   * @param {string} courseId - Course ID
-   * @param {string} lessonId - Lesson ID
-   * @returns {Promise} Completion confirmation
-   */
-  markLessonComplete: (courseId, lessonId) =>
-    axiosInstance.post(`/courses/${courseId}/lessons/${lessonId}/complete`, {}),
+	getEnrollmentKeyAnalytics: (courseId, keyId) =>
+		axiosInstance.get(`${COURSE_BASE}/enrollment-keys/analytics`, {
+			params: { course_id: courseId, key_id: keyId },
+		}),
 
-  /**
-   * Mark lesson as incomplete
-   * @param {string} courseId - Course ID
-   * @param {string} lessonId - Lesson ID
-   * @returns {Promise} Completion removal confirmation
-   */
-  markLessonIncomplete: (courseId, lessonId) =>
-    axiosInstance.post(`/courses/${courseId}/lessons/${lessonId}/incomplete`, {}),
+	// ---------------------------------------------------------------------------
+	// Sections
+	// ---------------------------------------------------------------------------
 
-  /**
-   * Get course completion status
-   * @param {string} courseId - Course ID
-   * @returns {Promise} Completion status
-   */
-  getCourseCompletion: (courseId) =>
-    axiosInstance.get(`/courses/${courseId}/completion`),
+	createSection: (courseId, sectionData) =>
+		axiosInstance.post(`${COURSE_BASE}/sections`, sectionData, {
+			params: { course_id: courseId },
+		}),
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Course Reviews & Ratings
-  // ──────────────────────────────────────────────────────────────────────────
+	updateSection: (courseId, sectionId, sectionData) =>
+		axiosInstance.put(`${COURSE_BASE}/sections`, sectionData, {
+			params: { course_id: courseId, section_id: sectionId },
+		}),
 
-  /**
-   * Get course reviews
-   * @param {string} courseId - Course ID
-   * @param {number} page - Page number
-   * @param {number} limit - Items per page
-   * @returns {Promise} List of reviews
-   */
-  getCourseReviews: (courseId, page = 1, limit = 10) =>
-    axiosInstance.get(`/courses/${courseId}/reviews`, {
-      params: { page, limit },
-    }),
+	deleteSection: (courseId, sectionId) =>
+		axiosInstance.delete(`${COURSE_BASE}/sections`, {
+			params: { course_id: courseId, section_id: sectionId },
+		}),
 
-  /**
-   * Submit a review for a course
-   * @param {string} courseId - Course ID
-   * @param {Object} reviewData - Review details (rating, comment, etc.)
-   * @returns {Promise} Submitted review
-   */
-  submitCourseReview: (courseId, reviewData) =>
-    axiosInstance.post(`/courses/${courseId}/reviews`, reviewData),
+	reorderSections: (courseId, sections) =>
+		axiosInstance.put(
+			`${COURSE_BASE}/sections/reorder`,
+			{ sections },
+			{ params: { course_id: courseId } }
+		),
 
-  /**
-   * Update a review
-   * @param {string} courseId - Course ID
-   * @param {string} reviewId - Review ID
-   * @param {Object} updateData - Updated review data
-   * @returns {Promise} Updated review
-   */
-  updateCourseReview: (courseId, reviewId, updateData) =>
-    axiosInstance.put(`/courses/${courseId}/reviews/${reviewId}`, updateData),
+	// ---------------------------------------------------------------------------
+	// Lessons
+	// ---------------------------------------------------------------------------
 
-  /**
-   * Delete a review
-   * @param {string} courseId - Course ID
-   * @param {string} reviewId - Review ID
-   * @returns {Promise} Deletion confirmation
-   */
-  deleteCourseReview: (courseId, reviewId) =>
-    axiosInstance.delete(`/courses/${courseId}/reviews/${reviewId}`),
+	createLesson: (courseId, sectionId, lessonData) =>
+		axiosInstance.post(`${COURSE_BASE}/sections/lessons`, lessonData, {
+			params: { course_id: courseId, section_id: sectionId },
+		}),
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Course Analytics
-  // ──────────────────────────────────────────────────────────────────────────
+	updateLesson: (courseId, lessonId, lessonData) =>
+		axiosInstance.put(`${COURSE_BASE}/sections/lessons`, lessonData, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		}),
 
-  /**
-   * Get course analytics (instructor view)
-   * @param {string} courseId - Course ID
-   * @returns {Promise} Analytics data (enrollments, completion rate, etc.)
-   */
-  getCourseAnalytics: (courseId) =>
-    axiosInstance.get(`/courses/${courseId}/analytics`),
+	deleteLesson: (courseId, lessonId) =>
+		axiosInstance.delete(`${COURSE_BASE}/sections/lessons`, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		}),
 
-  /**
-   * Get student progress analytics
-   * @param {string} courseId - Course ID
-   * @returns {Promise} Student progress data
-   */
-  getStudentProgressAnalytics: (courseId) =>
-    axiosInstance.get(`/courses/${courseId}/student-progress-analytics`),
+	reorderLessons: (courseId, sectionId, lessons) =>
+		axiosInstance.put(
+			`${COURSE_BASE}/sections/lessons/reorder`,
+			{ lessons },
+			{ params: { course_id: courseId, section_id: sectionId } }
+		),
 
-  // ──────────────────────────────────────────────────────────────────────────
-  // Course Activity
-  // ──────────────────────────────────────────────────────────────────────────
+	completeLesson: (courseId, lessonId) =>
+		axiosInstance.post(
+			`${COURSE_BASE}/lessons/complete`,
+			{},
+			{ params: { course_id: courseId, lesson_id: lessonId } }
+		),
 
-  /**
-   * Get course activity log
-   * @param {string} courseId - Course ID
-   * @param {number} page - Page number
-   * @param {number} limit - Items per page
-   * @returns {Promise} Activity log entries
-   */
-  getCourseActivity: (courseId, page = 1, limit = 20) =>
-    axiosInstance.get(`/courses/${courseId}/activity`, {
-      params: { page, limit },
-    }),
+	uncompleteLesson: (courseId, lessonId) =>
+		axiosInstance.post(
+			`${COURSE_BASE}/lessons/uncomplete`,
+			{},
+			{ params: { course_id: courseId, lesson_id: lessonId } }
+		),
+
+	// ---------------------------------------------------------------------------
+	// Content Management (Video, Zoom, Text, PDF, Quiz)
+	// ---------------------------------------------------------------------------
+
+	addVideoContent: (courseId, lessonId, contentData) =>
+		axiosInstance.post(`${COURSE_BASE}/contents/video`, contentData, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		}),
+
+	uploadVideoContentFile: (courseId, lessonId, file, extraData = {}) => {
+		const formData = new FormData();
+		formData.append('video_file', file);
+
+		Object.entries(extraData).forEach(([key, value]) => {
+			if (value !== undefined && value !== null && value !== '') {
+				formData.append(key, value);
+			}
+		});
+
+		return axiosInstance.post(`${COURSE_BASE}/contents/video/upload`, formData, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		});
+	},
+
+	uploadPdfContentFile: (courseId, lessonId, file, extraData = {}) => {
+		const formData = new FormData();
+		formData.append('pdf_file', file);
+
+		Object.entries(extraData).forEach(([key, value]) => {
+			if (value !== undefined && value !== null && value !== '') {
+				formData.append(key, value);
+			}
+		});
+
+		return axiosInstance.post(`${COURSE_BASE}/contents/pdf/upload`, formData, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		});
+	},
+
+	updateVideoContent: (courseId, lessonId, contentId, contentData) =>
+		axiosInstance.put(`${COURSE_BASE}/contents/video`, contentData, {
+			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
+		}),
+
+	addZoomContent: (courseId, lessonId, contentData) =>
+		axiosInstance.post(`${COURSE_BASE}/contents/zoom`, contentData, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		}),
+
+	updateZoomContent: (courseId, lessonId, contentId, contentData) =>
+		axiosInstance.put(`${COURSE_BASE}/contents/zoom`, contentData, {
+			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
+		}),
+
+	addTextContent: (courseId, lessonId, contentData) =>
+		axiosInstance.post(`${COURSE_BASE}/contents/text`, contentData, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		}),
+
+	updateTextContent: (courseId, lessonId, contentId, contentData) =>
+		axiosInstance.put(`${COURSE_BASE}/contents/text`, contentData, {
+			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
+		}),
+
+	getTextContent: (courseId, lessonId, contentId) =>
+		axiosInstance.get(`${COURSE_BASE}/contents/text`, {
+			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
+		}),
+
+	addPdfContent: (courseId, lessonId, contentData) =>
+		axiosInstance.post(`${COURSE_BASE}/contents/pdf`, contentData, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		}),
+
+	updatePdfContent: (courseId, lessonId, contentId, contentData) =>
+		axiosInstance.put(`${COURSE_BASE}/contents/pdf`, contentData, {
+			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
+		}),
+
+	downloadPdfContent: (courseId, lessonId, contentId) =>
+		axiosInstance.get(`${COURSE_BASE}/contents/pdf/download`, {
+			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
+		}),
+
+	addQuizContent: (courseId, lessonId, contentData) =>
+		axiosInstance.post(`${COURSE_BASE}/contents/quiz`, contentData, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		}),
+
+	updateQuizContent: (courseId, lessonId, contentId, contentData) =>
+		axiosInstance.put(`${COURSE_BASE}/contents/quiz`, contentData, {
+			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
+		}),
+
+	deleteContent: (courseId, lessonId, contentId) =>
+		axiosInstance.delete(`${COURSE_BASE}/contents`, {
+			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
+		}),
+
+	notifyContentUpdate: (courseId, lessonId, payload = {}) =>
+		axiosInstance.post(`${COURSE_BASE}/contents/notify-update`, payload, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		}),
+
+	getCourseContent: (courseId) =>
+		axiosInstance.get(`${COURSE_BASE}/content`, { params: { course_id: courseId } }),
+
+	getCourseContentPreview: (courseId) =>
+		axiosInstance.get(`${COURSE_BASE}/content/preview`, { params: { course_id: courseId } }),
+
+	getCourseContentDetails: (courseId, lessonId) =>
+		axiosInstance.get(`${COURSE_BASE}/content/details`, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		}),
+
+	streamVideoContent: (courseId, lessonId, contentId) =>
+		axiosInstance.get(`${COURSE_BASE}/contents/stream`, {
+			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
+		}),
+
+	updateWatchProgress: (courseId, lessonId, contentId, progressData) =>
+		axiosInstance.post(`${COURSE_BASE}/contents/watch-progress`, progressData, {
+			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
+		}),
+
+	recordZoomAttendance: (courseId, lessonId, contentId, attendanceData = {}) =>
+		axiosInstance.post(`${COURSE_BASE}/contents/zoom-attendance`, attendanceData, {
+			params: { course_id: courseId, lesson_id: lessonId, content_id: contentId },
+		}),
+
+	// ---------------------------------------------------------------------------
+	// Attendance & Recordings
+	// ---------------------------------------------------------------------------
+
+	getLessonAttendance: (courseId, lessonId, queryParams = {}) =>
+		axiosInstance.get(`${COURSE_BASE}/attendance`, {
+			params: { course_id: courseId, lesson_id: lessonId, ...queryParams },
+		}),
+
+	exportLessonAttendance: (courseId, lessonId, queryParams = {}) =>
+		axiosInstance.get(`${COURSE_BASE}/attendance/export`, {
+			params: { course_id: courseId, lesson_id: lessonId, ...queryParams },
+		}),
+
+	addRecording: (courseId, lessonId, recordingData) =>
+		axiosInstance.post(`${COURSE_BASE}/recordings`, recordingData, {
+			params: { course_id: courseId, lesson_id: lessonId },
+		}),
+
+	distributeRecording: (courseId, lessonId, contentId, recordingId, payload = {}) =>
+		axiosInstance.post(`${COURSE_BASE}/recordings/distribute`, payload, {
+			params: {
+				course_id: courseId,
+				lesson_id: lessonId,
+				content_id: contentId,
+				recording_id: recordingId,
+			},
+		}),
+
+	getRecordingViews: (courseId, lessonId, contentId, recordingId, queryParams = {}) =>
+		axiosInstance.get(`${COURSE_BASE}/recordings/views`, {
+			params: {
+				course_id: courseId,
+				lesson_id: lessonId,
+				content_id: contentId,
+				recording_id: recordingId,
+				...queryParams,
+			},
+		}),
+
+	sendRecordingReminder: (
+		courseId,
+		lessonId,
+		contentId,
+		recordingId,
+		payload = {}
+	) =>
+		axiosInstance.post(`${COURSE_BASE}/recordings/reminder`, payload, {
+			params: {
+				course_id: courseId,
+				lesson_id: lessonId,
+				content_id: contentId,
+				recording_id: recordingId,
+			},
+		}),
+
+	// ---------------------------------------------------------------------------
+	// Progress, Activity, Analytics
+	// ---------------------------------------------------------------------------
+
+	getCourseProgress: (courseId) =>
+		axiosInstance.get(`${COURSE_BASE}/progress`, { params: { course_id: courseId } }),
+
+	getActivityLog: (courseId, queryParams = {}) =>
+		axiosInstance.get(`${COURSE_BASE}/activity-log`, {
+			params: { course_id: courseId, ...queryParams },
+		}),
+
+	trackActivity: (courseId, activityData) =>
+		axiosInstance.post(`${COURSE_BASE}/track-activity`, activityData, {
+			params: { course_id: courseId },
+		}),
+
+	getCourseAnalytics: (courseId) =>
+		axiosInstance.get(`${COURSE_BASE}/analytics`, { params: { course_id: courseId } }),
+
+	// ---------------------------------------------------------------------------
+	// Reviews
+	// ---------------------------------------------------------------------------
+
+	createReview: (courseId, reviewData) =>
+		axiosInstance.post(`${COURSE_BASE}/reviews`, reviewData, {
+			params: { course_id: courseId },
+		}),
+
+	getReviews: (courseId, queryParams = {}) =>
+		axiosInstance.get(`${COURSE_BASE}/reviews`, {
+			params: { course_id: courseId, ...queryParams },
+		}),
 };
+
+export default courseAPI;

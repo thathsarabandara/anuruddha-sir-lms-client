@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { FaBook, FaCalendar,  FaChartBar, FaCheckCircle, FaFilePdf, FaGraduationCap, FaTimes, FaUserGraduate, FaStar, FaEye } from 'react-icons/fa';
 import Notification from '../../components/common/Notification';
-
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 
 const AdminManagement = () => {
   const [notification, setNotification] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const showNotification = (message, type = 'info', duration = 5000) => {
     setNotification({ message, type, duration });
@@ -346,9 +347,14 @@ const AdminManagement = () => {
               </div>
 
               <div className="flex space-x-3 pt-4">
-                <button type="submit" className="flex-1 btn-primary">
-                  Create Admin Account
-                </button>
+                <ButtonWithLoader
+                  type="submit"
+                  label="Create Admin Account"
+                  loadingLabel="Creating..."
+                  isLoading={isLoading}
+                  variant="success"
+                  fullWidth
+                />
                 <button type="button" onClick={() => setShowCreateModal(false)} className="btn-outline px-6">
                   Cancel
                 </button>

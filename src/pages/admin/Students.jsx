@@ -6,6 +6,7 @@ import { studentAPI } from '../../api/student';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 const AdminStudents = () => {
   const [students, setStudents] = useState([]);
@@ -17,7 +18,16 @@ const AdminStudents = () => {
   
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  
+  // Individual loading states for each action
+  const [approveLoading, setApproveLoading] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
+  const [suspendLoading, setSuspendLoading] = useState(false);
+  const [activateLoading, setActivateLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -89,7 +99,7 @@ const AdminStudents = () => {
   };
 
   const handleApprove = async () => {
-    setActionLoading(true);
+    setApproveLoading(true);
     setError('');
     setSuccess('');
     
@@ -109,7 +119,7 @@ const AdminStudents = () => {
       setError(err.response?.data?.message || 'Failed to approve student');
       showNotification(err.response?.data?.message || 'Failed to approve student', 'error');
     } finally {
-      setActionLoading(false);
+      setApproveLoading(false);
     }
   };
 
@@ -120,7 +130,7 @@ const AdminStudents = () => {
       return;
     }
     
-    setActionLoading(true);
+    setRejectLoading(true);
     setError('');
     setSuccess('');
     
@@ -145,7 +155,7 @@ const AdminStudents = () => {
       setError(err.response?.data?.message || 'Failed to reject student');
       showNotification(err.response?.data?.message || 'Failed to reject student', 'error');
     } finally {
-      setActionLoading(false);
+      setRejectLoading(false);
     }
   };
 
@@ -156,7 +166,7 @@ const AdminStudents = () => {
       return;
     }
     
-    setActionLoading(true);
+    setSuspendLoading(true);
     setError('');
     setSuccess('');
     
@@ -181,12 +191,12 @@ const AdminStudents = () => {
       setError(err.response?.data?.message || 'Failed to suspend student');
       showNotification(err.response?.data?.message || 'Failed to suspend student', 'error');
     } finally {
-      setActionLoading(false);
+      setSuspendLoading(false);
     }
   };
 
   const handleActivate = async () => {
-    setActionLoading(true);
+    setActivateLoading(true);
     setError('');
     setSuccess('');
     
@@ -205,7 +215,7 @@ const AdminStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to activate student');
     } finally {
-      setActionLoading(false);
+      setActivateLoading(false);
     }
   };
 
@@ -218,23 +228,32 @@ const AdminStudents = () => {
       return;
     }
     
-    setActionLoading(true);
+    setCreateLoading(true);
     setError('');
     setSuccess('');
     
     try {
-      const response = await studentAPI.createStudent({
-        first_name: createFormData.first_name,
-        last_name: createFormData.last_name,
-        email: createFormData.email,
-        phone: createFormData.phone,
-        date_of_birth: createFormData.date_of_birth || undefined,
-        grade_level: createFormData.grade_level,
-        school: createFormData.school,
-        address: createFormData.address,
-        parent_name: createFormData.parent_name,
-        parent_contact: createFormData.parent_contact,
-      });
+      // Create FormData to handle file upload
+      const formData = new FormData();
+      formData.append('first_name', createFormData.first_name);
+      formData.append('last_name', createFormData.last_name);
+      formData.append('email', createFormData.email);
+      formData.append('phone', createFormData.phone);
+      if (createFormData.date_of_birth) {
+        formData.append('date_of_birth', createFormData.date_of_birth);
+      }
+      formData.append('grade_level', createFormData.grade_level);
+      formData.append('school', createFormData.school);
+      formData.append('address', createFormData.address);
+      formData.append('parent_name', createFormData.parent_name);
+      formData.append('parent_contact', createFormData.parent_contact);
+      
+      // Add profile picture if provided
+      if (createFormData.profile_picture) {
+        formData.append('profile_picture', createFormData.profile_picture);
+      }
+      
+      const response = await studentAPI.createStudent(formData);
       
       // Add new student to list
       setStudents([...students, response.data]);
@@ -257,29 +276,36 @@ const AdminStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create student');
     } finally {
-      setActionLoading(false);
+      setCreateLoading(false);
     }
   };
 
   const handleEditStudent = async (e) => {
     e.preventDefault();
     
-    setActionLoading(true);
+    setEditLoading(true);
     setError('');
     setSuccess('');
     
     try {
-      await studentAPI.editStudentDetails(selectedStudent.id, {
-        first_name: editFormData.first_name,
-        last_name: editFormData.last_name,
-        phone: editFormData.phone,
-        date_of_birth: editFormData.date_of_birth,
-        grade_level: editFormData.grade_level,
-        school: editFormData.school,
-        address: editFormData.address,
-        parent_name: editFormData.parent_name,
-        parent_contact: editFormData.parent_contact,
-      });
+      // Create FormData to handle file upload
+      const formData = new FormData();
+      formData.append('first_name', editFormData.first_name);
+      formData.append('last_name', editFormData.last_name);
+      formData.append('phone', editFormData.phone);
+      formData.append('date_of_birth', editFormData.date_of_birth);
+      formData.append('grade_level', editFormData.grade_level);
+      formData.append('school', editFormData.school);
+      formData.append('address', editFormData.address);
+      formData.append('parent_name', editFormData.parent_name);
+      formData.append('parent_contact', editFormData.parent_contact);
+      
+      // Add profile picture only if a new one was selected
+      if (editFormData.profile_picture) {
+        formData.append('profile_picture', editFormData.profile_picture);
+      }
+      
+      await studentAPI.editStudentDetails(selectedStudent.id, formData);
       
       // Update in students list
       const updatedStudent = {
@@ -295,12 +321,12 @@ const AdminStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update student');
     } finally {
-      setActionLoading(false);
+      setEditLoading(false);
     }
   };
 
   const handleResetPassword = async () => {
-    setActionLoading(true);
+    setResetPasswordLoading(true);
     setError('');
     setSuccess('');
     
@@ -316,7 +342,7 @@ const AdminStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reset password');
     } finally {
-      setActionLoading(false);
+      setResetPasswordLoading(false);
     }
   };
 
@@ -543,9 +569,10 @@ const AdminStudents = () => {
                 <button
                   onClick={() => {
                     setSelectedStudent(student);
+                    setResetPasswordLoading(false);
                     handleResetPassword();
                   }}
-                  disabled={actionLoading}
+                  disabled={resetPasswordLoading}
                   className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
                   title="Reset password"
                 >
@@ -720,65 +747,79 @@ const AdminStudents = () => {
               <div className="flex gap-3 pt-4 border-t">
                 { selectedStudent.account_status.is_active === false && selectedStudent.account_status.is_banned === false && (
                   <>
-                    <button 
+                    <ButtonWithLoader 
+                      label="Approve Student"
+                      loadingLabel="Approving..."
+                      isLoading={approveLoading}
                       onClick={() => handleApprove(selectedStudent.id)}
-                      disabled={actionLoading}
-                      className="flex-1 btn-primary flex items-center justify-center gap-2"
-                    >
-                      <FaCheck /> Approve Student
-                    </button>
-                    <button 
+                      icon={<FaCheck />}
+                      variant="success"
+                      fullWidth
+                    />
+                    <ButtonWithLoader 
+                      label="Reject"
+                      loadingLabel="Processing..."
+                      isLoading={rejectLoading}
                       onClick={() => setShowRejectModal(true)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaTimes /> Reject
-                    </button>
+                      icon={<FaTimes />}
+                      variant="danger"
+                      fullWidth
+                    />
                   </>
                 )}
                 
                 {selectedStudent.account_status.is_active === true && selectedStudent.account_status.is_banned === false && (
                   <>
-                    <button 
+                    <ButtonWithLoader 
+                      label="Suspend Student"
+                      loadingLabel="Suspending..."
+                      isLoading={suspendLoading}
                       onClick={() => setShowSuspendModal(true)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaBan /> Suspend Student
-                    </button>
-                    <button 
+                      icon={<FaBan />}
+                      variant="warning"
+                      fullWidth
+                    />
+                    <ButtonWithLoader 
+                      label="Edit Details"
+                      loadingLabel="Preparing..."
+                      isLoading={editLoading}
                       onClick={openEditModal}
-                      disabled={actionLoading}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaEdit /> Edit Details
-                    </button>
-                    <button 
+                      icon={<FaEdit />}
+                      variant="info"
+                      fullWidth
+                    />
+                    <ButtonWithLoader 
+                      label="Reset Password"
+                      loadingLabel="Resetting..."
+                      isLoading={resetPasswordLoading}
                       onClick={() => handleResetPassword(selectedStudent.id)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaKey /> Reset Password
-                    </button>
+                      icon={<FaKey />}
+                      variant="secondary"
+                      fullWidth
+                    />
                   </>
                 )}
                 
                 {(selectedStudent.account_status.is_active === true && selectedStudent.account_status.is_banned === true) && (
                   <>
-                    <button 
+                    <ButtonWithLoader 
+                      label="Activate Student"
+                      loadingLabel="Activating..."
+                      isLoading={activateLoading}
                       onClick={() => handleActivate(selectedStudent.id)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaUndo /> Activate Student
-                    </button>
-                    <button 
+                      icon={<FaUndo />}
+                      variant="success"
+                      fullWidth
+                    />
+                    <ButtonWithLoader 
+                      label="Edit Details"
+                      loadingLabel="Preparing..."
+                      isLoading={editLoading}
                       onClick={openEditModal}
-                      disabled={actionLoading}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaEdit /> Edit Details
-                    </button>
+                      icon={<FaEdit />}
+                      variant="info"
+                      fullWidth
+                    />
                   </>
                 )}
               </div>
@@ -805,19 +846,21 @@ const AdminStudents = () => {
               Ban will be permanent. You can activate the student later if needed.
             </p>
             <div className="flex gap-3 mt-4">
-              <button
+              <ButtonWithLoader
+                label="Confirm Reject"
+                loadingLabel="Rejecting..."
+                isLoading={rejectLoading}
                 onClick={handleReject}
-                disabled={actionLoading || !reason.trim()}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg disabled:opacity-50"
-              >
-                {actionLoading ? 'Processing...' : 'Confirm Reject'}
-              </button>
+                disabled={!reason.trim()}
+                variant="danger"
+                fullWidth
+              />
               <button
                 onClick={() => {
                   setShowRejectModal(false);
                   setreason('');
                 }}
-                disabled={actionLoading}
+                disabled={rejectLoading}
                 className="flex-1 btn-outline"
               >
                 Cancel
@@ -842,19 +885,21 @@ const AdminStudents = () => {
               placeholder="Enter suspension reason..."
             />
             <div className="flex gap-3 mt-4">
-              <button
+              <ButtonWithLoader
+                label="Confirm Suspend"
+                loadingLabel="Suspending..."
+                isLoading={suspendLoading}
                 onClick={handleSuspend}
-                disabled={actionLoading || !suspendReason.trim()}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg disabled:opacity-50"
-              >
-                {actionLoading ? 'Processing...' : 'Confirm Suspend'}
-              </button>
+                disabled={!suspendReason.trim()}
+                variant="warning"
+                fullWidth
+              />
               <button
                 onClick={() => {
                   setShowSuspendModal(false);
                   setSuspendReason('');
                 }}
-                disabled={actionLoading}
+                disabled={suspendLoading}
                 className="flex-1 btn-outline"
               >
                 Cancel
@@ -1038,17 +1083,18 @@ const AdminStudents = () => {
               </div>
               </div>
               <div className="flex gap-3 pt-4 border-t">
-                <button
+                <ButtonWithLoader
                   type="submit"
-                  disabled={actionLoading}
-                  className="flex-1 btn-primary disabled:opacity-50"
-                >
-                  {actionLoading ? 'Creating...' : 'Create Student'}
-                </button>
+                  label="Create Student"
+                  loadingLabel="Creating..."
+                  isLoading={createLoading}
+                  variant="success"
+                  fullWidth
+                />
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  disabled={actionLoading}
+                  disabled={createLoading}
                   className="flex-1 btn-outline"
                 >
                   Cancel
@@ -1214,17 +1260,18 @@ const AdminStudents = () => {
                 </div>
               </div>
               <div className="flex gap-3 pt-4 border-t">
-                <button
+                <ButtonWithLoader
                   type="submit"
-                  disabled={actionLoading}
-                  className="flex-1 btn-primary disabled:opacity-50"
-                >
-                  {actionLoading ? 'Updating...' : 'Update Student'}
-                </button>
+                  label="Update Student"
+                  loadingLabel="Updating..."
+                  isLoading={editLoading}
+                  variant="success"
+                  fullWidth
+                />
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  disabled={actionLoading}
+                  disabled={editLoading}
                   className="flex-1 btn-outline"
                 >
                   Cancel

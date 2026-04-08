@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { FaFilePdf, FaGraduationCap, FaTimes, FaTrophy, FaChartLine, FaChartArea, FaStar, FaEye } from 'react-icons/fa';
+import { FaFilePdf, FaGraduationCap, FaTimes, FaTrophy, FaChartLine, FaChartArea, FaStar, FaEye, FaSpinner } from 'react-icons/fa';
 import Notification from '../../components/common/Notification';
-
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 
@@ -9,6 +9,8 @@ const AdminCertificates = () => {
   const [notification, setNotification] = useState(null);
   const [filterType, setFilterType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [viewingCertId, setViewingCertId] = useState(null);
 
   const certificates = [
     {
@@ -110,6 +112,44 @@ const AdminCertificates = () => {
     return colors[type] || colors.participation;
   };
 
+  const handleIssueCertificate = async () => {
+    setActionLoading(true);
+    try {
+      // TODO: Add API call to issue certificate
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setNotification({
+        type: 'success',
+        message: 'Certificate issued successfully!'
+      });
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: 'Failed to issue certificate: ' + error.message
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleViewCertificate = async (certId) => {
+    setViewingCertId(certId);
+    try {
+      // TODO: Add API call to view/download certificate
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      setNotification({
+        type: 'info',
+        message: 'Opening certificate...'
+      });
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: 'Failed to view certificate: ' + error.message
+      });
+    } finally {
+      setViewingCertId(null);
+    }
+  };
+
   const filteredCertificates = certificates.filter((cert) => {
     return filterType === 'all' || cert.type === filterType;
   });
@@ -130,9 +170,14 @@ const AdminCertificates = () => {
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Certificate Management</h1>
           <p className="text-gray-600">Issue and manage certificates and achievements</p>
         </div>
-        <button onClick={() => console.log('Issue certificate - modal coming soon')} className="btn-primary px-6">
-          + Issue Certificate
-        </button>
+        <ButtonWithLoader
+          label="+ Issue Certificate"
+          loadingLabel="Processing..."
+          isLoading={actionLoading}
+          onClick={handleIssueCertificate}
+          icon={<FaGraduationCap />}
+          variant="primary"
+        />
       </div>
 
       <StatCard stats={statsData} metricsConfig={metricsConfig} />
@@ -217,12 +262,14 @@ const AdminCertificates = () => {
             key: 'actions',
             label: 'Actions',
             render: (_, cert) => (
-              <button
-                onClick={() => console.log('View certificate:', cert.id)}
-                className="px-3 py-1 bg-primary-600 hover:bg-primary-700 text-white rounded text-xs flex items-center gap-1 transition whitespace-nowrap"
-              >
-                <FaEye /> View
-              </button>
+              <ButtonWithLoader
+                label="View"
+                loadingLabel="Loading..."
+                isLoading={viewingCertId === cert.id}
+                onClick={() => handleViewCertificate(cert.id)}
+                icon={<FaEye />}
+                variant="primary"
+              />
             ),
           },
         ]}

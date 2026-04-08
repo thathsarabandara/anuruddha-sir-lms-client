@@ -3,6 +3,7 @@ import { FaCheckCircle, FaExclamationTriangle, FaGraduationCap, FaTimes, FaUserG
 import { BiLoader } from 'react-icons/bi';
 import Notification from '../../components/common/Notification';
 import StatCard from '../../components/common/StatCard';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import { studentAPI } from '../../api/student';
 
 const TeacherStudents = () => {
@@ -23,7 +24,15 @@ const TeacherStudents = () => {
   
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const [actionLoading, setActionLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState({
+    approve: false,
+    reject: false,
+    suspend: false,
+    activate: false,
+    create: false,
+    edit: false,
+    resetPassword: false,
+  });
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -52,8 +61,8 @@ const TeacherStudents = () => {
   const [success, setSuccess] = useState('');
   const [notification, setNotification] = useState(null);
 
-  const showNotification = (message, type = 'info', duration = 5000) => {
-    setNotification({ message, type, duration });
+  const setActionLoadingState = (action, isLoading) => {
+    setActionLoading((prev) => ({ ...prev, [action]: isLoading }));
   };
 
   const fetchStats = async () => {
@@ -94,7 +103,7 @@ const TeacherStudents = () => {
   };
 
   const handleApprove = async () => {
-    setActionLoading(true);
+    setActionLoadingState('approve', true);
     setError('');
     setSuccess('');
     
@@ -112,7 +121,7 @@ const TeacherStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to approve student');
     } finally {
-      setActionLoading(false);
+      setActionLoadingState('approve', false);
     }
   };
 
@@ -122,7 +131,7 @@ const TeacherStudents = () => {
       return;
     }
     
-    setActionLoading(true);
+    setActionLoadingState('reject', true);
     setError('');
     setSuccess('');
     
@@ -145,7 +154,7 @@ const TeacherStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reject student');
     } finally {
-      setActionLoading(false);
+      setActionLoadingState('reject', false);
     }
   };
 
@@ -155,7 +164,7 @@ const TeacherStudents = () => {
       return;
     }
     
-    setActionLoading(true);
+    setActionLoadingState('suspend', true);
     setError('');
     setSuccess('');
     
@@ -178,12 +187,12 @@ const TeacherStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to suspend student');
     } finally {
-      setActionLoading(false);
+      setActionLoadingState('suspend', false);
     }
   };
 
   const handleActivate = async () => {
-    setActionLoading(true);
+    setActionLoadingState('activate', true);
     setError('');
     setSuccess('');
     
@@ -201,7 +210,7 @@ const TeacherStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to activate student');
     } finally {
-      setActionLoading(false);
+      setActionLoadingState('activate', false);
     }
   };
 
@@ -214,7 +223,7 @@ const TeacherStudents = () => {
       return;
     }
     
-    setActionLoading(true);
+    setActionLoadingState('create', true);
     setError('');
     setSuccess('');
     
@@ -253,14 +262,14 @@ const TeacherStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create student');
     } finally {
-      setActionLoading(false);
+      setActionLoadingState('create', false);
     }
   };
 
   const handleEditStudent = async (e) => {
     e.preventDefault();
     
-    setActionLoading(true);
+    setActionLoadingState('edit', true);
     setError('');
     setSuccess('');
     
@@ -291,17 +300,24 @@ const TeacherStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update student');
     } finally {
-      setActionLoading(false);
+      setActionLoadingState('edit', false);
     }
   };
 
-  const handleResetPassword = async () => {
-    setActionLoading(true);
+  const handleResetPassword = async (studentId) => {
+    const targetStudentId = studentId || selectedStudent?.id;
+
+    if (!targetStudentId) {
+      setError('No student selected for password reset');
+      return;
+    }
+
+    setActionLoadingState('resetPassword', true);
     setError('');
     setSuccess('');
     
     try {
-      const response = await studentAPI.resetStudentPassword(selectedStudent.id, true);
+      const response = await studentAPI.resetStudentPassword(targetStudentId, true);
       
       setResetPasswordData({
         email: response.data.email,
@@ -312,7 +328,7 @@ const TeacherStudents = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reset password');
     } finally {
-      setActionLoading(false);
+      setActionLoadingState('resetPassword', false);
     }
   };
 
@@ -348,37 +364,6 @@ const TeacherStudents = () => {
     };
     return icons[status] || FaClock;
   };
-
-  const statsData = [
-    { 
-      label: 'Total Students', 
-      value: stats?.total_students || 0, 
-      icon: FaUserGraduate, 
-      color: 'bg-blue-100 text-blue-700',
-      borderColor: 'border-blue-500'
-    },
-    { 
-      label: 'Active Students', 
-      value: stats?.active_students || 0, 
-      icon: FaCheckCircle, 
-      color: 'bg-green-100 text-green-700',
-      borderColor: 'border-green-500'
-    },
-    { 
-      label: 'Pending Approval', 
-      value: stats?.pending_students || 0, 
-      icon: BiLoader, 
-      color: 'bg-yellow-100 text-yellow-700',
-      borderColor: 'border-yellow-500'
-    },
-    { 
-      label: 'Banned', 
-      value: stats?.banned_students || 0, 
-      icon: FaExclamationTriangle, 
-      color: 'bg-red-100 text-red-700',
-      borderColor: 'border-red-500'
-    },
-  ];
 
   const teacherStudentsMetricsConfig = [
     {
@@ -595,9 +580,9 @@ const TeacherStudents = () => {
                             <button
                               onClick={() => {
                                 setSelectedStudent(student);
-                                handleResetPassword();
+                                handleResetPassword(student.id);
                               }}
-                              disabled={actionLoading}
+                              disabled={actionLoading.resetPassword}
                               className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
                               title="Reset password"
                             >
@@ -792,65 +777,86 @@ const TeacherStudents = () => {
               <div className="flex gap-3 pt-4 border-t">
                 { selectedStudent.account_status.is_active === false && selectedStudent.account_status.is_banned === false && (
                   <>
-                    <button 
+                    <ButtonWithLoader 
+                      label="Approve Student"
+                      loadingLabel="Approving..."
+                      isLoading={actionLoading.approve}
                       onClick={() => handleApprove(selectedStudent.id)}
-                      disabled={actionLoading}
-                      className="flex-1 btn-primary flex items-center justify-center gap-2"
-                    >
-                      <FaCheck /> Approve Student
-                    </button>
-                    <button 
+                      variant="success"
+                      icon={<FaCheck />}
+                      className="flex-1"
+                      fullWidth
+                    />
+                    <ButtonWithLoader 
+                      label="Reject"
+                      loadingLabel="Rejecting..."
+                      isLoading={false}
                       onClick={() => setShowRejectModal(true)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaTimes /> Reject
-                    </button>
+                      variant="danger"
+                      icon={<FaTimes />}
+                      className="flex-1"
+                      fullWidth
+                    />
                   </>
                 )}
                 
                 {selectedStudent.account_status.is_active === true && selectedStudent.account_status.is_banned === false && (
                   <>
-                    <button 
+                    <ButtonWithLoader 
+                      label="Suspend Student"
+                      loadingLabel="Suspending..."
+                      isLoading={false}
                       onClick={() => setShowSuspendModal(true)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaBan /> Suspend Student
-                    </button>
-                    <button 
+                      variant="warning"
+                      icon={<FaBan />}
+                      className="flex-1"
+                      fullWidth
+                    />
+                    <ButtonWithLoader 
+                      label="Edit Details"
+                      loadingLabel="Preparing..."
+                      isLoading={false}
                       onClick={openEditModal}
-                      disabled={actionLoading}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaEdit /> Edit Details
-                    </button>
-                    <button 
+                      variant="info"
+                      icon={<FaEdit />}
+                      className="flex-1"
+                      fullWidth
+                    />
+                    <ButtonWithLoader 
+                      label="Reset Password"
+                      loadingLabel="Resetting..."
+                      isLoading={actionLoading.resetPassword}
                       onClick={() => handleResetPassword(selectedStudent.id)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaKey /> Reset Password
-                    </button>
+                      variant="secondary"
+                      icon={<FaKey />}
+                      className="flex-1"
+                      fullWidth
+                    />
                   </>
                 )}
                 
                 {(selectedStudent.account_status.is_active === true && selectedStudent.account_status.is_banned === true) && (
                   <>
-                    <button 
+                    <ButtonWithLoader 
+                      label="Activate Student"
+                      loadingLabel="Activating..."
+                      isLoading={actionLoading.activate}
                       onClick={() => handleActivate(selectedStudent.id)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaUndo /> Activate Student
-                    </button>
-                    <button 
+                      variant="success"
+                      icon={<FaUndo />}
+                      className="flex-1"
+                      fullWidth
+                    />
+                    <ButtonWithLoader 
+                      label="Edit Details"
+                      loadingLabel="Preparing..."
+                      isLoading={false}
                       onClick={openEditModal}
-                      disabled={actionLoading}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaEdit /> Edit Details
-                    </button>
+                      variant="info"
+                      icon={<FaEdit />}
+                      className="flex-1"
+                      fullWidth
+                    />
                   </>
                 )}
               </div>
@@ -877,19 +883,22 @@ const TeacherStudents = () => {
               Ban will be permanent. You can activate the student later if needed.
             </p>
             <div className="flex gap-3 mt-4">
-              <button
+              <ButtonWithLoader
+                label="Confirm Reject"
+                loadingLabel="Rejecting..."
+                isLoading={actionLoading.reject}
                 onClick={handleReject}
-                disabled={actionLoading || !reason.trim()}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg disabled:opacity-50"
-              >
-                {actionLoading ? 'Processing...' : 'Confirm Reject'}
-              </button>
+                disabled={!reason.trim()}
+                variant="danger"
+                fullWidth
+                className="flex-1"
+              />
               <button
                 onClick={() => {
                   setShowRejectModal(false);
                   setreason('');
                 }}
-                disabled={actionLoading}
+                disabled={actionLoading.reject}
                 className="flex-1 btn-outline"
               >
                 Cancel
@@ -914,19 +923,22 @@ const TeacherStudents = () => {
               placeholder="Enter suspension reason..."
             />
             <div className="flex gap-3 mt-4">
-              <button
+              <ButtonWithLoader
+                label="Confirm Suspend"
+                loadingLabel="Suspending..."
+                isLoading={actionLoading.suspend}
                 onClick={handleSuspend}
-                disabled={actionLoading || !suspendReason.trim()}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg disabled:opacity-50"
-              >
-                {actionLoading ? 'Processing...' : 'Confirm Suspend'}
-              </button>
+                disabled={!suspendReason.trim()}
+                variant="warning"
+                fullWidth
+                className="flex-1"
+              />
               <button
                 onClick={() => {
                   setShowSuspendModal(false);
                   setSuspendReason('');
                 }}
-                disabled={actionLoading}
+                disabled={actionLoading.suspend}
                 className="flex-1 btn-outline"
               >
                 Cancel
@@ -1110,17 +1122,19 @@ const TeacherStudents = () => {
               </div>
               </div>
               <div className="flex gap-3 pt-4 border-t">
-                <button
+                <ButtonWithLoader
+                  label="Create Student"
+                  loadingLabel="Creating..."
+                  isLoading={actionLoading.create}
                   type="submit"
-                  disabled={actionLoading}
-                  className="flex-1 btn-primary disabled:opacity-50"
-                >
-                  {actionLoading ? 'Creating...' : 'Create Student'}
-                </button>
+                  variant="success"
+                  fullWidth
+                  className="flex-1"
+                />
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  disabled={actionLoading}
+                  disabled={actionLoading.create}
                   className="flex-1 btn-outline"
                 >
                   Cancel
@@ -1286,17 +1300,19 @@ const TeacherStudents = () => {
                 </div>
               </div>
               <div className="flex gap-3 pt-4 border-t">
-                <button
+                <ButtonWithLoader
+                  label="Update Student"
+                  loadingLabel="Updating..."
+                  isLoading={actionLoading.edit}
                   type="submit"
-                  disabled={actionLoading}
-                  className="flex-1 btn-primary disabled:opacity-50"
-                >
-                  {actionLoading ? 'Updating...' : 'Update Student'}
-                </button>
+                  variant="info"
+                  fullWidth
+                  className="flex-1"
+                />
                 <button
                   type="button"
                   onClick={() => setShowEditModal(false)}
-                  disabled={actionLoading}
+                  disabled={actionLoading.edit}
                   className="flex-1 btn-outline"
                 >
                   Cancel

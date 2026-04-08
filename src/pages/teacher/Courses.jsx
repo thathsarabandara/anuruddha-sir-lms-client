@@ -1,45 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { FaPlus, FaEdit, FaTrash, FaEye, FaBook, FaUsers, FaDollarSign, FaVideo, FaCheckCircle, FaClock, FaChartLine } from 'react-icons/fa';
+import { FaPlus, FaBook, FaUsers, FaDollarSign, FaCheckCircle } from 'react-icons/fa';
 import { BiLoader } from 'react-icons/bi';
 import StatCard from '../../components/common/StatCard';
-import CourseCard from '../../components/common/CourseCard';
+import DataTable from '../../components/common/DataTable';
 import CreateCourseForm from '../../components/teacher/CreateCourseForm';
 import Notification from '../../components/common/Notification';
+import { courseAPI } from '../../api/course';
+import { COURSE_SUBJECT_OPTIONS, COURSE_GRADE_LEVEL_OPTIONS, COURSE_TYPE_OPTIONS } from '../../utils/courseOptions';
+
+const getErrorMessage = (err, fallback = 'Something went wrong') =>
+  err?.response?.data?.message || err?.response?.data?.error || err?.message || fallback;
 
 const TeacherCourses = () => {
   const navigate = useNavigate();
-  // Dummy data
-  const dummyCourses = [
-    { id: 1, title: 'Advanced Python', description: 'Learn advanced Python', subject_id: 1, status: 'PUBLISHED', students: 45, revenue: 2250, price: 49.99 },
-    { id: 2, title: 'Web Development 101', description: 'Introduction to web dev', subject_id: 2, status: 'PUBLISHED', students: 32, revenue: 1280, price: 39.99 },
-    { id: 3, title: 'Mobile Apps with Flutter', description: 'Flutter development', subject_id: 3, status: 'DRAFT', students: 0, revenue: 0, price: 59.99 },
-  ];
 
-  const dummySubjects = [
-    { id: 1, name: 'Programming' },
-    { id: 2, name: 'Web Development' },
-    { id: 3, name: 'Mobile Apps' },
-  ];
-
-  const dummyGradeLevels = [
-    { id: 1, name: '9-10' },
-    { id: 2, name: '10-12' },
-  ];
-
-  const dummyCategories = [
-    { id: 1, name: 'Technology' },
-    { id: 2, name: 'Business' },
-  ];
-
-  const [courses, setCourses] = useState(dummyCourses);
-  const [loading, _setLoading] = useState(false);
+  const [courses, setCourses] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    grade_level: '',
+    course_type: '',
+    subject: '',
+    status: '',
+    visibility: '',
+    price_type: '',
+  });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [courseToDelete, setCourseToDelete] = useState(null);
-  const [subjects, _setSubjects] = useState(dummySubjects);
-  const [gradeLevels, _setGradeLevels] = useState(dummyGradeLevels);
-  const [categories, _setCategories] = useState(dummyCategories);
+  const subjects = COURSE_SUBJECT_OPTIONS;
+  const gradeLevels = COURSE_GRADE_LEVEL_OPTIONS;
+  const courseTypes = COURSE_TYPE_OPTIONS;
+  const [courseStats, setCourseStats] = useState({
+    total_courses: 0,
+    active_courses: 0,
+    total_students: 0,
+    total_revenue: 0,
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [notification, setNotification] = useState(null);
   
@@ -50,18 +49,105 @@ const TeacherCourses = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    subject_id: '',
-    grade_level_id: '',
-    category_id: '',
+    subject: '',
+    grade_level: '',
+    course_type: 'monthly',
     price_type: 'FREE',
     price: 0,
     status: 'DRAFT',
     visibility: 'PUBLIC',
   });
 
+  const mapCourse = (course) => ({
+    ...course,
+    id: course?.course_id || course?.id,
+    subject: course?.subject,
+    grade_level: course?.grade_level?.name || course?.grade_level_name || course?.grade_level,
+    price_type: course?.is_paid ? 'paid' : 'free',
+  });
+
   useEffect(() => {
-    // Dummy data already loaded
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
+  const loadCourses = useCallback(async () => {
+    const queryParams = {
+      page: 1,
+      limit: 200,
+      ...(debouncedSearchTerm ? { q: debouncedSearchTerm } : {}),
+      ...(filters.grade_level ? { grade_level: filters.grade_level } : {}),
+      ...(filters.course_type ? { course_type: filters.course_type } : {}),
+      ...(filters.subject ? { subject: filters.subject } : {}),
+      ...(filters.status ? { status: filters.status } : {}),
+      ...(filters.visibility ? { visibility: filters.visibility } : {}),
+      ...(filters.price_type
+        ? { is_paid: filters.price_type === 'paid' }
+        : {}),
+    };
+
+    const coursesResponse = await courseAPI.getTeacherCourses(queryParams);
+    const rows = coursesResponse?.data?.data || [];
+    setCourses(Array.isArray(rows) ? rows.map(mapCourse) : []);
+  }, [
+    debouncedSearchTerm,
+    filters.grade_level,
+    filters.course_type,
+    filters.subject,
+    filters.status,
+    filters.visibility,
+    filters.price_type,
+  ]);
+
+  const loadStats = useCallback(async () => {
+    try {
+      const statsResponse = await courseAPI.getTeacherDashboardStats();
+      const stats = statsResponse?.data?.data || {};
+      setCourseStats({
+        total_courses: stats?.total_courses || 0,
+        active_courses: stats?.active_courses || 0,
+        total_students: stats?.total_students || 0,
+        total_revenue: stats?.total_revenue || 0,
+      });
+    } catch {
+      setCourseStats({
+        total_courses: 0,
+        active_courses: 0,
+        total_students: 0,
+        total_revenue: 0,
+      });
+    }
   }, []);
+
+  const loadStatsData = useCallback(async () => {
+    try {
+      await loadStats();
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to load course stats'), 'error');
+    }
+  }, [loadStats]);
+
+  useEffect(() => {
+    const run = async () => {
+      try {
+        setLoading(true);
+        await loadCourses();
+      } catch (err) {
+        showNotification(getErrorMessage(err, 'Failed to load courses'), 'error');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    run();
+  }, [loadCourses]);
+
+  useEffect(() => {
+    loadStatsData();
+  }, [loadStatsData]);
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -71,7 +157,7 @@ const TeacherCourses = () => {
     });
   };
 
-  const handleCreateCourse = (e) => {
+  const handleCreateCourse = async (e) => {
     e.preventDefault();
     
     if (!formData.title || !formData.description) {
@@ -79,16 +165,33 @@ const TeacherCourses = () => {
       return;
     }
 
-    setIsSubmitting(true);
-    // Simulate creation
-    setTimeout(() => {
-      const newCourse = { ...formData, id: Math.random() };
-      setCourses([...courses, newCourse]);
+    try {
+      setIsSubmitting(true);
+      const createPayload = {
+        title: formData.title,
+        description: formData.description,
+        subject: formData.subject || undefined,
+        grade_level: formData.grade_level || undefined,
+        language: "en",
+        course_type: formData.course_type || "monthly",
+        status: String(formData.status || 'DRAFT').toLowerCase(),
+        visibility: String(formData.visibility || 'PUBLIC').toLowerCase(),
+        is_paid: formData.price_type === 'PAID',
+        price: formData.price_type === 'PAID' ? Number(formData.price || 0) : null,
+      };
+
+      await courseAPI.createCourse(createPayload);
+
+      await loadCourses();
+      await loadStats();
       showNotification('Course created successfully', 'success');
       setShowCreateModal(false);
       resetForm();
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to create course'), 'error');
+    } finally {
       setIsSubmitting(false);
-    }, 300);
+    }
   };
 
   const confirmDelete = (courseId) => {
@@ -96,27 +199,31 @@ const TeacherCourses = () => {
     setShowDeleteModal(true);
   };
 
-  const handleDeleteCourse = () => {
+  const handleDeleteCourse = async () => {
     if (!courseToDelete) return;
 
-    setIsSubmitting(true);
-    // Simulate deletion
-    setTimeout(() => {
+    try {
+      setIsSubmitting(true);
+      await courseAPI.deleteCourse(courseToDelete);
+      await loadCourses();
+      await loadStats();
       showNotification('Course deleted successfully', 'success');
-      setCourses(courses.filter(c => c.id !== courseToDelete));
-      setIsSubmitting(false);
       setShowDeleteModal(false);
       setCourseToDelete(null);
-    }, 300);
+    } catch (err) {
+      showNotification(getErrorMessage(err, 'Failed to delete course'), 'error');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
     setFormData({
       title: '',
       description: '',
-      subject_id: '',
-      grade_level_id: '',
-      category_id: '',
+      subject: '',
+      grade_level: '',
+      course_type: 'monthly',
       price_type: 'FREE',
       price: 0,
       status: 'DRAFT',
@@ -124,18 +231,135 @@ const TeacherCourses = () => {
     });
   };
 
-  // Calculate statistics
-  const courseStats = {
-    total_courses: courses.length,
-    active_courses: courses.filter(c => c.status === 'PUBLISHED').length,
-    total_students: courses.reduce((sum, c) => sum + (c.total_enrollments || c.students || 0), 0),
-    total_revenue: courses.reduce((sum, c) => {
-      if (c.price_type === 'PAID') {
-        return sum + (parseFloat(c.price) * (c.total_enrollments || c.students || 0));
-      }
-      return sum;
-    }, 0),
+  const subjectLabelMap = useMemo(() => {
+    return COURSE_SUBJECT_OPTIONS.reduce((acc, option) => {
+      acc[option.value] = option.label;
+      return acc;
+    }, {});
+  }, []);
+
+  const typeLabelMap = useMemo(() => {
+    return COURSE_TYPE_OPTIONS.reduce((acc, option) => {
+      acc[option.value] = option.label;
+      return acc;
+    }, {});
+  }, []);
+
+  const updateFilter = (key, value) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
   };
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setFilters({
+      grade_level: '',
+      course_type: '',
+      subject: '',
+      status: '',
+      visibility: '',
+      price_type: '',
+    });
+  };
+
+  const hasActiveFilters =
+    !!searchTerm || Object.values(filters).some((value) => Boolean(value));
+
+  const tableColumns = [
+    {
+      key: 'title',
+      label: 'Course',
+      searchable: true,
+      render: (_, row) => (
+        <div>
+          <p className="font-semibold text-gray-900">{row.title}</p>
+          <p className="text-xs text-gray-500 line-clamp-1">{row.description || 'No description'}</p>
+        </div>
+      ),
+    },
+    {
+      key: 'grade_level',
+      label: 'Grade',
+      render: (value) => <span className="text-sm text-gray-700">{value ? `Grade ${value}` : '-'}</span>,
+    },
+    {
+      key: 'subject',
+      label: 'Subject',
+      render: (value) => <span className="text-sm text-gray-700">{subjectLabelMap[value] || value || '-'}</span>,
+    },
+    {
+      key: 'course_type',
+      label: 'Type',
+      render: (value) => <span className="text-sm text-gray-700">{typeLabelMap[value] || value || '-'}</span>,
+    },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (value) => (
+        <span className={`px-2 py-1 text-xs rounded-full font-semibold ${
+          value === 'published'
+            ? 'bg-green-100 text-green-700'
+            : value === 'archived'
+              ? 'bg-gray-200 text-gray-700'
+              : 'bg-yellow-100 text-yellow-700'
+        }`}>
+          {String(value || 'draft').toUpperCase()}
+        </span>
+      ),
+    },
+    {
+      key: 'visibility',
+      label: 'Visibility',
+      render: (value) => (
+        <span className={`px-2 py-1 text-xs rounded-full font-semibold ${
+          value === 'private' ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'
+        }`}>
+          {String(value || 'public').toUpperCase()}
+        </span>
+      ),
+    },
+    {
+      key: 'price_type',
+      label: 'Price Type',
+      render: (_, row) => (
+        <span className="text-sm text-gray-700">{row.is_paid ? 'PAID' : 'FREE'}</span>
+      ),
+    },
+    {
+      key: 'price',
+      label: 'Price',
+      render: (_, row) => (
+        <span className="text-sm font-medium text-gray-900">
+          {row.is_paid ? `Rs. ${Number(row.price || 0).toLocaleString()}` : 'Free'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      label: 'Actions',
+      render: (_, row) => (
+        <div className="flex items-center gap-3 whitespace-nowrap">
+          <button
+            onClick={() => navigate(`/teacher/courses/${row.id}?mode=view`)}
+            className="text-blue-600 hover:text-blue-800 font-medium"
+          >
+            View
+          </button>
+          <button
+            onClick={() => navigate(`/teacher/courses/${row.id}?mode=edit`)}
+            className="text-indigo-600 hover:text-indigo-800 font-medium"
+          >
+            Edit
+          </button>
+          <button
+            onClick={() => confirmDelete(row.id)}
+            className="text-red-600 hover:text-red-800 font-medium"
+          >
+            Delete
+          </button>
+        </div>
+      ),
+    },
+  ];
 
   // Stats metrics configuration
   const coursesMetricsConfig = [
@@ -203,31 +427,95 @@ const TeacherCourses = () => {
       {/* Stats */}
       <StatCard stats={courseStats} metricsConfig={coursesMetricsConfig} loading={loading} />
 
-      {/* Courses Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {courses.map((course) => (
-          <CourseCard
-            key={course.id}
-            course={course}
-            userType="teacher"
-            onViewDetails={() => navigate(`/teacher/courses/${course.id}?mode=view`)}
-            onEdit={() => navigate(`/teacher/courses/${course.id}?mode=edit`)}
-            onDelete={confirmDelete}
-          />
-        ))}
+      <div className="card mt-6">
+        <div className="mb-4 flex flex-col lg:flex-row lg:items-center gap-3">
+          <select
+            value={filters.grade_level}
+            onChange={(e) => updateFilter('grade_level', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-700"
+          >
+            <option value="">All Grades</option>
+            {gradeLevels.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
 
-        {courses.length === 0 && (
-          <div className="col-span-3 text-center py-12">
-            <FaBook className="text-6xl text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-600 text-lg mb-4">No courses yet</p>
-            <button 
-              onClick={() => setShowCreateModal(true)}
-              className="btn-primary"
+          <select
+            value={filters.course_type}
+            onChange={(e) => updateFilter('course_type', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-700"
+          >
+            <option value="">All Course Types</option>
+            {courseTypes.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+
+          <select
+            value={filters.subject}
+            onChange={(e) => updateFilter('subject', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-700"
+          >
+            <option value="">All Subjects</option>
+            {subjects.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
+            ))}
+          </select>
+
+          <select
+            value={filters.status}
+            onChange={(e) => updateFilter('status', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-700"
+          >
+            <option value="">All Statuses</option>
+            <option value="draft">Draft</option>
+            <option value="published">Published</option>
+            <option value="archived">Archived</option>
+          </select>
+
+          <select
+            value={filters.visibility}
+            onChange={(e) => updateFilter('visibility', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-700"
+          >
+            <option value="">All Visibility</option>
+            <option value="public">Public</option>
+            <option value="private">Private</option>
+          </select>
+
+          <select
+            value={filters.price_type}
+            onChange={(e) => updateFilter('price_type', e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm text-gray-700"
+          >
+            <option value="">All Price Types</option>
+            <option value="free">Free</option>
+            <option value="paid">Paid</option>
+          </select>
+
+          {hasActiveFilters && (
+            <button
+              onClick={clearAllFilters}
+              className="px-4 py-2 text-sm border border-red-200 text-red-600 rounded-lg hover:bg-red-50"
             >
-              Create Your First Course
+              Clear Filters
             </button>
-          </div>
-        )}
+          )}
+        </div>
+
+        <DataTable
+          data={courses}
+          columns={tableColumns}
+          config={{
+            itemsPerPage: 10,
+            searchPlaceholder: 'Search by course name...',
+            hideSearch: false,
+            searchValue: searchTerm,
+            onSearchChange: (value) => setSearchTerm(value),
+            emptyMessage: 'No courses found for the selected filters',
+          }}
+          loading={loading}
+        />
       </div>
 
       {/* Create Course Modal */}
@@ -246,7 +534,7 @@ const TeacherCourses = () => {
             <CreateCourseForm
               subjects={subjects}
               gradeLevels={gradeLevels}
-              categories={categories}
+              courseTypes={courseTypes}
               formData={formData}
               handleInputChange={handleInputChange}
               handleCreateCourse={handleCreateCourse}

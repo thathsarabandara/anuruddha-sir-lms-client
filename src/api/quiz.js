@@ -12,14 +12,14 @@ export const quizAPI = {
    * @returns {Promise} Created quiz data
    */
   createQuiz: (quizData) =>
-    axiosInstance.post("/quiz", quizData),
+    axiosInstance.post("/quiz/", quizData),
 
   /**
    * Get all quizzes for the current user (teacher)
    * @returns {Promise} List of quizzes
    */
   getAllQuizzes: () =>
-    axiosInstance.get("/quiz"),
+    axiosInstance.get("/quiz/"),
 
   /**
    * Get quizzes for a specific course
@@ -27,7 +27,7 @@ export const quizAPI = {
    * @returns {Promise} List of quizzes for the course
    */
   getQuizzesForCourse: (courseId) =>
-    axiosInstance.get("/quiz", { params: { course_id: courseId } }),
+    axiosInstance.get("/quiz/", { params: { course_id: courseId } }),
 
   /**
    * Get detailed information for a specific quiz
@@ -88,11 +88,45 @@ export const quizAPI = {
    * @param {Object|Array} questionData - Single question or array of questions
    * @returns {Promise} Created question(s)
    */
-  createQuestions: (quizId, questionData) =>
-    axiosInstance.post("/quiz/questions", {
+  createQuestions: (quizId, questionData) => {
+    // Filter out frontend-only fields and convert types
+    const cleanData = { ...questionData };
+    const imageFile = cleanData.image;
+    delete cleanData.image;
+    delete cleanData.existing_image;
+    delete cleanData.remove_image;
+    
+    // Convert points to integer
+    if (cleanData.points !== undefined && cleanData.points !== null) {
+      cleanData.points = parseInt(cleanData.points, 10);
+    }
+    
+    // If there's an image file, use FormData
+    if (imageFile) {
+      const formData = new FormData();
+      formData.append('quiz_id', quizId);
+      
+      // Append all other fields
+      Object.entries(cleanData).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        } else if (value !== null && value !== undefined) {
+          formData.append(key, value);
+        }
+      });
+      
+      // Append the image file
+      formData.append('image', imageFile);
+      
+      return axiosInstance.post("/quiz/questions", formData);
+    }
+    
+    // Normal JSON request without image
+    return axiosInstance.post("/quiz/questions", {
       quiz_id: quizId,
-      ...questionData,
-    }),
+      ...cleanData,
+    });
+  },
 
   /**
    * Get all questions for a quiz
@@ -108,20 +142,57 @@ export const quizAPI = {
    * @param {Object} updateData - Fields to update
    * @returns {Promise} Updated question data
    */
-  updateQuestion: (questionId, updateData) =>
-    axiosInstance.put("/quiz/update/questions", updateData, { params: { question_id: questionId } }),
+  updateQuestion: (questionId, updateData) => {
+    // Handle image file if present
+    const cleanData = { ...updateData };
+    const imageFile = cleanData.image;
+    delete cleanData.image;
+    delete cleanData.existing_image;
+    delete cleanData.remove_image;
+    
+    // Convert points to integer if present
+    if (cleanData.points !== undefined && cleanData.points !== null) {
+      cleanData.points = parseInt(cleanData.points, 10);
+    }
+    
+    // If there's an image file or explicit remove_image flag, use FormData
+    if (imageFile || updateData.remove_image) {
+      const formData = new FormData();
+      
+      // Append all fields
+      Object.entries(cleanData).forEach(([key, value]) => {
+        if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        } else if (value !== null && value !== undefined) {
+          formData.append(key, value);
+        }
+      });
+      
+      // Append the image file if present
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+      
+      // Append remove_image flag if true
+      if (updateData.remove_image) {
+        formData.append('remove_image', 'true');
+      }
+      
+      return axiosInstance.put("/quiz/update/questions", formData, { params: { question_id: questionId } });
+    }
+    
+    // Normal JSON request without file operations
+    return axiosInstance.put("/quiz/update/questions", cleanData, { params: { question_id: questionId } });
+  },
 
   /**
    * Update question order (single or batch)
    * @param {string} quizId - Quiz ID
-   * @param {Array} orderData - Array of {question_id, new_order}
+   * @param {Array} orderData - Array of {question_id, question_order}
    * @returns {Promise} Updated questions
    */
   updateQuestionOrder: (quizId, orderData) =>
-    axiosInstance.put("/quiz/questions/order", {
-      quiz_id: quizId,
-      questions: orderData,
-    }),
+    axiosInstance.put("/quiz/questions/order", orderData),
 
   /**
    * Delete a question
@@ -141,8 +212,8 @@ export const quizAPI = {
    * @returns {Promise} Created attempt with attempt_id
    */
   startQuizAttempt: (quizId) =>
-    axiosInstance.post("/quiz/attempts", {
-      quiz_id: quizId,
+    axiosInstance.post("/quiz/attempts", null, {
+      params: { quiz_id: quizId },
     }),
 
   /**
@@ -152,7 +223,9 @@ export const quizAPI = {
    * @returns {Promise} Saved answer confirmation
    */
   saveAnswer: (attemptId, answerData) =>
-    axiosInstance.post(`/quiz/submit/answers/${attemptId}`, answerData),
+    axiosInstance.post("/quiz/submit/answers", answerData, {
+      params: { attempt_id: attemptId },
+    }),
 
   /**
    * Submit a quiz attempt
@@ -176,6 +249,14 @@ export const quizAPI = {
    */
   getQuizResults: (quizId) =>
     axiosInstance.get(`/quiz/${quizId}/results`),
+
+  /**
+   * Get detailed data for a specific quiz attempt
+   * @param {string} attemptId - Attempt ID
+   * @returns {Promise} Attempt, quiz, question answers, and statistics
+   */
+  getAttemptDetails: (attemptId) =>
+    axiosInstance.get(`/quiz/attempts/${attemptId}`),
 
   // ──────────────────────────────────────────────────────────────────────────
   // Grading Endpoints
@@ -208,7 +289,7 @@ export const quizAPI = {
    * @returns {Promise} Dashboard stats (total, published, draft, this month)
    */
   getTeacherDashboardStats: () =>
-    axiosInstance.get("/quiz/dashboard/teacher-stats"),
+    axiosInstance.get("/quiz/teacher/stats"),
 
   /**
    * Get quiz statistics (instructor view)
@@ -225,4 +306,20 @@ export const quizAPI = {
    */
   getQuestionAnalytics: (questionId) =>
     axiosInstance.get(`/quiz/questions/${questionId}/analytics`),
+
+  /**
+   * Get question statistics for manage questions page
+   * @param {string} quizId - Quiz ID
+   * @returns {Promise} Stats including total_questions, total_marks, auto_graded, manual_review
+   */
+  getQuizQuestionStats: (quizId) =>
+    axiosInstance.get(`/quiz/${quizId}/questions/stats`),
+
+  /**
+   * Get quiz results for teacher with all student attempts
+   * @param {string} quizId - Quiz ID
+   * @returns {Promise} Quiz details, analytics, and list of student attempts
+   */
+  getQuizResultsForTeacher: (quizId) =>
+    axiosInstance.get(`/quiz/${quizId}/teacher/results`),
 };

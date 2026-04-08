@@ -1,14 +1,42 @@
 import { useState } from 'react';
-import { FaChartBar, FaGraduationCap, FaUserGraduate, FaStar } from 'react-icons/fa';
+import { FaChartBar, FaGraduationCap, FaUserGraduate, FaStar, FaSpinner, FaFilePdf } from 'react-icons/fa';
 import Notification from '../../components/common/Notification';
-
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import StatCard from '../../components/common/StatCard';
 
 const AdminReports = () => {
   const [notification, setNotification] = useState(null);
+  const [generatingReport, setGeneratingReport] = useState(false);
+  const [exportingPDF, setExportingPDF] = useState(false);
 
   const showNotification = (message, type = 'info', duration = 5000) => {
     setNotification({ message, type, duration });
+  };
+
+  const handleGenerateReport = async () => {
+    setGeneratingReport(true);
+    try {
+      // TODO: Add API call to generate report
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      showNotification('Report generated successfully!', 'success');
+    } catch (error) {
+      showNotification('Failed to generate report: ' + error.message, 'error');
+    } finally {
+      setGeneratingReport(false);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    setExportingPDF(true);
+    try {
+      // TODO: Add API call to export PDF
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      showNotification('Report exported to PDF successfully!', 'success');
+    } catch (error) {
+      showNotification('Failed to export PDF: ' + error.message, 'error');
+    } finally {
+      setExportingPDF(false);
+    }
   };
 
   const [reportType, setReportType] = useState('overview');
@@ -128,8 +156,22 @@ const AdminReports = () => {
             </div>
           </div>
           <div className="flex space-x-3">
-            <button className="btn-outline px-4 py-2">📊 Generate Report</button>
-            <button className="btn-primary px-4 py-2">📥 Export PDF</button>
+            <ButtonWithLoader
+              label="📊 Generate Report"
+              loadingLabel="Generating..."
+              isLoading={generatingReport}
+              onClick={handleGenerateReport}
+              icon={<FaChartBar />}
+              variant="outline"
+            />
+            <ButtonWithLoader
+              label="📥 Export PDF"
+              loadingLabel="Exporting..."
+              isLoading={exportingPDF}
+              onClick={handleExportPDF}
+              icon={<FaFilePdf />}
+              variant="primary"
+            />
           </div>
         </div>
       </div>

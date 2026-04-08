@@ -13,7 +13,6 @@ const QuizResultsDashboard = () => {
   const [quiz, setQuiz] = useState(null);
   const [attempts, setAttempts] = useState([]);
   const [analytics, setAnalytics] = useState(null);
-  const [quizStats, setQuizStats] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [loading, setLoading] = useState(false);
@@ -23,73 +22,6 @@ const QuizResultsDashboard = () => {
   const showNotification = (message, type = 'info', duration = 5000) => {
     setNotification({ message, type, duration });
   };
-
-  // Dummy data for StatCard
-  const dummyStats = {
-    avg_score: 72.5,
-    highest_score: 95,
-    lowest_score: 35,
-    completion_rate: 88
-  };
-
-  // Dummy data for DataTable
-  const dummyAttempts = [
-    {
-      id: 1,
-      student_name: 'John Doe',
-      student_id: 'STU001',
-      student_email: 'john@example.com',
-      score: 85,
-      max_score: 100,
-      attempt_number: 1,
-      time_taken: 2400,
-      submitted_at: '2024-03-15T10:30:00',
-    },
-    {
-      id: 2,
-      student_name: 'Jane Smith',
-      student_id: 'STU002',
-      student_email: 'jane@example.com',
-      score: 92,
-      max_score: 100,
-      attempt_number: 1,
-      time_taken: 1800,
-      submitted_at: '2024-03-15T11:15:00',
-    },
-    {
-      id: 3,
-      student_name: 'Mike Johnson',
-      student_id: 'STU003',
-      student_email: 'mike@example.com',
-      score: 65,
-      max_score: 100,
-      attempt_number: 2,
-      time_taken: 3200,
-      submitted_at: '2024-03-15T12:00:00',
-    },
-    {
-      id: 4,
-      student_name: 'Sarah Wilson',
-      student_id: 'STU004',
-      student_email: 'sarah@example.com',
-      score: 78,
-      max_score: 100,
-      attempt_number: 1,
-      time_taken: 2100,
-      submitted_at: '2024-03-15T13:45:00',
-    },
-    {
-      id: 5,
-      student_name: 'Tom Brown',
-      student_id: 'STU005',
-      student_email: 'tom@example.com',
-      score: 88,
-      max_score: 100,
-      attempt_number: 1,
-      time_taken: 1950,
-      submitted_at: '2024-03-15T14:20:00',
-    },
-  ];
 
   // StatCard metrics configuration
   const statCardMetricsConfig = [
@@ -167,7 +99,7 @@ const QuizResultsDashboard = () => {
       key: 'percentage',
       label: 'Percentage',
       render: (_, row) => {
-        const percentage = Math.round((row.score / row.max_score) * 100);
+        const percentage = Math.round(row.percentage || 0);
         return (
           <span className={`text-lg font-bold ${percentage >= 60 ? 'text-green-600' : 'text-red-600'}`}>
             {percentage}%
@@ -178,12 +110,16 @@ const QuizResultsDashboard = () => {
     {
       key: 'time_taken',
       label: 'Time Taken',
-      render: (_, row) => (
-        <div className="flex items-center gap-2 text-sm text-gray-900">
-          <FaClock className="text-gray-400" />
-          {Math.floor(row.time_taken / 60)}m {row.time_taken % 60}s
-        </div>
-      ),
+      render: (_, row) => {
+        const minutes = Math.floor(row.time_taken / 60);
+        const seconds = row.time_taken % 60;
+        return (
+          <div className="flex items-center gap-2 text-sm text-gray-900">
+            <FaClock className="text-gray-400" />
+            {minutes}m {seconds}s
+          </div>
+        );
+      },
     },
     {
       key: 'submitted_at',
@@ -210,20 +146,15 @@ const QuizResultsDashboard = () => {
       setLoading(true);
       setStatsLoading(true);
       try {
-        // Get quiz details
-        const quizDetail = await quizAPI.getQuizDetails(quizId);
-        setQuiz(quizDetail.data?.data || {});
-
-        // Get quiz results (student attempts and basic analytics)
-        const resultsData = await quizAPI.getQuizResults(quizId);
-        const resultsInfo = resultsData.data?.data || {};
-        setAttempts(resultsInfo.attempts || []);
-        setAnalytics(resultsInfo.analytics || {});
-
-        // Get detailed quiz statistics (4 key metrics)
-        const statsData = await quizAPI.getQuizStatistics(quizId);
-        setQuizStats(statsData.data?.data || null);
+        // Get quiz results with attempts and analytics from the new endpoint
+        const resultsResponse = await quizAPI.getQuizResultsForTeacher(quizId);
+        const resultsData = resultsResponse.data?.data || {};
+        
+        setQuiz(resultsData.quiz || {});
+        setAttempts(resultsData.attempts || []);
+        setAnalytics(resultsData.analytics || {});
       } catch (err) {
+        console.error('Error fetching quiz results:', err);
         showNotification('Failed to load quiz results', 'error');
       } finally {
         setLoading(false);
@@ -231,7 +162,9 @@ const QuizResultsDashboard = () => {
       }
     };
 
-    fetchResults();
+    if (quizId) {
+      fetchResults();
+    }
   }, [quizId]);
 
   const handleExportResults = () => {
@@ -242,11 +175,11 @@ const QuizResultsDashboard = () => {
         attempt.student_name || 'N/A',
         attempt.student_id || 'N/A',
         attempt.score || 0,
-        attempt.max_score || quiz?.total_marks || 100,
-        Math.round((attempt.score / (attempt.max_score || quiz?.total_marks || 100)) * 100),
-        (attempt.score / (attempt.max_score || quiz?.total_marks || 100)) * 100 >= (quiz?.passing_score || 60) ? 'Passed' : 'Failed',
-        attempt.attempts || 1,
-        attempt.completed_at || 'N/A',
+        attempt.max_score || (quiz?.total_marks || 100),
+        Math.round(attempt.percentage || 0),
+        attempt.passed ? 'Passed' : 'Failed',
+        attempt.attempt_number || 1,
+        attempt.submitted_at || 'N/A',
       ]);
 
       const csvContent = [
@@ -265,6 +198,7 @@ const QuizResultsDashboard = () => {
 
       showNotification('Results exported successfully!', 'success');
     } catch (err) {
+      console.error('Export error:', err);
       showNotification('Failed to export results', 'error');
     }
   };
@@ -273,23 +207,9 @@ const QuizResultsDashboard = () => {
     navigate(`/teacher/quizzes/${quizId}/attempt/${attemptId}`);
   };
 
-  const getStatusBadge = (attempt) => {
-    const maxScore = attempt.max_score || quiz?.total_marks || 100;
-    const passingScore = quiz?.passing_score || 60;
-    const percentage = (attempt.score / maxScore) * 100;
-    
-    if (percentage >= passingScore) {
-      return <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded">Passed</span>;
-    }
-    return <span className="px-3 py-1 bg-red-100 text-red-700 text-sm font-semibold rounded">Failed</span>;
-  };
-
   const filteredAttempts = attempts.filter(attempt => {
     const matchesSearch = (attempt.student_name || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const maxScore = attempt.max_score || quiz?.total_marks || 100;
-    const passingScore = quiz?.passing_score || 60;
-    const percentage = (attempt.score / maxScore) * 100;
-    const passed = percentage >= passingScore;
+    const passed = attempt.passed || false;
     
     if (filterStatus === 'passed') return matchesSearch && passed;
     if (filterStatus === 'failed') return matchesSearch && !passed;
@@ -374,28 +294,31 @@ const QuizResultsDashboard = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Quiz Results</h1>
-            <p className="text-gray-600">{quiz?.title}</p>
+            <p className="text-gray-600">{quiz?.title || 'Loading...'}</p>
           </div>
           
           <button 
             onClick={handleExportResults}
             className="btn-primary px-6 flex items-center gap-2"
+            disabled={attempts.length === 0}
           >
             <FaDownload /> Export Results
           </button>
         </div>
       </div>
 
-      {/* Quiz Statistics - 4 Key Metrics */}
-      <div className="mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Quiz Performance Metrics</h2>
-        <StatCard stats={dummyStats} metricsConfig={statCardMetricsConfig} loading={statsLoading} />
-      </div>
+      {/* Quiz Performance Metrics */}
+      {analytics && Object.keys(analytics).length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Quiz Performance Metrics</h2>
+          <StatCard stats={analytics} metricsConfig={statCardMetricsConfig} loading={statsLoading} />
+        </div>
+      )}
 
       {/* Results Table */}
       <div className="card">
         <DataTable
-          data={dummyAttempts}
+          data={filteredAttempts}
           columns={dataTableColumns}
           config={{
             itemsPerPage: 10,
@@ -408,145 +331,14 @@ const QuizResultsDashboard = () => {
         />
       </div>
 
-      {/* Original Results Table - Hidden */}
-      <div className="card overflow-hidden hidden">
-        {filteredAttempts.length === 0 ? (
-          <div className="text-center py-12">
-            <FaChartBar className="mx-auto text-gray-400 text-5xl mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No Results Found</h3>
-            <p className="text-gray-600">
-              {searchTerm ? 'Try adjusting your search' : 'No students have taken this quiz yet'}
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Student
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Attempt
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Score
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Percentage
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Time Taken
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Submitted
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredAttempts.map((attempt) => {
-                  const percentage = Math.round((attempt.score / quiz.total_marks) * 100);
-                  const passed = percentage >= quiz.passing_score;
-                  
-                  return (
-                    <tr key={attempt.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                            <FaUser className="text-primary-600" />
-                          </div>
-                          <div className="ml-3">
-                            <div className="font-medium text-gray-900">{attempt.student_name}</div>
-                            <div className="text-sm text-gray-500">{attempt.student_email}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm text-gray-900">#{attempt.attempt_number}</span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className="text-sm font-medium text-gray-900">
-                          {attempt.score} / {quiz.total_marks}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`text-lg font-bold ${
-                          passed ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {percentage}%
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(attempt)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2 text-sm text-gray-900">
-                          <FaClock className="text-gray-400" />
-                          {Math.floor(attempt.time_taken / 60)}m {attempt.time_taken % 60}s
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(attempt.submitted_at).toLocaleDateString()}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
-                        <button
-                          onClick={() => handleViewAttempt(attempt.id)}
-                          className="text-primary-600 hover:text-primary-800 font-medium flex items-center gap-1"
-                        >
-                          <FaEye /> View
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
-
-      {/* Question Statistics */}
-      {analytics?.question_statistics && (
-        <div className="mt-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-4">Question Statistics</h2>
-          <div className="space-y-4">
-            {analytics.question_statistics.map((stat, index) => (
-              <div key={index} className="card">
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      Q{index + 1}. {stat.question_text}
-                    </h3>
-                    <div className="flex gap-4 text-sm text-gray-600">
-                      <span>Correct: {stat.correct_count}/{stat.total_attempts}</span>
-                      <span>Accuracy: {Math.round((stat.correct_count / stat.total_attempts) * 100)}%</span>
-                      <span>Avg Score: {stat.average_score}/{stat.max_marks}</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Progress Bar */}
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div 
-                    className={`h-3 rounded-full ${
-                      (stat.correct_count / stat.total_attempts) >= 0.7
-                        ? 'bg-green-500'
-                        : (stat.correct_count / stat.total_attempts) >= 0.5
-                        ? 'bg-yellow-500'
-                        : 'bg-red-500'
-                    }`}
-                    style={{ width: `${(stat.correct_count / stat.total_attempts) * 100}%` }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* Empty State */}
+      {attempts.length === 0 && !loading && (
+        <div className="card text-center py-12">
+          <FaChartBar className="mx-auto text-gray-400 text-5xl mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Results Found</h3>
+          <p className="text-gray-600">
+            No students have taken this quiz yet
+          </p>
         </div>
       )}
     </div>

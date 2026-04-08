@@ -6,6 +6,7 @@ import { BiLoader } from 'react-icons/bi';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import { teacherAPI } from '../../api/teacher';
 
 const AdminTeachers = () => {
@@ -19,7 +20,16 @@ const AdminTeachers = () => {
   const [modalType, setModalType] = useState('');
   const [selectedTeacher, setSelectedTeacher] = useState(null);
   const [editFormData, setEditFormData] = useState({});
-  const [actionLoading, setActionLoading] = useState(false);
+  
+  // Individual loading states for each action
+  const [approveLoading, setApproveLoading] = useState(false);
+  const [rejectLoading, setRejectLoading] = useState(false);
+  const [suspendLoading, setSuspendLoading] = useState(false);
+  const [reactivateLoading, setReactivateLoading] = useState(false);
+  const [createLoading, setCreateLoading] = useState(false);
+  const [editLoading, setEditLoading] = useState(false);
+  const [resetPasswordLoading, setResetPasswordLoading] = useState(false);
+  
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -41,7 +51,7 @@ const AdminTeachers = () => {
     first_name: '',
     last_name: '',
     email: '',
-    contact_number: '',
+    phone: '',
     qualifications: '',
     subject_expertise: '',
     years_of_experience: '',
@@ -88,7 +98,7 @@ const AdminTeachers = () => {
         first_name: teacher.first_name,
         last_name: teacher.last_name,
         email: teacher.email,
-        contact_number: teacher.contact_number,
+        phone: teacher.phone,
         qualifications: teacher.qualifications,
         subject_expertise: teacher.subject_expertise,
         years_of_experience: teacher.years_of_experience,
@@ -110,7 +120,7 @@ const AdminTeachers = () => {
   };
 
   const handleApprove = async () => {
-    setActionLoading(true);
+    setApproveLoading(true);
     setError('');
     setSuccess('');
     
@@ -127,7 +137,7 @@ const AdminTeachers = () => {
       setError(err.response?.data?.message || 'Failed to approve teacher');
       showNotification(err.response?.data?.message || 'Failed to approve teacher', 'error');
     } finally {
-      setActionLoading(false);
+      setApproveLoading(false);
     }
   };
 
@@ -138,7 +148,7 @@ const AdminTeachers = () => {
       return;
     }
     
-    setActionLoading(true);
+    setRejectLoading(true);
     setError('');
     setSuccess('');
     
@@ -162,7 +172,7 @@ const AdminTeachers = () => {
       setError(err.response?.data?.message || 'Failed to reject teacher');
       showNotification(err.response?.data?.message || 'Failed to reject teacher', 'error');
     } finally {
-      setActionLoading(false);
+      setRejectLoading(false);
     }
   };
 
@@ -173,7 +183,7 @@ const AdminTeachers = () => {
       return;
     }
     
-    setActionLoading(true);
+    setSuspendLoading(true);
     setError('');
     setSuccess('');
     
@@ -197,12 +207,12 @@ const AdminTeachers = () => {
       setError(err.response?.data?.message || 'Failed to suspend teacher');
       showNotification(err.response?.data?.message || 'Failed to suspend teacher', 'error');
     } finally {
-      setActionLoading(false);
+      setSuspendLoading(false);
     }
   };
 
   const handleReactivate = async () => {
-    setActionLoading(true);
+    setReactivateLoading(true);
     setError('');
     setSuccess('');
     
@@ -220,29 +230,35 @@ const AdminTeachers = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reactivate teacher');
     } finally {
-      setActionLoading(false);
+      setReactivateLoading(false);
     }
   };
 
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     
-    setActionLoading(true);
+    setEditLoading(true);
     setError('');
     setSuccess('');
     
     try {
-      await teacherAPI.editTeacherDetails(selectedTeacher.id, {
-        first_name: editFormData.first_name,
-        last_name: editFormData.last_name,
-        phone: editFormData.contact_number,
-        date_of_birth: editFormData.date_of_birth,
-        subject_expertise: editFormData.subject_expertise,
-        years_of_experience: editFormData.years_of_experience,
-        qualifications: editFormData.qualifications,
-        professional_bio: editFormData.professional_bio,
-        address: editFormData.address,
-      });
+      // Create FormData to handle file upload
+      const formData = new FormData();
+      formData.append('first_name', editFormData.first_name);
+      formData.append('last_name', editFormData.last_name);
+      formData.append('phone', editFormData.phone);
+      formData.append('subject_expertise', editFormData.subject_expertise);
+      formData.append('years_of_experience', editFormData.years_of_experience);
+      formData.append('qualifications', editFormData.qualifications);
+      formData.append('professional_bio', editFormData.professional_bio);
+      formData.append('address', editFormData.address);
+      
+      // Add profile picture only if a new one was selected
+      if (editFormData.profile_picture) {
+        formData.append('profile_picture', editFormData.profile_picture);
+      }
+      
+      await teacherAPI.editTeacherDetails(selectedTeacher.id, formData);
       
       // Update local state
       setTeachers(teachers.map(t => 
@@ -256,12 +272,12 @@ const AdminTeachers = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to update teacher profile');
     } finally {
-      setActionLoading(false);
+      setEditLoading(false);
     }
   };
 
   const handleResetPassword = async () => {
-    setActionLoading(true);
+    setResetPasswordLoading(true);
     setError('');
     setSuccess('');
     
@@ -277,7 +293,7 @@ const AdminTeachers = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to reset password');
     } finally {
-      setActionLoading(false);
+      setResetPasswordLoading(false);
     }
   };
 
@@ -286,7 +302,7 @@ const AdminTeachers = () => {
       first_name: selectedTeacher.first_name || '',
       last_name: selectedTeacher.last_name || '',
       email: selectedTeacher.email || '',
-      contact_number: selectedTeacher.contact_number || '',
+      phone: selectedTeacher.phone || '',
       qualifications: selectedTeacher.qualifications || '',
       subject_expertise: selectedTeacher.subject_expertise || '',
       years_of_experience: selectedTeacher.years_of_experience || '',
@@ -306,23 +322,32 @@ const AdminTeachers = () => {
       return;
     }
     
-    setActionLoading(true);
+    setCreateLoading(true);
     setError('');
     setSuccess('');
     
     try {
-      const response = await teacherAPI.createTeacher({
-        first_name: createFormData.first_name,
-        last_name: createFormData.last_name,
-        email: createFormData.email,
-        phone: createFormData.contact_number,
-        date_of_birth: createFormData.date_of_birth || undefined,
-        subject_expertise: createFormData.subject_expertise,
-        years_of_experience: createFormData.years_of_experience,
-        qualifications: createFormData.qualifications,
-        professional_bio: createFormData.professional_bio,
-        address: createFormData.address,
-      });
+      // Create FormData to handle file upload
+      const formData = new FormData();
+      formData.append('first_name', createFormData.first_name);
+      formData.append('last_name', createFormData.last_name);
+      formData.append('email', createFormData.email);
+      formData.append('phone', createFormData.phone);
+      if (createFormData.date_of_birth) {
+        formData.append('date_of_birth', createFormData.date_of_birth);
+      }
+      formData.append('subject_expertise', createFormData.subject_expertise);
+      formData.append('years_of_experience', createFormData.years_of_experience);
+      formData.append('qualifications', createFormData.qualifications);
+      formData.append('professional_bio', createFormData.professional_bio);
+      formData.append('address', createFormData.address);
+      
+      // Add profile picture if provided
+      if (createFormData.profile_picture) {
+        formData.append('profile_picture', createFormData.profile_picture);
+      }
+      
+      const response = await teacherAPI.createTeacher(formData);
       
       // Add new teacher to list
       setTeachers([...teachers, response.data]);
@@ -345,7 +370,7 @@ const AdminTeachers = () => {
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to create teacher');
     } finally {
-      setActionLoading(false);
+      setCreateLoading(false);
     }
   };
 
@@ -578,7 +603,7 @@ const AdminTeachers = () => {
                     setSelectedTeacher(teacher);
                     handleResetPassword();
                   }}
-                  disabled={actionLoading}
+                  disabled={resetPasswordLoading}
                   className="px-2 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
                   title="Reset password"
                 >
@@ -603,7 +628,7 @@ const AdminTeachers = () => {
                       setSelectedTeacher(teacher);
                       handleReactivate();
                     }}
-                    disabled={actionLoading}
+                    disabled={reactivateLoading}
                     className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
                   >
                     <FaCheck /> Activate
@@ -617,7 +642,7 @@ const AdminTeachers = () => {
                         setSelectedTeacher(teacher);
                         handleApprove();
                       }}
-                      disabled={actionLoading}
+                      disabled={approveLoading}
                       className="px-2 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-xs flex items-center gap-1 transition disabled:opacity-50 whitespace-nowrap"
                     >
                       <FaCheck /> Approve
@@ -709,7 +734,7 @@ const AdminTeachers = () => {
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Phone Number</label>
-                    <p className="text-gray-900 font-medium">{selectedTeacher.contact_number || 'N/A'}</p>
+                    <p className="text-gray-900 font-medium">{selectedTeacher.phone || 'N/A'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-500">Years of Experience</label>
@@ -742,62 +767,70 @@ const AdminTeachers = () => {
               <div className="flex gap-3 pt-4 border-t flex-wrap">
                 {selectedTeacher.account_status.is_active === false && selectedTeacher.account_status.is_banned === false && (
                   <>
-                    <button 
+                    <ButtonWithLoader
+                      label="Approve Teacher"
+                      loadingLabel="Approving..."
+                      isLoading={approveLoading}
                       onClick={handleApprove}
-                      disabled={actionLoading}
-                      className="flex-1 btn-primary flex items-center justify-center gap-2"
-                    >
-                      <FaCheck /> Approve Teacher
-                    </button>
-                    <button 
+                      icon={<FaCheck />}
+                      variant="success"
+                      fullWidth
+                    />
+                    <ButtonWithLoader
+                      label="Reject"
+                      loadingLabel="Processing..."
+                      isLoading={rejectLoading}
                       onClick={() => setShowRejectModal(true)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaTimes /> Reject
-                    </button>
+                      icon={<FaTimes />}
+                      variant="danger"
+                      fullWidth
+                    />
                   </>
                 )}
                 
                 {selectedTeacher.account_status.is_active === true && selectedTeacher.account_status.is_banned === false && (
                   <>
-                    <button 
+                    <ButtonWithLoader
+                      label="Suspend"
+                      loadingLabel="Suspending..."
+                      isLoading={suspendLoading}
                       onClick={() => setShowSuspendModal(true)}
-                      disabled={actionLoading}
-                      className="flex-1 bg-orange-600 hover:bg-orange-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaBan /> Suspend
-                    </button>
-                    <button 
+                      icon={<FaBan />}
+                      variant="warning"
+                      fullWidth
+                    />
+                    <ButtonWithLoader
+                      label="Edit Profile"
+                      loadingLabel="Preparing..."
+                      isLoading={editLoading}
                       onClick={openEditModal}
-                      disabled={actionLoading}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaEdit /> Edit Profile
-                    </button>
-                    <button 
+                      icon={<FaEdit />}
+                      variant="info"
+                      fullWidth
+                    />
+                    <ButtonWithLoader
+                      label="Reset Password"
+                      loadingLabel="Resetting..."
+                      isLoading={resetPasswordLoading}
                       onClick={handleResetPassword}
-                      disabled={actionLoading}
-                      className="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                    >
-                      <FaKey /> Reset Password
-                    </button>
+                      icon={<FaKey />}
+                      variant="secondary"
+                      fullWidth
+                    />
                   </>
                 )}
                 
                 {selectedTeacher.account_status.is_banned === true && selectedTeacher.account_status.is_active === false && (
-                  <button 
+                  <ButtonWithLoader
+                    label="Reactivate Teacher"
+                    loadingLabel="Reactivating..."
+                    isLoading={reactivateLoading}
                     onClick={handleReactivate}
-                    disabled={actionLoading}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg flex items-center justify-center gap-2"
-                  >
-                    <FaUndo /> Reactivate Teacher
-                  </button>
+                    icon={<FaUndo />}
+                    variant="success"
+                    fullWidth
+                  />
                 )}
-
-                <button onClick={closeModal} className="px-6 btn-outline py-2">
-                  Close
-                </button>
               </div>
             </div>
           </div>
@@ -816,6 +849,44 @@ const AdminTeachers = () => {
             </div>
 
             <form onSubmit={handleUpdateProfile} className="space-y-4">
+              {/* Profile Picture Upload */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-3">Profile Picture</label>
+                <div className="flex items-center gap-4">
+                  {editFormData.profile_picture_preview ? (
+                    <img 
+                      src={editFormData.profile_picture_preview} 
+                      alt="Preview"
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
+                  ) : selectedTeacher.profile_picture ? (
+                    <img 
+                      src={selectedTeacher.profile_picture} 
+                      alt="Current"
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
+                      <FaGraduationCap className="text-2xl text-gray-400" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files[0];
+                        if (file) {
+                          setEditFormData({...editFormData, profile_picture: file, profile_picture_preview: URL.createObjectURL(file)});
+                        }
+                      }}
+                      className="w-full"
+                    />
+                    <p className="text-xs text-gray-500 mt-1">Leave empty to keep current picture</p>
+                  </div>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
@@ -901,7 +972,7 @@ const AdminTeachers = () => {
                 </div>
               </div>
               <div className="flex space-x-3 pt-4">
-                <button type="submit" disabled={actionLoading} className="flex-1 btn-primary py-3">
+                <button type="submit" disabled={editLoading} className="flex-1 btn-primary py-3">
                   <FaSave className="inline mr-2" /> Save Changes
                 </button>
                 <button type="button" onClick={() => setShowEditModal(false)} className="px-6 btn-outline py-3">
@@ -937,13 +1008,14 @@ const AdminTeachers = () => {
               />
             </div>
             <div className="flex gap-3 mt-4">
-              <button
+              <ButtonWithLoader
+                label="Confirm Rejection"
+                loadingLabel="Rejecting..."
+                isLoading={rejectLoading}
                 onClick={handleReject}
-                disabled={actionLoading}
-                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-2 font-medium"
-              >
-                Confirm Rejection
-              </button>
+                variant="danger"
+                fullWidth
+              />
               <button 
                 onClick={() => setShowRejectModal(false)}
                 className="px-4 btn-outline py-2"
@@ -979,13 +1051,14 @@ const AdminTeachers = () => {
               />
             </div>
             <div className="flex gap-3 mt-4">
-              <button
+              <ButtonWithLoader
+                label="Confirm Suspension"
+                loadingLabel="Suspending..."
+                isLoading={suspendLoading}
                 onClick={handleSuspend}
-                disabled={actionLoading}
-                className="flex-1 bg-orange-600 hover:bg-orange-700 text-white rounded-lg py-2 font-medium"
-              >
-                Confirm Suspension
-              </button>
+                variant="warning"
+                fullWidth
+              />
               <button 
                 onClick={() => setShowSuspendModal(false)}
                 className="px-4 btn-outline py-2"
@@ -1187,11 +1260,11 @@ const AdminTeachers = () => {
               <div className="flex gap-3 pt-6">
                 <button
                   type="submit"
-                  disabled={actionLoading}
+                  disabled={createLoading}
                   className="flex-1 btn-primary py-3 flex items-center justify-center gap-2"
                 >
-                  {actionLoading ? <BiLoader className="animate-spin" /> : <FaSave />}
-                  {actionLoading ? 'Creating...' : 'Create Teacher'}
+                  {createLoading ? <BiLoader className="animate-spin" /> : <FaSave />}
+                  {createLoading ? 'Creating...' : 'Create Teacher'}
                 </button>
                 <button
                   type="button"

@@ -1,43 +1,44 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
-import { FaSearch, FaChevronLeft, FaChevronRight, FaFilter, FaTimes, FaBook, FaBookOpen, FaSpinner } from 'react-icons/fa';
-import CourseCard from '../../components/common/CourseCard';
+import { FaSearch, FaFilter, FaTimes, FaBook, FaBookOpen } from 'react-icons/fa';
 import { MdOutlineWorkspacePremium } from 'react-icons/md';
 import { GrCompliance } from 'react-icons/gr';
+import { useNavigate } from 'react-router-dom';
 import Notification from '../../components/common/Notification';
+import CourseCard from '../../components/common/CourseCard';
+import { courseAPI } from '../../api/course';
+import { useCart } from '../../hooks/useCart';
+import {
+  COURSE_SUBJECT_OPTIONS,
+  COURSE_GRADE_LEVEL_OPTIONS,
+  COURSE_TYPE_OPTIONS,
+} from '../../utils/courseOptions';
 
 const StudentCourses = () => {
-  // Dummy data
-  const dummyNewCourses = [
-    { id: 1, title: 'Advanced Python', teacher_name: 'Dr. John', price: 49.99, rating: 4.8, students: 245 },
-    { id: 2, title: 'Web Development 101', teacher_name: 'Mr. Davis', price: 39.99, rating: 4.6, students: 180 },
-  ];
-  
-  const dummyEnrolledCourses = [
-    { id: 1, title: 'JavaScript Basics', progress: 45, teacher_name: 'Jane Smith' },
-    { id: 2, title: 'React Fundamentals', progress: 65, teacher_name: 'John Doe' },
-  ];
-
-  const dummyCompletedCourses = [
-    { id: 1, title: 'HTML & CSS Basics', certificate: true, teacher_name: 'Tom Wilson' },
-  ];
-
-  const dummyGradeLevels = [{ id: 1, name: '10-12' }, { id: 2, name: '8-9' }];
-  const dummySubjects = [{ id: 1, name: 'Programming' }, { id: 2, name: 'Web Dev' }];
-  const dummyCategories = [{ id: 1, name: 'Technology' }, { id: 2, name: 'Business' }];
+  const navigate = useNavigate();
+  const { addToCart } = useCart();
+  const gradeLevels = COURSE_GRADE_LEVEL_OPTIONS.map((grade) => ({
+    id: grade.value,
+    name: grade.label,
+  }));
+  const subjects = COURSE_SUBJECT_OPTIONS.map((subject) => ({
+    id: subject.value,
+    name: subject.label,
+  }));
+  const courseTypes = COURSE_TYPE_OPTIONS.map((type) => ({
+    id: type.value,
+    name: type.label,
+  }));
 
   const [activeTab, setActiveTab] = useState('enrolled');
   const [searchQuery, setSearchQuery] = useState('');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(true);
-  const itemsPerPage = 9;
-  const [newCourses, setNewCourses] = useState(dummyNewCourses);
-  const [enrolledCourses, setEnrolledCourses] = useState(dummyEnrolledCourses);
-  const [completedCourses, setCompletedCourses] = useState(dummyCompletedCourses);
-  const [loading, setLoading] = useState(false);
+  const [newCourses, setNewCourses] = useState([]);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [completedCourses, setCompletedCourses] = useState([]);
+  const [loadingDiscover, setLoadingDiscover] = useState(false);
+  const [loadingEnrollments, setLoadingEnrollments] = useState(false);
   const [error, setError] = useState(null);
-  const [gradeLevels, setGradeLevels] = useState(dummyGradeLevels);
-  const [subjects, setSubjects] = useState(dummySubjects);
-  const [categories, setCategories] = useState(dummyCategories);
   const [filters, setFilters] = useState({
     grades: [],
     subjects: [],
@@ -47,29 +48,173 @@ const StudentCourses = () => {
   });
 
   const [notification, setNotification] = useState(null);
+  const loading = loadingDiscover || loadingEnrollments;
 
-  const showNotification = (message, type = 'info', duration = 5000) => {
-    setNotification({ message, type, duration });
-  };
+  const subjectLabelMap = useMemo(
+    () => COURSE_SUBJECT_OPTIONS.reduce((acc, option) => ({ ...acc, [option.value]: option.label }), {}),
+    []
+  );
+
+  const mapCourse = useCallback(
+    (course, extra = {}) => {
+      const rawRating = course?.average_rating ?? course?.rating;
+      const parsedRating = Number.parseFloat(rawRating);
+      const progress = Number(course?.progress || 0);
+      const isCompleted =
+        String(course?.status || '').toLowerCase() === 'completed' ||
+        Boolean(course?.completed_at) ||
+        progress >= 100;
+
+      return {
+        ...course,
+        ...extra,
+        id: course?.course_id || course?.id,
+        title: course?.title || 'Untitled Course',
+        teacher_name: course?.teacher_name || course?.instructor_name || 'N/A',
+        thumbnail: course?.thumbnail || course?.thumbnail_url || null,
+        subject: subjectLabelMap[course?.subject] || course?.subject || 'N/A',
+        subject_value: course?.subject,
+        grade: course?.grade_level || '',
+        type: course?.course_type || '',
+        price: Number(course?.price || 0),
+        rating: Number.isFinite(parsedRating) ? parsedRating : null,
+        students: Number(course?.total_enrollments || 0),
+        progress,
+        certificate: extra.certificate ?? isCompleted,
+        description: course?.description || '',
+      };
+    },
+    [subjectLabelMap]
+  );
+
+  const normalizeEnrollmentStatus = useCallback((course) => {
+    const rawStatus = String(course?.status || '').toLowerCase();
+    const progress = Number(course?.progress || 0);
+
+    if (rawStatus === 'dropped') return 'dropped';
+    if (rawStatus === 'completed' || Boolean(course?.completed_at) || progress >= 100) {
+      return 'completed';
+    }
+    if (rawStatus === 'in_progress' || progress > 0) {
+      return 'in_progress';
+    }
+    return 'enrolled';
+  }, []);
 
   useEffect(() => {
-    // Dummy data already loaded
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const loadNewCourses = useCallback(async () => {
+    const params = {
+      page: 1,
+      limit: 200,
+      ...(debouncedSearchQuery ? { q: debouncedSearchQuery } : {}),
+      ...(filters.subjects.length === 1 ? { subject: filters.subjects[0] } : {}),
+      ...(filters.grades.length === 1 ? { grade_level: filters.grades[0] } : {}),
+      ...(filters.types.length === 1 ? { course_type: filters.types[0] } : {}),
+    };
+
+    const response = await courseAPI.getCourses(params);
+    const rows = response?.data?.data || [];
+    setNewCourses(Array.isArray(rows) ? rows.map((row) => mapCourse(row)) : []);
+  }, [debouncedSearchQuery, filters.subjects, filters.grades, filters.types, mapCourse]);
+
+  const loadMyCourses = useCallback(async () => {
+    const pageSize = 100;
+    let page = 1;
+    let totalPages = 1;
+    const rows = [];
+
+    do {
+      const response = await courseAPI.getMyCourses({ page, limit: pageSize });
+      const pageRows = response?.data?.data || [];
+      const pagination = response?.data?.pagination || {};
+      totalPages = Number(pagination.total_pages || 1);
+
+      if (Array.isArray(pageRows)) {
+        rows.push(...pageRows);
+      }
+
+      page += 1;
+    } while (page <= totalPages && page <= 20);
+
+    const normalizedRows = rows.map((row) => ({
+      ...row,
+      status: normalizeEnrollmentStatus(row),
+    }));
+
+    const allEnrolled = normalizedRows.filter(
+      (row) => row.status === 'enrolled' || row.status === 'in_progress'
+    );
+    const completedRows = normalizedRows.filter((row) => row.status === 'completed');
+
+    setEnrolledCourses(Array.isArray(allEnrolled) ? allEnrolled.map((row) => mapCourse(row)) : []);
+    setCompletedCourses(
+      Array.isArray(completedRows)
+        ? completedRows.map((row) =>
+            mapCourse(row, {
+              certificate: true,
+            })
+          )
+        : []
+    );
+  }, [mapCourse, normalizeEnrollmentStatus]);
+
+  useEffect(() => {
+    const loadDiscoverCourses = async () => {
+      try {
+        setLoadingDiscover(true);
+        setError(null);
+        await loadNewCourses();
+      } catch (err) {
+        const message = err?.message || 'Failed to load courses';
+        setError(message);
+        setNotification({ message, type: 'error', duration: 5000 });
+      } finally {
+        setLoadingDiscover(false);
+      }
+    };
+
+    loadDiscoverCourses();
+  }, [loadNewCourses]);
+
+  useEffect(() => {
+    const loadStudentEnrollments = async () => {
+      try {
+        setLoadingEnrollments(true);
+        setError(null);
+        await loadMyCourses();
+      } catch (err) {
+        const message = err?.message || 'Failed to load my courses';
+        setError(message);
+        setNotification({ message, type: 'error', duration: 5000 });
+      } finally {
+        setLoadingEnrollments(false);
+      }
+    };
+
+    loadStudentEnrollments();
+  }, [loadMyCourses]);
 
   // Filter Application Function
   const applyFilters = useCallback((coursesToFilter) => {
     return coursesToFilter.filter(course => {
       const matchesSearch = 
-        course.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        course.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         course.subject?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         course.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         false;
 
       const matchesGrade = filters.grades.length === 0 || (course.grade && filters.grades.includes(course.grade));
-      const matchesSubject = filters.subjects.length === 0 || (course.subject && filters.subjects.includes(course.subject));
+      const matchesSubject = filters.subjects.length === 0 || (course.subject_value && filters.subjects.includes(course.subject_value));
       const matchesType = filters.types.length === 0 || !course.type || filters.types.includes(course.type);
-      const matchesPrice = !course.price || (course.price >= filters.priceRange[0] && course.price <= filters.priceRange[1]);
-      const matchesRating = !course.rating || course.rating >= filters.rating;
+      const matchesPrice = course.price >= filters.priceRange[0] && course.price <= filters.priceRange[1];
+      const matchesRating = filters.rating === 0 || course.rating >= filters.rating;
 
       return matchesSearch && matchesGrade && matchesSubject && matchesType && matchesPrice && matchesRating;
     });
@@ -80,31 +225,61 @@ const StudentCourses = () => {
   const filteredEnrolledCourses = useMemo(() => applyFilters(enrolledCourses), [applyFilters, enrolledCourses]);
   const filteredCompletedCourses = useMemo(() => applyFilters(completedCourses), [applyFilters, completedCourses]);
 
-  // Pagination Logic
-  const getDisplayCourses = useCallback((courses) => {
-    const startIdx = (currentPage - 1) * itemsPerPage;
-    const endIdx = startIdx + itemsPerPage;
-    return courses.slice(startIdx, endIdx);
-  }, [currentPage]);
+  const enrolledCourseIds = useMemo(
+    () => new Set(enrolledCourses.map((course) => String(course.id)).filter(Boolean)),
+    [enrolledCourses]
+  );
 
-  const getTotalPages = (courses) => Math.ceil(courses.length / itemsPerPage);
-
-  const currentDisplayCourses = useMemo(() => {
-    if (activeTab === 'new') return getDisplayCourses(filteredNewCourses);
-    if (activeTab === 'enrolled') return getDisplayCourses(filteredEnrolledCourses);
-    return getDisplayCourses(filteredCompletedCourses);
-  }, [activeTab, filteredNewCourses, filteredEnrolledCourses, filteredCompletedCourses, getDisplayCourses]);
-
-  const totalPages = getTotalPages(
-    activeTab === 'new' ? filteredNewCourses :
-    activeTab === 'enrolled' ? filteredEnrolledCourses :
-    filteredCompletedCourses
+  const completedCourseIds = useMemo(
+    () => new Set(completedCourses.map((course) => String(course.id)).filter(Boolean)),
+    [completedCourses]
   );
 
   const currentFilteredCount = 
     activeTab === 'new' ? filteredNewCourses.length :
     activeTab === 'enrolled' ? filteredEnrolledCourses.length :
     filteredCompletedCourses.length;
+
+  const currentFilteredCourses =
+    activeTab === 'new'
+      ? filteredNewCourses
+      : activeTab === 'enrolled'
+      ? filteredEnrolledCourses
+      : filteredCompletedCourses;
+
+  // Event handlers for CourseCard buttons
+  const handleAddToCart = useCallback(async (course) => {
+    const result = await addToCart(course);
+    setNotification({
+      message: result.message || `${course.title} added to cart!`,
+      type: result.success ? 'success' : 'error',
+      duration: 3000,
+    });
+  }, [addToCart]);
+
+  const handleContinueLearning = useCallback((course) => {
+    navigate(`/student/course/${course.id}/learn`);
+  }, [navigate]);
+
+  const handleViewStats = useCallback((course) => {
+    navigate(`/student/course/${course.id}/stats`);
+  }, [navigate]);
+
+  const handleDownloadCertificate = useCallback((courseId) => {
+    // TODO: Implement certificate download API call
+    console.log('Downloading certificate for course:', courseId);
+    setNotification({ message: 'Downloading certificate...', type: 'success', duration: 3000 });
+  }, []);
+
+  const handleViewReport = useCallback((courseId) => {
+    navigate(`/student/course/${courseId}/report`);
+  }, [navigate]);
+
+  const getEmptyMessage = () => {
+    if (activeTab === 'new') return 'No courses match your filters';
+    if (activeTab === 'enrolled') return 'No enrolled courses. Start learning today!';
+    return 'No completed courses yet. Keep learning!';
+  };
 
   const handleFilterChange = (filterType, value) => {
     setFilters(prev => {
@@ -116,7 +291,6 @@ const StudentCourses = () => {
       }
       return updated;
     });
-    setCurrentPage(1);
   };
 
   const handleResetFilters = () => {
@@ -128,7 +302,6 @@ const StudentCourses = () => {
       rating: 0
     });
     setSearchQuery('');
-    setCurrentPage(1);
   };
 
   if (loading) {
@@ -225,10 +398,7 @@ const StudentCourses = () => {
               type="text"
               placeholder="Search courses by title, subject, or description..."
               value={searchQuery}
-              onChange={(e) => {
-                setSearchQuery(e.target.value);
-                setCurrentPage(1);
-              }}
+              onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-12 pr-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all bg-white"
             />
           </div>
@@ -239,7 +409,6 @@ const StudentCourses = () => {
           <button
             onClick={() => {
               setActiveTab('new');
-              setCurrentPage(1);
             }}
             className={`flex-1 px-4 py-3 font-semibold rounded-lg transition-all ${
               activeTab === 'new'
@@ -252,7 +421,6 @@ const StudentCourses = () => {
           <button
             onClick={() => {
               setActiveTab('enrolled');
-              setCurrentPage(1);
             }}
             className={`flex-1 px-4 py-3 font-semibold rounded-lg transition-all ${
               activeTab === 'enrolled'
@@ -265,7 +433,6 @@ const StudentCourses = () => {
           <button
             onClick={() => {
               setActiveTab('completed');
-              setCurrentPage(1);
             }}
             className={`flex-1 px-4 py-3 font-semibold rounded-lg transition-all ${
               activeTab === 'completed'
@@ -286,8 +453,13 @@ const StudentCourses = () => {
             <FaFilter className="text-blue-600" />
             {showFilters ? 'Hide Filters' : 'Show Filters'}
           </button>
-          {(filters.grades.length > 0 || filters.subjects.length > 0 || filters.types.length > 0 || 
-            filters.priceRange[0] > 0 || filters.priceRange[1] < 15000 || filters.rating > 0 || searchQuery) && (
+          {(filters.grades.length > 0 ||
+            filters.subjects.length > 0 ||
+            filters.types.length > 0 ||
+            filters.priceRange[0] > 0 ||
+            filters.priceRange[1] < 15000 ||
+            filters.rating > 0 ||
+            searchQuery) && (
             <button
               onClick={handleResetFilters}
               className="flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all font-semibold"
@@ -299,7 +471,7 @@ const StudentCourses = () => {
 
         {/* Filter Section */}
         {showFilters && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-8 p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-8 p-6 bg-white rounded-xl border border-slate-200 shadow-sm">
             {/* Grade Filter */}
             <div>
               <h6 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
@@ -311,8 +483,8 @@ const StudentCourses = () => {
                     <label key={grade.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
                       <input
                         type="checkbox"
-                        checked={filters.grades.includes(grade.name)}
-                        onChange={() => handleFilterChange('grades', grade.name)}
+                        checked={filters.grades.includes(grade.id)}
+                        onChange={() => handleFilterChange('grades', grade.id)}
                         className="w-4 h-4 text-blue-600 rounded"
                       />
                       <span className="text-slate-700">{grade.name}</span>
@@ -335,8 +507,8 @@ const StudentCourses = () => {
                     <label key={subject.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
                       <input
                         type="checkbox"
-                        checked={filters.subjects.includes(subject.name)}
-                        onChange={() => handleFilterChange('subjects', subject.name)}
+                        checked={filters.subjects.includes(subject.id)}
+                        onChange={() => handleFilterChange('subjects', subject.id)}
                         className="w-4 h-4 text-blue-600 rounded"
                       />
                       <span className="text-slate-700">{subject.name}</span>
@@ -348,26 +520,26 @@ const StudentCourses = () => {
               </div>
             </div>
 
-            {/* Category Filter */}
+            {/* Price Range Filter */}
             <div>
               <h6 className="font-bold text-slate-900 mb-3 flex items-center gap-2">
-                Category
+                 Course Type
               </h6>
               <div className="space-y-2 max-h-48 overflow-y-auto">
-                {categories.length > 0 ? (
-                  categories.map(category => (
-                    <label key={category.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
+                {courseTypes.length > 0 ? (
+                  courseTypes.map((type) => (
+                    <label key={type.id} className="flex items-center gap-2 cursor-pointer hover:bg-slate-50 p-2 rounded text-sm">
                       <input
                         type="checkbox"
-                        checked={filters.types.includes(category.name)}
-                        onChange={() => handleFilterChange('types', category.name)}
+                        checked={filters.types.includes(type.id)}
+                        onChange={() => handleFilterChange('types', type.id)}
                         className="w-4 h-4 text-blue-600 rounded"
                       />
-                      <span className="text-slate-700">{category.name}</span>
+                      <span className="text-slate-700">{type.name}</span>
                     </label>
                   ))
                 ) : (
-                  <p className="text-slate-500 text-sm">Loading categories...</p>
+                  <p className="text-slate-500 text-sm">Loading course types...</p>
                 )}
               </div>
             </div>
@@ -440,191 +612,61 @@ const StudentCourses = () => {
           </div>
         )}
 
-        {/* New Courses Tab */}
-        {activeTab === 'new' && (
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <MdOutlineWorkspacePremium /> New Courses Available
-            </h2>
-            {currentFilteredCount > 0 ? (
+        <div>
+          <h2 className="text-2xl font-bold text-slate-900 mb-2 flex items-center gap-2">
+            {activeTab === 'new' && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  {currentDisplayCourses.map((course) => (
-                    <CourseCard
-                      key={course.id}
-                      course={course}
-                      userType="student"
-                      courseStatus="new"
-                    />
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-4 mt-8">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                    >
-                      <FaChevronLeft />
-                    </button>
-                    <div className="flex gap-2">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 rounded-lg font-bold transition-all ${
-                            currentPage === page
-                              ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white'
-                              : 'bg-white border border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                    >
-                      <FaChevronRight />
-                    </button>
-                  </div>
-                )}
+                <MdOutlineWorkspacePremium /> New Courses Available
               </>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                <p className="text-slate-600 text-lg">No courses match your filters</p>
-              </div>
             )}
-          </div>
-        )}
-
-        {/* Enrolled Courses Tab */}
-        {activeTab === 'enrolled' && (
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <FaBookOpen /> Currently Enrolled Courses
-            </h2>
-            {currentFilteredCount > 0 ? (
+            {activeTab === 'enrolled' && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  {currentDisplayCourses.map((course) => (
-                    <CourseCard
-                      key={course.id}
-                      course={course}
-                      userType="student"
-                      courseStatus="enrolled"
-                    />
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-4 mt-8">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                    >
-                      <FaChevronLeft />
-                    </button>
-                    <div className="flex gap-2">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 rounded-lg font-bold transition-all ${
-                            currentPage === page
-                              ? 'bg-gradient-to-r from-green-500 to-green-600 text-white'
-                              : 'bg-white border border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                    >
-                      <FaChevronRight />
-                    </button>
-                  </div>
-                )}
+                <FaBookOpen /> Currently Enrolled Courses
               </>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                <p className="text-slate-600 text-lg">No enrolled courses. Start learning today!</p>
-              </div>
             )}
-          </div>
-        )}
-
-        {/* Completed Courses Tab */}
-        {activeTab === 'completed' && (
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <GrCompliance /> Completed Courses
-            </h2>
-            {filteredCompletedCourses.length > 0 ? (
+            {activeTab === 'completed' && (
               <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-                  {currentDisplayCourses.map((course) => (
-                    <CourseCard
-                      key={course.id}
-                      course={course}
-                      userType="student"
-                      courseStatus="completed"
-                    />
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                  <div className="flex items-center justify-center gap-4 mt-8">
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                    >
-                      <FaChevronLeft />
-                    </button>
-                    <div className="flex gap-2">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`w-10 h-10 rounded-lg font-bold transition-all ${
-                            currentPage === page
-                              ? 'bg-gradient-to-r from-purple-500 to-purple-600 text-white'
-                              : 'bg-white border border-slate-200 hover:bg-slate-50'
-                          }`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    </div>
-                    <button
-                      onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
-                      className="px-4 py-2 bg-white border border-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-50"
-                    >
-                      <FaChevronRight />
-                    </button>
-                  </div>
-                )}
+                <GrCompliance /> Completed Courses
               </>
-            ) : (
-              <div className="text-center py-12 bg-white rounded-2xl border border-slate-200">
-                <p className="text-slate-600 text-lg">No completed courses yet. Keep learning!</p>
-              </div>
             )}
-          </div>
-        )}
+          </h2>
+          <p className="text-slate-600 mb-6">Showing {currentFilteredCount} course(s)</p>
+
+          {currentFilteredCourses.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {currentFilteredCourses.map((course) => {
+                  const courseId = String(course.id);
+                  const derivedStatus = activeTab === 'new'
+                    ? completedCourseIds.has(courseId)
+                      ? 'completed'
+                      : enrolledCourseIds.has(courseId)
+                      ? 'enrolled'
+                      : 'new'
+                    : activeTab;
+
+                  return (
+                <CourseCard
+                  key={course.id}
+                  course={course}
+                  userType="student"
+                  courseStatus={derivedStatus}
+                  onAddToCart={handleAddToCart}
+                  onContinueLearning={handleContinueLearning}
+                  onViewStats={handleViewStats}
+                  onDownloadCertificate={handleDownloadCertificate}
+                  onViewReport={handleViewReport}
+                  loading={loading}
+                />
+                  );
+                })}
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center">
+              <FaBook className="mx-auto text-5xl text-slate-300 mb-4" />
+              <p className="text-slate-600 text-lg font-medium">{getEmptyMessage()}</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

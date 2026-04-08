@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { FaBook, FaCalendar,  FaChartBar, FaCheck, FaCheckCircle, FaFilePdf, FaTimes, FaHourglassHalf, FaEye } from 'react-icons/fa';
+import { FaBook, FaCalendar,  FaChartBar, FaCheck, FaCheckCircle, FaFilePdf, FaTimes, FaHourglassHalf, FaEye, FaSpinner, FaBan } from 'react-icons/fa';
 import Notification from '../../components/common/Notification';
-
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 
@@ -11,6 +11,7 @@ const AdminQuizzes = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const quizzes = [
     {
@@ -115,6 +116,69 @@ const AdminQuizzes = () => {
   const handleViewDetails = (quiz) => {
     setSelectedQuiz(quiz);
     setShowDetailsModal(true);
+  };
+
+  const handleApproveQuiz = async () => {
+    setActionLoading(true);
+    try {
+      // TODO: Add API call to approve quiz
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setNotification({
+        type: 'success',
+        message: 'Quiz approved successfully!'
+      });
+      setShowDetailsModal(false);
+      setSelectedQuiz(null);
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: 'Failed to approve quiz: ' + error.message
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRequestChanges = async () => {
+    setActionLoading(true);
+    try {
+      // TODO: Add API call to request changes
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setNotification({
+        type: 'warning',
+        message: 'Changes requested from teacher'
+      });
+      setShowDetailsModal(false);
+      setSelectedQuiz(null);
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: 'Failed to request changes: ' + error.message
+      });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSuspendQuiz = async () => {
+    setActionLoading(true);
+    try {
+      // TODO: Add API call to suspend quiz
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      setNotification({
+        type: 'warning',
+        message: 'Quiz suspended successfully'
+      });
+      setShowDetailsModal(false);
+      setSelectedQuiz(null);
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: 'Failed to suspend quiz: ' + error.message
+      });
+    } finally {
+      setActionLoading(false);
+    }
   };
 
   const filteredQuizzes = quizzes.filter((quiz) => {
@@ -345,19 +409,37 @@ const AdminQuizzes = () => {
               <div className="flex space-x-3 pt-4">
                 {selectedQuiz.status === 'pending' ? (
                   <>
-                    <button className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg py-3 font-medium">
-                      ✓ Approve Quiz
-                    </button>
-                    <button className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg py-3 font-medium">
-                      ✗ Request Changes
-                    </button>
+                    <ButtonWithLoader
+                      label="✓ Approve Quiz"
+                      loadingLabel="Approving..."
+                      isLoading={actionLoading}
+                      onClick={handleApproveQuiz}
+                      icon={<FaCheck />}
+                      variant="success"
+                      fullWidth
+                    />
+                    <ButtonWithLoader
+                      label="✗ Request Changes"
+                      loadingLabel="Processing..."
+                      isLoading={actionLoading}
+                      onClick={handleRequestChanges}
+                      icon={<FaBan />}
+                      variant="danger"
+                      fullWidth
+                    />
                   </>
                 ) : selectedQuiz.status === 'published' ? (
                   <>
                     <button className="flex-1 btn-primary">View All Questions</button>
-                    <button className="flex-1 bg-orange-600 hover:bg-orange-700 text-white rounded-lg py-3 font-medium">
-                      Suspend Quiz
-                    </button>
+                    <ButtonWithLoader
+                      label="Suspend Quiz"
+                      loadingLabel="Suspending..."
+                      isLoading={actionLoading}
+                      onClick={handleSuspendQuiz}
+                      icon={<FaBan />}
+                      variant="warning"
+                      fullWidth
+                    />
                   </>
                 ) : null}
                 <button onClick={() => setShowDetailsModal(false)} className="px-6 btn-outline">

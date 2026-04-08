@@ -109,6 +109,7 @@ export const ROUTES = {
   STUDENT_CERTIFICATES: '/student/certificates',
   STUDENT_PAYMENTS: '/student/payments',
   STUDENT_REWARDS: '/student/rewards',
+  STUDENT_NOTIFICATIONS: '/student/notifications',
   STUDENT_REWARDS_LEADERBOARD: '/student/rewards/leaderboard',
   STUDENT_PROFILE: '/student/profile',
   STUDENT_CART: '/student/cart',

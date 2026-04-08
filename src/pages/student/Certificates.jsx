@@ -3,10 +3,12 @@ import { useState, useMemo } from 'react';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
 import Notification from '../../components/common/Notification';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 const StudentCertificates = () => {
   const [filter, setFilter] = useState('issued');
   const [searchTerm, setSearchTerm] = useState('');
+  const [downloadingId, setDownloadingId] = useState(null);
   
   const certificatesMetricsConfig = [
     {
@@ -139,9 +141,17 @@ const StudentCertificates = () => {
       label: 'Actions',
       render: () => (
         <div className="flex gap-2">
-          <button className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-xs font-bold transition-all">
-            Download
-          </button>
+          <ButtonWithLoader
+            label="Download"
+            loadingLabel="Downloading..."
+            isLoading={downloadingId === 1}
+            onClick={() => {
+              setDownloadingId(1);
+              setTimeout(() => setDownloadingId(null), 1000);
+            }}
+            variant="primary"
+            size="sm"
+          />
           <button className="px-2 py-1 border border-gray-300 hover:bg-gray-50 rounded text-xs">
             <FaEye />
           </button>

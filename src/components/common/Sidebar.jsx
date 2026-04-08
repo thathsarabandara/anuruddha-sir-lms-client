@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useState, useEffect } from 'react';
 import { logout } from '../../app/slices/authSlice';
 import { ROUTES, ROLES } from '../../utils/constants';
-import { FaTimes, FaBook,  FaChartBar, FaClipboardList, FaCreditCard, FaFilePdf, FaGem, FaLink, FaTrophy, FaUsers, FaVideo, FaUser, FaFlag } from 'react-icons/fa';
+import { FaTimes, FaBook,  FaChartBar, FaClipboardList, FaCreditCard, FaFilePdf, FaGem, FaLink, FaTrophy, FaUsers, FaVideo, FaUser, FaFlag, FaBell } from 'react-icons/fa';
 import { TfiAnnouncement } from 'react-icons/tfi';
 import { IoSettings } from 'react-icons/io5';
 import { MdError, MdHealthAndSafety, MdLogout, MdManageAccounts } from 'react-icons/md';
@@ -44,6 +44,7 @@ const Sidebar = ({ isOpen = true, onClose = () => {} }) => {
           { name: 'Certificates', path: ROUTES.STUDENT_CERTIFICATES, icon: FaTrophy },
           { name: 'Payments', path: ROUTES.STUDENT_PAYMENTS, icon: FaCreditCard },
           { name: 'Rewards', path: ROUTES.STUDENT_REWARDS, icon: FaGem },
+          { name: 'Notifications', path: ROUTES.STUDENT_NOTIFICATIONS, icon: FaBell },
           { name: 'Profile', path: ROUTES.STUDENT_PROFILE, icon: FaUser },
         ];
       
@@ -51,10 +52,8 @@ const Sidebar = ({ isOpen = true, onClose = () => {} }) => {
         return [
           { name: 'Dashboard', path: ROUTES.TEACHER_DASHBOARD, icon: FaChartBar },
           { name: 'Courses', path: ROUTES.TEACHER_COURSES, icon: FaBook },
-          { name: 'Live Classes', path: ROUTES.TEACHER_LIVE_CLASSES, icon: FaVideo },
           { name: 'Students', path: ROUTES.TEACHER_STUDENTS, icon: FaUsers },
           { name: 'Quizzes', path: ROUTES.TEACHER_QUIZZES, icon: FaFilePdf },
-          { name: 'Recordings', path: ROUTES.TEACHER_RECORDINGS, icon: FaVideo },
           { name: 'Revenue', path: ROUTES.TEACHER_REVENUE, icon: FaCreditCard },
           { name: 'Rewards', path: ROUTES.TEACHER_REWARDS, icon: FaGem },
           { name: 'Announcements', path: ROUTES.TEACHER_ANNOUNCEMENTS, icon: TfiAnnouncement },

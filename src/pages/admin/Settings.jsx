@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { FaFileVideo } from 'react-icons/fa';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 
 
 const AdminSettings = () => {
   const [activeTab, setActiveTab] = useState('general');
+  const [actionLoading, setActionLoading] = useState(false);
 
   return (
     <div className="p-8">
@@ -143,9 +145,13 @@ const AdminSettings = () => {
                   </select>
                 </div>
 
-                <button type="submit" className="btn-primary px-6">
-                  Save Changes
-                </button>
+                <ButtonWithLoader
+                  type="submit"
+                  label="Save Changes"
+                  loadingLabel="Saving..."
+                  isLoading={actionLoading}
+                  variant="success"
+                />
               </form>
             </div>
           )}

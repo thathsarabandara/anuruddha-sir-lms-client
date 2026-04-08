@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FaUser, FaEnvelope, FaPhone, FaLock, FaEye, FaEyeSlash, FaGraduationCap, FaChalkboardTeacher, FaCheck, FaTimes, FaBook, FaCamera, FaCalendar } from 'react-icons/fa';
 import { authAPI } from '../../api';
+import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import { ROUTES, getAuthRoute } from '../../utils/constants';
 import { isValidEmail, isValidPhone } from '../../utils/helpers';
 
@@ -133,12 +134,12 @@ const Register = () => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        setFieldErrors(prev => ({ ...prev, profilePicture: 'File size must be less than 5MB' }));
+        setFieldErrors(prev => ({ ...prev, profile_picture: 'File size must be less than 5MB' }));
         return;
       }
       
       if (!['image/jpeg', 'image/png', 'image/gif', 'image/webp'].includes(file.type)) {
-        setFieldErrors(prev => ({ ...prev, profilePicture: 'Only image files are allowed' }));
+        setFieldErrors(prev => ({ ...prev, profile_picture: 'Only image files are allowed' }));
         return;
       }
 
@@ -146,10 +147,10 @@ const Register = () => {
       reader.onloadend = () => {
         setFormData(prev => ({
           ...prev,
-          profilePicture: file,
+          profile_picture: file,
           profilePicturePreview: reader.result,
         }));
-        setFieldErrors(prev => ({ ...prev, profilePicture: '' }));
+        setFieldErrors(prev => ({ ...prev, profile_picture: '' }));
       };
       reader.readAsDataURL(file);
     }
@@ -330,8 +331,8 @@ const Register = () => {
       errors.confirmPassword = 'Passwords do not match';
     }
 
-    if (!formData.profilePicture) {
-      errors.profilePicture = 'Profile picture is required';
+    if (!formData.profile_picture) {
+      errors.profile_picture = 'Profile picture is required';
     }
 
     if (formData.role === 'teacher') {
@@ -529,10 +530,10 @@ const Register = () => {
                         </label>
                       </div>
                     </div>
-                    {fieldErrors.profilePicture && (
+                    {fieldErrors.profile_picture && (
                       <p className="mt-2 text-sm text-red-600 flex items-center gap-1">
                         <FaTimes className="flex-shrink-0" />
-                        {fieldErrors.profilePicture}
+                        {fieldErrors.profile_picture}
                       </p>
                     )}
                   </div>
@@ -1241,30 +1242,21 @@ const Register = () => {
                   <button
                     type="button"
                     onClick={() => setCurrentTab(currentTab + 1)}
-                    className="flex-1 px-6 py-3 rounded-lg font-medium text-white hover:shadow-lg transform hover:scale-[1.01] transition-all duration-200"
+                    className="flex-1 px-6 py-3 rounded-lg font-medium text-white hover:shadow-lg transform hover:scale-[1.01]"
                     style={{ background: gradientStyles[currentRole.gradient] }}
                   >
                     Next
                   </button>
                 ) : (
-                  <button
+                  <ButtonWithLoader
                     type="submit"
-                    disabled={loading}
-                    className="flex-1 text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:scale-[1.01] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                    label="Create Account"
+                    loadingLabel="Creating Account..."
+                    isLoading={loading}
+                    fullWidth
                     style={{ background: gradientStyles[currentRole.gradient] }}
-                  >
-                    {loading ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                        </svg>
-                        Creating Account...
-                      </span>
-                    ) : (
-                      'Create Account'
-                    )}
-                  </button>
+                    className="text-white py-3 rounded-lg font-semibold hover:shadow-lg transform hover:scale-[1.01] disabled:transform-none"
+                  />
                 )}
               </div>
             </form>
