@@ -46,6 +46,12 @@ export const quizAPI = {
   updateQuiz: (quizId, updateData) =>
     axiosInstance.put("/quiz/update", updateData, { params: { quiz_id: quizId } }),
 
+  banQuiz: (quizId, payload = {}) =>
+    axiosInstance.put("/quiz/ban", payload, { params: { quiz_id: quizId } }),
+
+  unbanQuiz: (quizId, payload = {}) =>
+    axiosInstance.put("/quiz/unban", payload, { params: { quiz_id: quizId } }),
+
   /**
    * Delete a quiz
    * @param {string} quizId - Quiz ID
