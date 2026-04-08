@@ -21,8 +21,9 @@ const formatStatus = (status) => String(status || '').toUpperCase();
 
 const statusBadge = (status) => {
   const normalized = formatStatus(status);
+  if (normalized === 'BANNED') return 'bg-red-100 text-red-700';
   if (normalized === 'PUBLISHED') return 'bg-green-100 text-green-700';
-  if (normalized === 'ARCHIVED') return 'bg-red-100 text-red-700';
+  if (normalized === 'DRAFT') return 'bg-yellow-100 text-yellow-700';
   return 'bg-gray-100 text-gray-700';
 };
 
@@ -52,7 +53,12 @@ const AdminCourses = () => {
       };
 
       if (searchTerm.trim()) params.q = searchTerm.trim();
-      if (filterStatus !== 'all') params.status = filterStatus.toLowerCase();
+      if (filterStatus === 'banned') {
+        params.is_banned = true;
+      } else if (filterStatus !== 'all') {
+        params.status = filterStatus.toLowerCase();
+        params.is_banned = false;
+      }
 
       const response = await courseAPI.getTeacherCourses(params);
       const rows = response?.data?.data || [];
@@ -73,13 +79,13 @@ const AdminCourses = () => {
     const totalCourses = courses.length;
     const publishedCourses = courses.filter((c) => formatStatus(c.status) === 'PUBLISHED').length;
     const draftCourses = courses.filter((c) => formatStatus(c.status) === 'DRAFT').length;
-    const archivedCourses = courses.filter((c) => formatStatus(c.status) === 'ARCHIVED').length;
+    const bannedCourses = courses.filter((c) => Boolean(c.is_banned)).length;
 
     return {
       total_courses: totalCourses,
       published_courses: publishedCourses,
       draft_courses: draftCourses,
-      archived_courses: archivedCourses,
+      banned_courses: bannedCourses,
     };
   }, [courses]);
 
@@ -109,12 +115,12 @@ const AdminCourses = () => {
       description: 'needs publish',
     },
     {
-      label: 'Archived',
-      statsKey: 'archived_courses',
+      label: 'Banned',
+      statsKey: 'banned_courses',
       icon: FaExclamationTriangle,
-      bgColor: 'bg-yellow-100',
-      textColor: 'text-yellow-600',
-      description: 'inactive',
+      bgColor: 'bg-red-100',
+      textColor: 'text-red-600',
+      description: 'blocked by admin',
     },
   ];
 
@@ -131,7 +137,6 @@ const AdminCourses = () => {
     try {
       if (nextStatus === 'published') await courseAPI.publishCourse(courseId);
       if (nextStatus === 'draft') await courseAPI.unpublishCourse(courseId);
-      if (nextStatus === 'archived') await courseAPI.archiveCourse(courseId);
 
       showNotification('Course status updated successfully', 'success');
       await fetchCourses();
@@ -165,6 +170,46 @@ const AdminCourses = () => {
     }
   };
 
+  const handleBanCourse = async (course) => {
+    const courseId = course.course_id || course.id;
+    if (!courseId) return;
+
+    const reason = window.prompt('Enter ban reason (required):', course.ban_reason || '');
+    if (!reason || !reason.trim()) {
+      showNotification('Ban reason is required', 'error');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await courseAPI.banCourse(courseId, { reason: reason.trim() });
+      showNotification('Course banned successfully', 'success');
+      await fetchCourses();
+      setShowDetailsModal(false);
+    } catch (err) {
+      showNotification(err?.data?.message || err?.message || 'Failed to ban course', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleUnbanCourse = async (course) => {
+    const courseId = course.course_id || course.id;
+    if (!courseId) return;
+
+    setActionLoading(true);
+    try {
+      await courseAPI.unbanCourse(courseId, {});
+      showNotification('Course unbanned successfully', 'success');
+      await fetchCourses();
+      setShowDetailsModal(false);
+    } catch (err) {
+      showNotification(err?.data?.message || err?.message || 'Failed to unban course', 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   const goToCourseContent = (course) => {
     const courseId = course.course_id || course.id;
     if (!courseId) return;
@@ -180,6 +225,9 @@ const AdminCourses = () => {
         subject: course.subject || 'N/A',
         grade_level: course.grade_level || 'N/A',
         status: formatStatus(course.status),
+        display_status: course.is_banned ? 'BANNED' : formatStatus(course.status),
+        is_banned: Boolean(course.is_banned),
+        ban_reason: course.ban_reason || '',
         total_enrollments: course.total_enrollments || 0,
         total_revenue: Number(course.total_revenue || 0),
         raw: course,
@@ -203,7 +251,7 @@ const AdminCourses = () => {
         label: 'Teacher',
       },
       {
-        key: 'status',
+        key: 'display_status',
         label: 'Status',
         render: (value) => (
           <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusBadge(value)}`}>
@@ -280,7 +328,7 @@ const AdminCourses = () => {
               { label: 'All Status', value: 'all' },
               { label: 'Published', value: 'published' },
               { label: 'Draft', value: 'draft' },
-              { label: 'Archived', value: 'archived' },
+              { label: 'Banned', value: 'banned' },
             ],
             statusFilterValue: filterStatus,
             onStatusFilterChange: setFilterStatus,
@@ -306,6 +354,10 @@ const AdminCourses = () => {
               <p><strong>Title:</strong> {selectedCourse.title}</p>
               <p><strong>Teacher:</strong> {selectedCourse.teacher_name || 'N/A'}</p>
               <p><strong>Status:</strong> {formatStatus(selectedCourse.status)}</p>
+              <p><strong>Banned:</strong> {selectedCourse.is_banned ? 'Yes' : 'No'}</p>
+              {selectedCourse.is_banned && (
+                <p><strong>Ban Reason:</strong> {selectedCourse.ban_reason || 'Banned by admin'}</p>
+              )}
               <p><strong>Visibility:</strong> {String(selectedCourse.visibility || 'N/A')}</p>
               <p><strong>Price:</strong> {selectedCourse.is_paid ? `Rs. ${selectedCourse.price || 0}` : 'Free'}</p>
               <p><strong>Enrollments:</strong> {selectedCourse.total_enrollments || 0}</p>
@@ -314,7 +366,7 @@ const AdminCourses = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {formatStatus(selectedCourse.status) !== 'PUBLISHED' && (
+              {!selectedCourse.is_banned && formatStatus(selectedCourse.status) !== 'PUBLISHED' && (
                 <ButtonWithLoader
                   label="Publish"
                   loadingLabel="Publishing..."
@@ -325,7 +377,7 @@ const AdminCourses = () => {
                 />
               )}
 
-              {formatStatus(selectedCourse.status) === 'PUBLISHED' && (
+              {!selectedCourse.is_banned && formatStatus(selectedCourse.status) === 'PUBLISHED' && (
                 <ButtonWithLoader
                   label="Move To Draft"
                   loadingLabel="Updating..."
@@ -336,16 +388,6 @@ const AdminCourses = () => {
                 />
               )}
 
-              {formatStatus(selectedCourse.status) !== 'ARCHIVED' && (
-                <ButtonWithLoader
-                  label="Archive"
-                  loadingLabel="Archiving..."
-                  isLoading={actionLoading}
-                  onClick={() => handleChangeStatus(selectedCourse, 'archived')}
-                  variant="warning"
-                  fullWidth
-                />
-              )}
 
               <button
                 type="button"
@@ -354,6 +396,26 @@ const AdminCourses = () => {
               >
                 View Course Content
               </button>
+
+              {!selectedCourse.is_banned ? (
+                <ButtonWithLoader
+                  label="Ban Course"
+                  loadingLabel="Banning..."
+                  isLoading={actionLoading}
+                  onClick={() => handleBanCourse(selectedCourse)}
+                  variant="danger"
+                  fullWidth
+                />
+              ) : (
+                <ButtonWithLoader
+                  label="Unban Course"
+                  loadingLabel="Unbanning..."
+                  isLoading={actionLoading}
+                  onClick={() => handleUnbanCourse(selectedCourse)}
+                  variant="success"
+                  fullWidth
+                />
+              )}
 
               <ButtonWithLoader
                 label="Delete Course"
@@ -376,6 +438,7 @@ const AdminCourses = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
