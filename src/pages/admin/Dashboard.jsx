@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { 
   FaBook, FaChartBar, FaCheckCircle, 
   FaServer, 
@@ -20,10 +20,6 @@ ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarEle
 
 const AdminDashboard = () => {
   const [notification, setNotification] = useState(null);
-
-  const showNotification = (message, type = 'info', duration = 5000) => {
-    setNotification({ message, type, duration });
-  };
  
   const adminMetricsConfig = [
     {
@@ -197,7 +193,6 @@ const AdminDashboard = () => {
   const courseStats = {
     published: 142,
     draft: 10,
-    archived: 4,
     totalEnrollments: 8924,
     avgRating: 4.52,
     avgCompletion: 71.4
@@ -215,12 +210,10 @@ const AdminDashboard = () => {
     { id: 2, title: 'Copyright Issue', type: 'lesson', reporter: 'Legal Team', date: '2024-03-08', status: 'new' }
   ];
 
-  const [recentActivities, setRecentActivities] = useState(dummyRecentActivities);
-  const [pendingApprovals, setPendingApprovals] = useState(dummyPendingApprovals);
-  const [systemAlerts, setSystemAlerts] = useState(dummySystemAlerts);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview');
+  const [recentActivities] = useState(dummyRecentActivities);
+  const [pendingApprovals] = useState(dummyPendingApprovals);
+  const [systemAlerts] = useState(dummySystemAlerts);
+  const [error] = useState(null);
 
   const getPriorityColor = (priority) => {
     const colors = {
@@ -254,23 +247,6 @@ const AdminDashboard = () => {
     };
     return colors[severity] || colors.info;
   };
-
-
-
-  useEffect(() => {
-    fetchDashboardData();
-  }, []);
-
-  const fetchDashboardData = () => {
-    // Use dummy data without API calls
-    setRecentActivities(dummyRecentActivities);
-    setPendingApprovals(dummyPendingApprovals);
-    setSystemAlerts(dummySystemAlerts);
-    setLoading(false);
-    setError(null);
-  };
-
-
   // Error state
   if (error) {
     return (
@@ -532,7 +508,7 @@ const AdminDashboard = () => {
             <div className="space-y-4">
               <div className="p-4 bg-gradient-to-r from-indigo-50 to-indigo-50 rounded-lg border border-indigo-200">
                 <p className="text-xs text-gray-600 font-medium">Total Courses</p>
-                <p className="text-2xl font-bold text-indigo-600 mt-2">{courseStats.published + courseStats.draft + courseStats.archived}</p>
+                <p className="text-2xl font-bold text-indigo-600 mt-2">{courseStats.published + courseStats.draft}</p>
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="p-3 bg-green-50 rounded-lg border border-green-100">
@@ -542,10 +518,6 @@ const AdminDashboard = () => {
                 <div className="p-3 bg-yellow-50 rounded-lg border border-yellow-100">
                   <p className="text-xs text-gray-600">Draft</p>
                   <p className="text-lg font-bold text-yellow-600 mt-1">{courseStats.draft}</p>
-                </div>
-                <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                  <p className="text-xs text-gray-600">Archived</p>
-                  <p className="text-lg font-bold text-gray-600 mt-1">{courseStats.archived}</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
