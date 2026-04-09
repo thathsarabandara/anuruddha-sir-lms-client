@@ -7,7 +7,7 @@ import DataTable from '../../components/common/DataTable';
 import CreateCourseForm from '../../components/teacher/CreateCourseForm';
 import Notification from '../../components/common/Notification';
 import { courseAPI } from '../../api/course';
-import { COURSE_SUBJECT_OPTIONS, COURSE_GRADE_LEVEL_OPTIONS, COURSE_TYPE_OPTIONS } from '../../utils/courseOptions';
+import { COURSE_SUBJECT_OPTIONS, COURSE_GRADE_LEVEL_OPTIONS, COURSE_TYPE_OPTIONS, COURSE_LANGUAGE_OPTIONS } from '../../utils/courseOptions';
 
 const getErrorMessage = (err, fallback = 'Something went wrong') =>
   err?.response?.data?.message || err?.response?.data?.error || err?.message || fallback;
@@ -56,6 +56,7 @@ const TeacherCourses = () => {
     price: 0,
     status: 'DRAFT',
     visibility: 'PUBLIC',
+    language: 'en',
   });
 
   const mapCourse = (course) => ({
@@ -172,7 +173,7 @@ const TeacherCourses = () => {
         description: formData.description,
         subject: formData.subject || undefined,
         grade_level: formData.grade_level || undefined,
-        language: "en",
+        language: formData.language || 'en',
         course_type: formData.course_type || "monthly",
         status: String(formData.status || 'DRAFT').toLowerCase(),
         visibility: String(formData.visibility || 'PUBLIC').toLowerCase(),
@@ -228,6 +229,7 @@ const TeacherCourses = () => {
       price: 0,
       status: 'DRAFT',
       visibility: 'PUBLIC',
+      language: 'en',
     });
   };
 
@@ -298,9 +300,9 @@ const TeacherCourses = () => {
         <span className={`px-2 py-1 text-xs rounded-full font-semibold ${
           value === 'published'
             ? 'bg-green-100 text-green-700'
-            : value === 'archived'
-              ? 'bg-gray-200 text-gray-700'
-              : 'bg-yellow-100 text-yellow-700'
+            : value === 'draft'
+              ? 'bg-yellow-100 text-yellow-700'
+              : 'bg-gray-200 text-gray-700'
         }`}>
           {String(value || 'draft').toUpperCase()}
         </span>
@@ -470,7 +472,6 @@ const TeacherCourses = () => {
             <option value="">All Statuses</option>
             <option value="draft">Draft</option>
             <option value="published">Published</option>
-            <option value="archived">Archived</option>
           </select>
 
           <select
@@ -535,6 +536,7 @@ const TeacherCourses = () => {
               subjects={subjects}
               gradeLevels={gradeLevels}
               courseTypes={courseTypes}
+              languages={COURSE_LANGUAGE_OPTIONS}
               formData={formData}
               handleInputChange={handleInputChange}
               handleCreateCourse={handleCreateCourse}

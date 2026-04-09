@@ -1,404 +1,191 @@
-/* eslint-disable react-hooks/preserve-manual-memoization */
-import { useState, useMemo } from 'react';
-import { FaBook, FaCheck, FaFilePdf, FaGem, FaGraduationCap, FaTrophy, FaVideo, FaCoins, FaStar, FaHandshake, FaAward, FaWallet } from 'react-icons/fa';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  FaBolt,
+  FaCoins,
+  FaGraduationCap,
+  FaHandHoldingUsd,
+  FaListAlt,
+  FaTrophy,
+} from 'react-icons/fa';
 import DataTable from '../../components/common/DataTable';
 import StatCard from '../../components/common/StatCard';
 import Notification from '../../components/common/Notification';
 import ButtonWithLoader from '../../components/common/ButtonWithLoader';
+import { rewardAPI } from '../../api/reward';
+
+const prettyLabel = (value) => {
+  if (!value) return 'Coin Activity';
+  return String(value)
+    .replace(/[_-]+/g, ' ')
+    .replace(/\b\w/g, (char) => char.toUpperCase());
+};
+
+const formatDateTime = (value) => {
+  if (!value) return '-';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '-';
+  return date.toLocaleString();
+};
 
 const StudentRewards = () => {
-  const [selectedTab, setSelectedTab] = useState('earnings');
+  const [selectedTab, setSelectedTab] = useState('transactions');
+  const [transactionType, setTransactionType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [redeemSearchTerm, setRedeemSearchTerm] = useState('');
-  const [redeemTypeFilter, setRedeemTypeFilter] = useState('all');
-  const [redeemingId, setRedeemingId] = useState(null);
+  const [summary, setSummary] = useState({
+    coins: 0,
+    current_level: 'Bronze',
+    progress_percentage: 0,
+    points_to_next_level: 0,
+    next_level: 'Silver',
+  });
+  const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [notification, setNotification] = useState(null);
 
-  const rewardBalance = useMemo(() => ({
-    coins: 1250,
-    gems: 30,
-    totalValue: 1250 * 5 + 30 * 100, // Assuming 1 coin = Rs.5 and 1 gem = Rs.100
-  }), []);
-
-  const recentEarnings = [
-    {
-      id: 1,
-      title: 'Completed Mathematics Quiz',
-      amount: 50,
-      type: 'coins',
-      date: 'Today',
-      icon: FaFilePdf,
-      color: 'text-yellow-600',
-    },
-    {
-      id: 2,
-      title: 'Perfect Attendance - Week 50',
-      amount: 5,
-      type: 'gems',
-      date: 'Yesterday',
-      icon: FaStar,
-      color: 'text-blue-600',
-    },
-    {
-      id: 3,
-      title: 'Top 3 in Quiz Leaderboard',
-      amount: 100,
-      type: 'coins',
-      date: '2 days ago',
-      icon: FaTrophy,
-      color: 'text-yellow-600',
-    },
-    {
-      id: 4,
-      title: 'Helped a Classmate',
-      amount: 25,
-      type: 'coins',
-      date: '3 days ago',
-      icon: FaHandshake,
-      color: 'text-yellow-600',
-    },
-    {
-      id: 5,
-      title: 'Completed All Homework',
-      amount: 3,
-      type: 'gems',
-      date: '4 days ago',
-      icon: FaCheck,
-      color: 'text-blue-600',
-    },
-  ];
-
-  const redeemableItems = useMemo(() => [
-    {
-      id: 1,
-      title: 'Free Study Material Pack',
-      description: 'Get access to premium study materials',
-      cost: 500,
-      type: 'coins',
-      icon: FaBook,
-      available: true,
-    },
-    {
-      id: 2,
-      title: 'One-on-One Session',
-      description: '30-minute private session with teacher',
-      cost: 10,
-      type: 'gems',
-      icon: FaBook,
-      available: true,
-    },
-    {
-      id: 3,
-      title: 'Certificate Frame',
-      description: 'Beautiful frame for your certificates',
-      cost: 800,
-      type: 'coins',
-      icon: FaAward,
-      available: true,
-    },
-    {
-      id: 4,
-      title: 'Premium Recordings Access',
-      description: '1 month access to all premium recordings',
-      cost: 15,
-      type: 'gems',
-      icon: FaVideo,
-      available: true,
-    },
-    {
-      id: 5,
-      title: 'Scholarship Hoodie',
-      description: 'Official scholarship program hoodie',
-      cost: 2000,
-      type: 'coins',
-      icon: FaTrophy,
-      available: false,
-    },
-    {
-      id: 6,
-      title: 'Exclusive Webinar Access',
-      description: 'Access to special exam preparation webinar',
-      cost: 20,
-      type: 'gems',
-      icon: FaStar,
-      available: true,
-    },
-  ], []);
-
-  const rewardHistory = [
-    {
-      id: 1,
-      title: 'Redeemed Free Study Material Pack',
-      amount: -500,
-      type: 'coins',
-      date: 'Dec 10, 2025',
-      status: 'delivered',
-    },
-    {
-      id: 2,
-      title: 'Earned Quiz Champion Badge',
-      amount: 100,
-      type: 'coins',
-      date: 'Dec 5, 2025',
-      status: 'earned',
-    },
-    {
-      id: 3,
-      title: 'Redeemed One-on-One Session',
-      amount: -10,
-      type: 'gems',
-      date: 'Nov 28, 2025',
-      status: 'completed',
-    },
-  ];
-
-  // Calculate metrics for stat cards
-  const stats = {
-    coins: rewardBalance.coins,
-    gems: rewardBalance.gems,
-    totalValue: rewardBalance.totalValue,
-    activitiesCompleted: recentEarnings.length,
-    itemsRedeemed: rewardHistory.filter(item => item.amount < 0).length,
+  const showNotification = (message, type = 'info', duration = 5000) => {
+    setNotification({ message, type, duration });
   };
 
-  const rewardsMetricsConfig = useMemo(() => [
+  const loadRewardsData = useCallback(async (forceRecalculate = false) => {
+    try {
+      if (forceRecalculate) {
+        setRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+
+      const [summaryResponse, transactionsResponse] = await Promise.all([
+        rewardAPI.getMyRewardCoins(forceRecalculate),
+        rewardAPI.getMyRewardCoinTransactions(1, 100, transactionType),
+      ]);
+
+      const summaryData = summaryResponse?.data?.data || {};
+      const transactionData = transactionsResponse?.data?.data?.transactions || [];
+
+      setSummary({
+        coins: Number(summaryData?.coins || 0),
+        current_level: summaryData?.current_level || 'Bronze',
+        progress_percentage: Number(summaryData?.progress_percentage || 0),
+        points_to_next_level: Number(summaryData?.points_to_next_level || 0),
+        next_level: summaryData?.next_level || null,
+      });
+      setTransactions(Array.isArray(transactionData) ? transactionData : []);
+    } catch (error) {
+      showNotification(error?.message || 'Failed to load reward coins', 'error');
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  }, [transactionType]);
+
+  useEffect(() => {
+    void loadRewardsData(false);
+  }, [loadRewardsData]);
+
+  const stats = useMemo(() => ({
+    coins: summary.coins,
+    currentLevel: summary.current_level,
+    levelProgress: summary.progress_percentage,
+    pointsToNext: summary.points_to_next_level,
+  }), [summary]);
+
+  const rewardsMetricsConfig = useMemo(() => ([
     {
       label: 'Reward Coins',
       statsKey: 'coins',
       icon: FaCoins,
       bgColor: 'bg-yellow-100',
       textColor: 'text-yellow-600',
-      description: `≈ Rs. ${(stats.coins * 5).toLocaleString()}`,
-      formatter: (value) => `${value} pts`,
+      description: 'Total earned coins',
+      formatter: (value) => `${value} coins`,
     },
     {
-      label: 'Premium Gems',
-      statsKey: 'gems',
-      icon: FaGem,
+      label: 'Current Level',
+      statsKey: 'currentLevel',
+      icon: FaTrophy,
       bgColor: 'bg-blue-100',
       textColor: 'text-blue-600',
-      description: `≈ Rs. ${(stats.gems * 100).toLocaleString()}`,
-      formatter: (value) => `${value} pts`,
+      description: summary.next_level ? `Next: ${summary.next_level}` : 'Max level reached',
     },
     {
-      label: 'Total Value',
-      statsKey: 'totalValue',
-      icon: FaWallet,
-      bgColor: 'bg-green-100',
-      textColor: 'text-green-600',
-      description: 'from all rewards',
-      formatter: (value) => `Rs. ${(value / 1000).toFixed(1)}k`,
-    },
-    {
-      label: 'Activities',
-      statsKey: 'activitiesCompleted',
-      icon: FaTrophy,
+      label: 'Level Progress',
+      statsKey: 'levelProgress',
+      icon: FaBolt,
       bgColor: 'bg-purple-100',
       textColor: 'text-purple-600',
-      description: `${stats.itemsRedeemed} items redeemed`,
-      formatter: (value) => `${value} done`,
+      description: 'Progress to next level',
+      formatter: (value) => `${value}%`,
     },
-  ], [stats.coins, stats.gems, stats.totalValue, stats.itemsRedeemed]);
-
-  const earnMethods = [
-    { title: 'Complete a Quiz', reward: '25-100 coins', icon: FaFilePdf },
-    { title: 'Perfect Attendance (Weekly)', reward: '5 gems', icon: FaStar },
-    { title: 'Top 3 in Leaderboard', reward: '100 coins', icon: FaTrophy },
-    { title: 'Help a Classmate', reward: '25 coins', icon: FaHandshake },
-    { title: 'Complete All Homework', reward: '3 gems', icon: FaCheck },
-    { title: 'Watch All Class Recordings', reward: '50 coins', icon: FaVideo },
-  ];
-
-  // Earnings Columns for DataTable
-  const earningsColumns = useMemo(() => [
     {
-      key: 'title',
+      label: 'Points To Next',
+      statsKey: 'pointsToNext',
+      icon: FaHandHoldingUsd,
+      bgColor: 'bg-green-100',
+      textColor: 'text-green-600',
+      description: summary.next_level ? `To ${summary.next_level}` : 'No next level',
+      formatter: (value) => `${value} pts`,
+    },
+  ]), [summary.next_level]);
+
+  const transactionColumns = useMemo(() => [
+    {
+      key: 'activity_description',
       label: 'Activity',
-      width: '35%',
-      render: (_, row) => {
-        const Icon = row.icon;
-        return (
-          <div className="flex items-center space-x-3">
-            <div className="text-2xl text-gray-700">
-              <Icon />
-            </div>
-            <div>
-              <div className="font-medium text-gray-900">{row.title}</div>
-              <div className="text-sm text-gray-600">{row.date}</div>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      key: 'type',
-      label: 'Type',
-      width: '20%',
-      render: (_, row) => (
-        <span className={`px-3 py-1 rounded-full text-sm font-medium flex items-center space-x-2 w-fit ${
-          row.type === 'coins' ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700'
-        }`}>
-          {row.type === 'coins' ? <FaCoins /> : <FaGem />}
-          <span>{row.type === 'coins' ? 'Coins' : 'Gems'}</span>
-        </span>
-      ),
-    },
-    {
-      key: 'amount',
-      label: 'Amount',
-      width: '25%',
-      render: (_, row) => (
-        <div className={`text-lg font-bold ${row.type === 'coins' ? 'text-yellow-600' : 'text-blue-600'}`}>
-          +{row.amount}
-        </div>
-      ),
-    },
-  ], []);
-
-  // History Columns for DataTable
-  const historyColumns = useMemo(() => [
-    {
-      key: 'title',
-      label: 'Description',
-      width: '40%',
       render: (_, row) => (
         <div>
-          <div className="font-medium text-gray-900">{row.title}</div>
-          <div className="text-sm text-gray-600">{row.date}</div>
+          <p className="font-medium text-gray-900">
+            {row.activity_description || prettyLabel(row.activity_type)}
+          </p>
+          <p className="text-xs text-gray-500">{prettyLabel(row.activity_type)}</p>
         </div>
       ),
     },
     {
-      key: 'amount',
-      label: 'Amount',
-      width: '25%',
+      key: 'transaction_type',
+      label: 'Type',
       render: (_, row) => (
-        <div className={`font-bold flex items-center space-x-2 ${row.amount > 0 ? 'text-green-600' : 'text-red-600'}`}>
-          <span>{row.amount > 0 ? '+' : ''}{row.amount}</span>
-          {row.type === 'coins' ? <FaCoins /> : <FaGem />}
-        </div>
-      ),
-    },
-    {
-      key: 'status',
-      label: 'Status',
-      width: '25%',
-      render: (_, row) => (
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-          row.status === 'delivered' || row.status === 'completed'
-            ? 'bg-green-100 text-green-700'
-            : 'bg-blue-100 text-blue-700'
-        }`}>
-          {row.status.toUpperCase()}
+        <span
+          className={`px-3 py-1 rounded-full text-xs font-semibold ${
+            row.transaction_type === 'earned'
+              ? 'bg-green-100 text-green-700'
+              : 'bg-red-100 text-red-700'
+          }`}
+        >
+          {row.transaction_type === 'earned' ? 'EARNED' : 'SPENT'}
         </span>
       ),
+    },
+    {
+      key: 'points',
+      label: 'Points',
+      render: (_, row) => (
+        <span
+          className={`font-bold ${Number(row.points) >= 0 ? 'text-green-600' : 'text-red-600'}`}
+        >
+          {Number(row.points) >= 0 ? '+' : ''}
+          {row.points}
+        </span>
+      ),
+    },
+    {
+      key: 'balance_after',
+      label: 'Balance',
+      render: (value) => <span className="font-medium text-gray-800">{value ?? '-'}</span>,
+    },
+    {
+      key: 'created_at',
+      label: 'Date',
+      render: (value) => <span className="text-sm text-gray-600">{formatDateTime(value)}</span>,
     },
   ], []);
 
-  // Redeem Columns for DataTable
-  const redeemColumns = useMemo(() => [
-    {
-      key: 'title',
-      label: 'Reward Item',
-      width: '30%',
-      render: (_, row) => {
-        const Icon = row.icon;
-        return (
-          <div className="flex items-center space-x-3">
-            <div className="text-3xl text-gray-700">
-              <Icon />
-            </div>
-            <div>
-              <div className="font-medium text-gray-900">{row.title}</div>
-              <div className="text-xs text-gray-600">{row.description}</div>
-            </div>
-          </div>
-        );
-      },
-    },
-    {
-      key: 'cost',
-      label: 'Cost',
-      width: '20%',
-      render: (_, row) => (
-        <div className="flex items-center space-x-2">
-          {row.type === 'coins' ? <FaCoins className="text-yellow-600" /> : <FaGem className="text-blue-600" />}
-          <span className="font-bold text-gray-900">{row.cost}</span>
-        </div>
-      ),
-    },
-    {
-      key: 'availability',
-      label: 'Availability',
-      width: '20%',
-      render: (_, row) => (
-        <span className={`px-3 py-1 rounded-full text-xs font-medium flex items-center space-x-1 w-fit ${
-          row.available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
-        }`}>
-          {row.available ? <FaCheck /> : null}
-          <span>{row.available ? 'Available' : 'Coming Soon'}</span>
-        </span>
-      ),
-    },
-    {
-      key: 'action',
-      label: 'Action',
-      width: '30%',
-      render: (_, row) => {
-        const canRedeem = row.available && (
-          (row.type === 'coins' && rewardBalance.coins >= row.cost) ||
-          (row.type === 'gems' && rewardBalance.gems >= row.cost)
-        );
-        
-        if (!row.available) {
-          return (
-            <button disabled className="bg-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
-              Coming Soon
-            </button>
-          );
-        }
-
-        if (!canRedeem) {
-          return (
-            <button disabled className="bg-gray-300 text-gray-600 px-4 py-2 rounded-lg font-medium cursor-not-allowed">
-              Insufficient
-            </button>
-          );
-        }
-
-        return (
-          <ButtonWithLoader
-            label="Redeem Now"
-            loadingLabel="Processing..."
-            isLoading={redeemingId === row.id}
-            onClick={() => {
-              setRedeemingId(row.id);
-              setTimeout(() => {
-                setRedeemingId(null);
-              }, 1000);
-            }}
-            variant="primary"
-            size="sm"
-          />
-        );
-      },
-    },
-  ], [rewardBalance.coins, rewardBalance.gems, redeemingId]);
-
-  // Filter redeem items by search and type
-  const filteredRedeemItems = useMemo(() => {
-    return redeemableItems.filter(item => {
-      const matchesSearch = item.title.toLowerCase().includes(redeemSearchTerm.toLowerCase()) ||
-                           item.description.toLowerCase().includes(redeemSearchTerm.toLowerCase());
-      const matchesType = redeemTypeFilter === 'all' || item.type === redeemTypeFilter;
-      return matchesSearch && matchesType;
-    });
-  }, [redeemSearchTerm, redeemTypeFilter, redeemableItems]);
-
-  const [notification, setNotification] = useState(null);
-
-  const showNotification = (message, type = 'info', duration = 5000) => {
-    setNotification({ message, type, duration });
-  };
+  const earnMethods = [
+    { title: 'Complete Quizzes', reward: 'Earn points for correct answers' },
+    { title: 'Finish Courses', reward: 'Gain bonus coins on completion' },
+    { title: 'Stay Active Daily', reward: 'Build streaks and collect rewards' },
+    { title: 'Join Challenges', reward: 'Win extra points from events' },
+  ];
 
   return (
     <div className="p-8">
@@ -412,67 +199,46 @@ const StudentRewards = () => {
           />
         </div>
       )}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-          <div className="max-w-7xl mx-auto px-6 py-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Rewards & Achievements
-                </h1>
-                <p className="text-slate-600 mt-1">Earn coins and gems, redeem exciting rewards</p>
-              </div>
-              <div className="text-5xl"><FaGraduationCap className="text-blue-600" /></div>
+
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-10 mb-6">
+        <div className="max-w-7xl mx-auto px-6 py-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Reward Coins
+              </h1>
+              <p className="text-slate-600 mt-1">Track your coin level and recent coin activities</p>
             </div>
+            <div className="text-5xl"><FaGraduationCap className="text-blue-600" /></div>
           </div>
+        </div>
       </div>
 
-      {/* Balance StatCards - 4 Metrics */}
-      <StatCard
-        stats={stats}
-        metricsConfig={rewardsMetricsConfig}
-      />
+      <div className="mb-4 flex justify-end">
+        <ButtonWithLoader
+          label="Recalculate Coins"
+          loadingLabel="Updating..."
+          isLoading={refreshing}
+          onClick={() => void loadRewardsData(true)}
+          variant="primary"
+          size="sm"
+        />
+      </div>
 
-      {/* Tabs */}
-      <div className="flex space-x-4 mb-6 border-b">
+      <StatCard stats={stats} metricsConfig={rewardsMetricsConfig} />
+
+      <div className="flex items-center gap-4 mb-6 border-b border-slate-200">
         <button
-          onClick={() => {
-            setSelectedTab('earnings');
-            setSearchTerm('');
-          }}
+          onClick={() => setSelectedTab('transactions')}
           className={`pb-3 px-4 font-medium transition-colors ${
-            selectedTab === 'earnings'
+            selectedTab === 'transactions'
               ? 'text-primary-600 border-b-2 border-primary-600'
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          Recent Earnings ({recentEarnings.length})
-        </button>
-        <button
-          onClick={() => {
-            setSelectedTab('history');
-            setSearchTerm('');
-          }}
-          className={`pb-3 px-4 font-medium transition-colors ${
-            selectedTab === 'history'
-              ? 'text-primary-600 border-b-2 border-primary-600'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          History ({rewardHistory.length})
-        </button>
-        <button
-          onClick={() => {
-            setSelectedTab('redeem');
-            setRedeemSearchTerm('');
-            setRedeemTypeFilter('all');
-          }}
-          className={`pb-3 px-4 font-medium transition-colors ${
-            selectedTab === 'redeem'
-              ? 'text-primary-600 border-b-2 border-primary-600'
-              : 'text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          Redeem Rewards ({redeemableItems.length})
+          <span className="inline-flex items-center gap-2">
+            <FaListAlt /> Transactions
+          </span>
         </button>
         <button
           onClick={() => setSelectedTab('earn')}
@@ -482,81 +248,50 @@ const StudentRewards = () => {
               : 'text-gray-600 hover:text-gray-900'
           }`}
         >
-          How to Earn
+          How To Earn
         </button>
       </div>
 
-      {/* Recent Earnings DataTable */}
-      {selectedTab === 'earnings' && (
-        <DataTable
-          columns={earningsColumns}
-          data={recentEarnings}
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          pagination={{ itemsPerPage: 10 }}
-          searchPlaceholder="Search earnings..."
-        />
-      )}
-
-      {/* History DataTable */}
-      {selectedTab === 'history' && (
-        <DataTable
-          columns={historyColumns}
-          data={rewardHistory}
-          searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
-          pagination={{ itemsPerPage: 10 }}
-          searchPlaceholder="Search history..."
-        />
-      )}
-
-      {/* Redeem Rewards DataTable with Filters */}
-      {selectedTab === 'redeem' && (
-        <div className="space-y-6">
-          <div className="flex items-center space-x-4 mb-4">
-            <div className="flex-1">
-              <input
-                type="text"
-                placeholder="Search rewards..."
-                value={redeemSearchTerm}
-                onChange={(e) => setRedeemSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-              />
-            </div>
+      {selectedTab === 'transactions' && (
+        <div className="space-y-4">
+          <div className="flex justify-end">
             <select
-              value={redeemTypeFilter}
-              onChange={(e) => setRedeemTypeFilter(e.target.value)}
+              value={transactionType}
+              onChange={(e) => setTransactionType(e.target.value)}
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
             >
-              <option value="all">All Types</option>
-              <option value="coins">Coins Only</option>
-              <option value="gems">Gems Only</option>
+              <option value="all">All Transactions</option>
+              <option value="earned">Earned</option>
+              <option value="spent">Spent</option>
             </select>
           </div>
+
           <DataTable
-            columns={redeemColumns}
-            data={filteredRedeemItems}
-            pagination={{ itemsPerPage: 10 }}
-            showSearch={false}
+            columns={transactionColumns}
+            data={transactions}
+            loading={loading}
+            config={{
+              itemsPerPage: 10,
+              searchPlaceholder: 'Search transaction activity...',
+              searchValue: searchTerm,
+              onSearchChange: setSearchTerm,
+              emptyMessage: 'No coin transactions found.',
+            }}
           />
         </div>
       )}
 
-      {/* How to Earn Grid */}
       {selectedTab === 'earn' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {earnMethods.map((method, index) => {
-            const Icon = method.icon;
-            return (
-              <div key={index} className="bg-white rounded-lg shadow p-6 text-center hover:shadow-lg transition-shadow">
-                <div className="text-5xl mb-3 text-gray-700 flex justify-center">
-                  <Icon />
-                </div>
-                <h3 className="font-bold text-gray-900 mb-2">{method.title}</h3>
-                <div className="text-primary-600 font-bold">{method.reward}</div>
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {earnMethods.map((method) => (
+            <div
+              key={method.title}
+              className="bg-white rounded-lg shadow p-6 hover:shadow-lg transition-shadow border border-gray-100"
+            >
+              <h3 className="font-bold text-gray-900 mb-2">{method.title}</h3>
+              <p className="text-primary-600 font-medium">{method.reward}</p>
+            </div>
+          ))}
         </div>
       )}
     </div>

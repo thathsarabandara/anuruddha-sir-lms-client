@@ -122,8 +122,9 @@ const Quizzes = () => {
 
   const filteredQuizzes = quizzesArray.filter((q) => {
     // Status filter
+    if (statusFilter === 'banned' && !q.is_banned) return false;
     if (statusFilter === 'published' && !q.is_published) return false;
-    if (statusFilter === 'draft' && q.is_published) return false;
+    if (statusFilter === 'draft' && (q.is_published || q.is_banned)) return false;
     
     // Date range filter
     if (fromDate && q.available_from) {
@@ -150,11 +151,16 @@ const Quizzes = () => {
       label: 'Status',
       render: (_, row) => (
         <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-          row.is_published ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'
+          row.is_banned ? 'bg-red-100 text-red-700' : (row.is_published ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700')
         }`}>
-          {row.is_published ? 'Published' : 'Draft'}
+          {row.is_banned ? 'Banned' : (row.is_published ? 'Published' : 'Draft')}
         </span>
       ),
+    },
+    {
+      key: 'ban_reason',
+      label: 'Ban Reason',
+      render: (_, row) => <span className="text-sm text-red-700">{row.is_banned ? (row.ban_reason || 'Banned by admin') : '-'}</span>,
     },
     {
       key: 'total_questions',
@@ -281,6 +287,7 @@ const Quizzes = () => {
       { label: 'All', value: 'all' },
       { label: 'Published', value: 'published' },
       { label: 'Drafts', value: 'draft' },
+      { label: 'Banned', value: 'banned' },
     ],
     statusFilterValue: statusFilter,
     onStatusFilterChange: (value) => setStatusFilter(value),

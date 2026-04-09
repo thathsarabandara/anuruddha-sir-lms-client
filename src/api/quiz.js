@@ -18,8 +18,8 @@ export const quizAPI = {
    * Get all quizzes for the current user (teacher)
    * @returns {Promise} List of quizzes
    */
-  getAllQuizzes: () =>
-    axiosInstance.get("/quiz/"),
+  getAllQuizzes: (params = {}) =>
+    axiosInstance.get("/quiz/", { params }),
 
   /**
    * Get quizzes for a specific course
@@ -45,6 +45,12 @@ export const quizAPI = {
    */
   updateQuiz: (quizId, updateData) =>
     axiosInstance.put("/quiz/update", updateData, { params: { quiz_id: quizId } }),
+
+  banQuiz: (quizId, payload = {}) =>
+    axiosInstance.put("/quiz/ban", payload, { params: { quiz_id: quizId } }),
+
+  unbanQuiz: (quizId, payload = {}) =>
+    axiosInstance.put("/quiz/unban", payload, { params: { quiz_id: quizId } }),
 
   /**
    * Delete a quiz
@@ -211,8 +217,21 @@ export const quizAPI = {
    * @param {string} quizId - Quiz ID
    * @returns {Promise} Created attempt with attempt_id
    */
-  startQuizAttempt: (quizId) =>
+  startQuizAttempt: (quizId, courseId = null) =>
     axiosInstance.post("/quiz/attempts", null, {
+      params: {
+        quiz_id: quizId,
+        ...(courseId ? { course_id: courseId } : {}),
+      },
+    }),
+
+  /**
+   * Get an active in-progress attempt for a quiz (resume support)
+   * @param {string} quizId - Quiz ID
+   * @returns {Promise} Active attempt with questions and saved answers
+   */
+  getActiveAttempt: (quizId) =>
+    axiosInstance.get("/quiz/attempts/active", {
       params: { quiz_id: quizId },
     }),
 
@@ -223,9 +242,7 @@ export const quizAPI = {
    * @returns {Promise} Saved answer confirmation
    */
   saveAnswer: (attemptId, answerData) =>
-    axiosInstance.post("/quiz/submit/answers", answerData, {
-      params: { attempt_id: attemptId },
-    }),
+    axiosInstance.post(`/quiz/submit/answers/${attemptId}`, answerData),
 
   /**
    * Submit a quiz attempt

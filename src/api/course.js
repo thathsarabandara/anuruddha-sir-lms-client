@@ -59,15 +59,6 @@ export const courseAPI = {
 			params: { course_id: courseId },
 		}),
 
-	archiveCourse: (courseId, data = {}) =>
-		axiosInstance.put(`${COURSE_BASE}/archive`, data, {
-			params: { course_id: courseId },
-		}),
-
-	unarchiveCourse: (courseId, data = {}) =>
-		axiosInstance.put(`${COURSE_BASE}/unarchive`, data, {
-			params: { course_id: courseId },
-		}),
 
 	setCoursePrivate: (courseId, data = {}) =>
 		axiosInstance.put(`${COURSE_BASE}/private`, data, {
@@ -76,6 +67,16 @@ export const courseAPI = {
 
 	setCoursePublic: (courseId, data = {}) =>
 		axiosInstance.put(`${COURSE_BASE}/public`, data, {
+			params: { course_id: courseId },
+		}),
+
+	banCourse: (courseId, data = {}) =>
+		axiosInstance.put(`${COURSE_BASE}/ban`, data, {
+			params: { course_id: courseId },
+		}),
+
+	unbanCourse: (courseId, data = {}) =>
+		axiosInstance.put(`${COURSE_BASE}/unban`, data, {
 			params: { course_id: courseId },
 		}),
 
@@ -106,6 +107,11 @@ export const courseAPI = {
 	getCourseEnrollments: (courseId, queryParams = {}) =>
 		axiosInstance.get(`${COURSE_BASE}/courses/enrollments`, {
 			params: { course_id: courseId, ...queryParams },
+		}),
+
+	getStudentDetails: (courseId, studentId) =>
+		axiosInstance.get(`${COURSE_BASE}/student-details`, {
+			params: { course_id: courseId, student: studentId },
 		}),
 
 	// ---------------------------------------------------------------------------
@@ -214,7 +220,7 @@ export const courseAPI = {
 			params: { course_id: courseId, lesson_id: lessonId },
 		}),
 
-	uploadVideoContentFile: (courseId, lessonId, file, extraData = {}) => {
+	uploadVideoContentFile: (courseId, lessonId, file, extraData = {}, onUploadProgress) => {
 		const formData = new FormData();
 		formData.append('video_file', file);
 
@@ -226,10 +232,11 @@ export const courseAPI = {
 
 		return axiosInstance.post(`${COURSE_BASE}/contents/video/upload`, formData, {
 			params: { course_id: courseId, lesson_id: lessonId },
+			...(onUploadProgress ? { onUploadProgress } : {}),
 		});
 	},
 
-	uploadPdfContentFile: (courseId, lessonId, file, extraData = {}) => {
+	uploadPdfContentFile: (courseId, lessonId, file, extraData = {}, onUploadProgress) => {
 		const formData = new FormData();
 		formData.append('pdf_file', file);
 
@@ -241,6 +248,7 @@ export const courseAPI = {
 
 		return axiosInstance.post(`${COURSE_BASE}/contents/pdf/upload`, formData, {
 			params: { course_id: courseId, lesson_id: lessonId },
+			...(onUploadProgress ? { onUploadProgress } : {}),
 		});
 	},
 
@@ -416,12 +424,12 @@ export const courseAPI = {
 	// ---------------------------------------------------------------------------
 
 	createReview: (courseId, reviewData) =>
-		axiosInstance.post(`${COURSE_BASE}/reviews`, reviewData, {
+		axiosInstance.post(`/reviews`, reviewData, {
 			params: { course_id: courseId },
 		}),
 
 	getReviews: (courseId, queryParams = {}) =>
-		axiosInstance.get(`${COURSE_BASE}/reviews`, {
+		axiosInstance.get(`/reviews`, {
 			params: { course_id: courseId, ...queryParams },
 		}),
 };

@@ -9,6 +9,7 @@ export const CreateCourseForm = ({
   subjects = [],
   gradeLevels = [],
   courseTypes = [],
+  languages = [],
   isSubmitting = false,
 }) => {
   return (
@@ -81,6 +82,26 @@ export const CreateCourseForm = ({
             </div>
           </div>
 
+          {/* Language */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Language *</label>
+              <select
+                name="language"
+                value={formData.language}
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                {languages.map(lang => (
+                  <option key={lang.value} value={lang.value}>
+                    {lang.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           {/* Course Type, Price Type and Price */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
@@ -141,7 +162,6 @@ export const CreateCourseForm = ({
               >
                 <option value="DRAFT">Draft</option>
                 <option value="PUBLISHED">Published</option>
-                <option value="ARCHIVED">Archived</option>
               </select>
             </div>
 

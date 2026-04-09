@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { FaArrowLeft, FaCreditCard, FaFileInvoice, FaSpinner, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { useCart, useCheckout } from '../../hooks/useCart';
+import paymentAPI from '../../api/payment';
 import { CiBank } from 'react-icons/ci';
 import Notification from '../../components/common/Notification';
 import ButtonWithLoader from '../../components/common/ButtonWithLoader';
@@ -12,7 +13,7 @@ const CheckoutPage = () => {
   const { cart, loading: cartLoading } = useCart();
   const { checkout, loading: checkoutLoading, error } = useCheckout();
   
-  const [paymentMethod, setPaymentMethod] = useState('payhere');
+  const [paymentMethod, setPaymentMethod] = useState('bank');
   const [tax] = useState(0);
   const [couponCode, setCouponCode] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -20,9 +21,6 @@ const CheckoutPage = () => {
   const [discountApplied, setDiscountApplied] = useState(null);
   const [checkoutError, setCheckoutError] = useState(null);
   const [bankSlipData, setBankSlipData] = useState({
-    bankName: '',
-    accountHolderName: '',
-    transferDate: '',
     bankSlip: null
   });
   const [checkoutResult, setCheckoutResult] = useState(null);
@@ -145,46 +143,13 @@ const CheckoutPage = () => {
 
   // Handle PayHere payment
   const handlePayHerePayment = async () => {
-    setProcessing(true);
-    setCheckoutError(null);
-
-    const result = await checkout(paymentMethod, couponCode || null, parseFloat(tax) || 0);
-
-    if (result.success) {
-      // Redirect to PayHere gateway
-      if (result.paymentGateway) {
-        // Store order data for reference
-        sessionStorage.setItem('pendingOrder', JSON.stringify(result.order));
-        sessionStorage.setItem('pendingPayment', JSON.stringify(result.payment));
-        
-        setCheckoutResult({
-          type: 'success',
-          title: 'Checkout Created',
-          message: 'Your checkout is ready. Follow the payment process to confirm enrollment for paid courses.',
-          isPayHere: true
-        });
-        setCountdownTimer(7);
-        
-        // Redirect to PayHere after 2 seconds
-        setTimeout(() => {
-          window.location.href = result.paymentGateway.redirect_url;
-        }, 2000);
-      }
-    } else {
-      setCheckoutResult({
-        type: 'error',
-        title: 'Payment Initiation Failed',
-        message: result.message || 'Failed to initiate PayHere payment'
-      });
-      setCountdownTimer(7);
-      setProcessing(false);
-    }
+    setCheckoutError('PayHere is coming soon. Please use Bank Deposit.');
   };
 
-  // Handle Bank Slip payment
+  // Handle Bank Deposit payment
   const handleBankSlipSubmit = async () => {
-    if (!bankSlipData.bankName || !bankSlipData.accountHolderName || !bankSlipData.transferDate || !bankSlipData.bankSlip) {
-      setCheckoutError('Please fill all bank slip fields');
+    if (!bankSlipData.bankSlip) {
+      setCheckoutError('Please upload a bank deposit receipt');
       return;
     }
 
@@ -195,25 +160,19 @@ const CheckoutPage = () => {
       const result = await checkout(paymentMethod, couponCode || null, parseFloat(tax) || 0);
 
       if (result.success) {
-        // Upload bank slip
+        // Upload deposit receipt via payment API
         const formData = new FormData();
-        formData.append('order_id', result.order.id);
-        formData.append('payment_id', result.payment.id);
-        formData.append('bank_name', bankSlipData.bankName);
-        formData.append('account_holder_name', bankSlipData.accountHolderName);
-        formData.append('transfer_date', bankSlipData.transferDate);
-        formData.append('bank_slip', bankSlipData.bankSlip);
+        formData.append('transaction_id', result.payment.id);
+        formData.append('receipt_image', bankSlipData.bankSlip);
 
-        const uploadResponse = await new Promise(resolve => {
-          setTimeout(() => resolve({ data: { success: true } }), 500);
-        });
+        const uploadResponse = await paymentAPI.uploadStudentReceipt(formData);
 
-        if (uploadResponse.data.success) {
-          showNotification('Bank slip uploaded successfully!', 'success');
+        if (uploadResponse?.data?.status === 'success') {
+          showNotification('Bank deposit uploaded successfully!', 'success');
           setCheckoutResult({
             type: 'success',
-            title: 'Bank Slip Uploaded Successfully! ✓',
-            message: 'Your bank slip has been submitted for verification.',
+            title: 'Bank Deposit Uploaded',
+            message: 'Your deposit receipt has been submitted for verification.',
             order: result.order,
             payment: result.payment
           });
@@ -223,7 +182,7 @@ const CheckoutPage = () => {
           setCheckoutResult({
             type: 'error',
             title: 'Upload Failed',
-            message: uploadResponse.data.message || 'Failed to upload bank slip'
+            message: uploadResponse?.data?.message || 'Failed to upload deposit receipt'
           });
           setCountdownTimer(7);
           setProcessing(false);
@@ -402,37 +361,34 @@ const CheckoutPage = () => {
               <div
                 className={`p-6 rounded-xl border-2 mb-4 cursor-pointer transition ${
                   paymentMethod === 'payhere'
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-slate-200 bg-slate-50 hover:border-slate-300'
+                    ? 'border-slate-300 bg-slate-50'
+                    : 'border-slate-200 bg-slate-50'
                 }`}
-                onClick={() => setPaymentMethod('payhere')}
+                onClick={() => setCheckoutError('PayHere is coming soon. Please use Bank Deposit.')}
               >
                 <div className="flex items-start gap-4">
                   <input
                     type="radio"
                     value="payhere"
                     checked={paymentMethod === 'payhere'}
-                    onChange={() => setPaymentMethod('payhere')}
+                    onChange={() => setCheckoutError('PayHere is coming soon. Please use Bank Deposit.')}
+                    disabled
                     className="mt-1 h-4 w-4"
                   />
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
-                      <FaCreditCard className="text-blue-600 text-lg" />
-                      <h3 className="text-lg font-bold text-slate-900">PayHere (Card Payment)</h3>
+                      <FaCreditCard className="text-slate-400 text-lg" />
+                      <h3 className="text-lg font-bold text-slate-700">PayHere (Coming Soon)</h3>
                     </div>
                     <p className="text-sm text-slate-600 mb-3">
-                      Pay securely using your credit or debit card. Instant confirmation.
+                      Card payments will be available soon.
                     </p>
-                    <div className="flex gap-2 flex-wrap">
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Visa</span>
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Mastercard</span>
-                      <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">Mobile Money</span>
-                    </div>
+                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded inline-block">Coming soon</span>
                   </div>
                 </div>
               </div>
 
-              {/* Bank Transfer Option */}
+              {/* Bank Deposit Option */}
               <div
                 className={`p-6 rounded-xl border-2 mb-4 cursor-pointer transition ${
                   paymentMethod === 'bank'
@@ -452,10 +408,10 @@ const CheckoutPage = () => {
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">
                       <CiBank className="text-green-600 text-lg" />
-                      <h3 className="text-lg font-bold text-slate-900">Bank Transfer</h3>
+                      <h3 className="text-lg font-bold text-slate-900">Bank Deposit</h3>
                     </div>
                     <p className="text-sm text-slate-600 mb-3">
-                      Transfer funds directly from your bank account. Upload the bank slip for verification.
+                      Upload a clear deposit receipt image for verification.
                     </p>
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded inline-block">
                       Requires verification
@@ -464,69 +420,28 @@ const CheckoutPage = () => {
                 </div>
               </div>
 
-              {/* Bank Slip Form */}
+              {/* Deposit Slip Upload */}
               {paymentMethod === 'bank' && (
                 <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 mb-4 border border-green-200">
                   <h3 className="text-lg font-bold text-slate-900 mb-4 flex items-center gap-2">
-                    <FaFileInvoice className="text-green-600" /> Bank Transfer Details
+                    <FaFileInvoice className="text-green-600" /> Upload Deposit Receipt
                   </h3>
 
-                  <div className="space-y-4">
-                    {/* Bank Name */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Bank Name *</label>
-                      <input
-                        type="text"
-                        placeholder="e.g., Commercial Bank, Sampath Bank"
-                        value={bankSlipData.bankName}
-                        onChange={(e) => setBankSlipData({ ...bankSlipData, bankName: e.target.value })}
-                        className="w-full px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    {/* Account Holder Name */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Account Holder Name *</label>
-                      <input
-                        type="text"
-                        placeholder="Name on your bank account"
-                        value={bankSlipData.accountHolderName}
-                        onChange={(e) => setBankSlipData({ ...bankSlipData, accountHolderName: e.target.value })}
-                        className="w-full px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    {/* Transfer Date */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Transfer Date *</label>
-                      <input
-                        type="date"
-                        value={bankSlipData.transferDate}
-                        onChange={(e) => setBankSlipData({ ...bankSlipData, transferDate: e.target.value })}
-                        className="w-full px-4 py-2 border border-green-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                      />
-                    </div>
-
-                    {/* Bank Slip Upload */}
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-700 mb-2">Upload Bank Slip *</label>
-                      <div className="border-2 border-dashed border-green-300 rounded-lg p-6 text-center hover:border-green-500 transition cursor-pointer">
-                        <input
-                          type="file"
-                          accept="image/*,.pdf"
-                          onChange={(e) => setBankSlipData({ ...bankSlipData, bankSlip: e.target.files[0] })}
-                          className="hidden"
-                          id="bank-slip-input"
-                        />
-                        <label htmlFor="bank-slip-input" className="cursor-pointer">
-                          <FaFileInvoice className="text-4xl text-green-300 mx-auto mb-2" />
-                          <p className="text-sm font-semibold text-slate-700">
-                            {bankSlipData.bankSlip ? bankSlipData.bankSlip.name : 'Click to upload bank slip'}
-                          </p>
-                          <p className="text-xs text-slate-500 mt-1">PNG, JPG, PDF up to 10MB</p>
-                        </label>
-                      </div>
-                    </div>
+                  <div className="border-2 border-dashed border-green-300 rounded-xl p-5 text-center bg-white/70">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => setBankSlipData({ bankSlip: e.target.files[0] || null })}
+                      className="hidden"
+                      id="bank-slip-input"
+                    />
+                    <label htmlFor="bank-slip-input" className="cursor-pointer block">
+                      <FaFileInvoice className="text-4xl text-green-400 mx-auto mb-2" />
+                      <p className="text-sm font-semibold text-slate-800">
+                        {bankSlipData.bankSlip ? bankSlipData.bankSlip.name : 'Click to upload receipt image'}
+                      </p>
+                      <p className="text-xs text-slate-500 mt-1">Images only</p>
+                    </label>
                   </div>
                 </div>
               )}

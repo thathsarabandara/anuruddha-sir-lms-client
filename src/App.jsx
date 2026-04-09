@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ROUTES, ROLES } from './utils/constants';
 
 // Layouts
@@ -26,6 +26,7 @@ import Gallery from './pages/public/Gallery';
 import Login from './pages/auth/Login';
 import Register from './pages/auth/Register';
 import VerifyOTP from './pages/auth/VerifyOTP';
+import AccountPending from './pages/auth/AccountPending';
 import ForgotPassword from './pages/auth/ForgotPassword';
 import ResetPassword from './pages/auth/ResetPassword';
 
@@ -34,12 +35,8 @@ import StudentDashboard from './pages/student/Dashboard';
 import StudentCourses from './pages/student/Courses';
 import StudentCoursesDiscover from './pages/student/CoursesDiscover';
 import StudentCourseLearning from './pages/student/CourseLearning';
-import StudentLiveClasses from './pages/student/LiveClasses';
-import StudentQuizzes from './pages/student/Quizzes';
-import StudentQuizDetails from './pages/student/QuizDetails';
 import TakeQuiz from './pages/student/TakeQuiz';
 import QuizResults from './pages/student/QuizResults';
-import StudentRecordings from './pages/student/Recordings';
 import StudentCertificates from './pages/student/Certificates';
 import StudentPayments from './pages/student/Payments';
 import StudentRewards from './pages/student/Rewards';
@@ -61,6 +58,7 @@ import ManageQuestions from './pages/teacher/ManageQuestions';
 import GradeQuiz from './pages/teacher/GradeQuiz';
 import QuizResultsDashboard from './pages/teacher/QuizResultsDashboard';
 import TeacherRevenue from './pages/teacher/Revenue';
+import TeacherPaymentApprovals from './pages/teacher/PaymentApprovals';
 import TeacherRewards from './pages/teacher/Rewards';
 import TeacherAnnouncements from './pages/teacher/Announcements';
 import TeacherProfile from './pages/teacher/Profile';
@@ -73,6 +71,7 @@ import AdminCourses from './pages/admin/Courses';
 import AdminPayments from './pages/admin/Payments';
 import AdminQuizzes from './pages/admin/Quizzes';
 import AdminCertificates from './pages/admin/Certificates';
+import AdminAnnouncements from './pages/admin/Announcements';
 import AdminManagement from './pages/admin/Management';
 import AdminReports from './pages/admin/Reports';
 import AdminSettings from './pages/admin/Settings';
@@ -89,6 +88,7 @@ function App() {
           <Route path={ROUTES.LOGIN} element={<Login />} />
           <Route path={ROUTES.REGISTER} element={<Register />} />
           <Route path={ROUTES.VERIFY_OTP} element={<VerifyOTP />} />
+          <Route path={ROUTES.ACCOUNT_PENDING} element={<AccountPending />} />
           <Route path={ROUTES.FORGOT_PASSWORD} element={<ForgotPassword />} />
           <Route path={ROUTES.RESET_PASSWORD} element={<ResetPassword />} />
           <Route path={ROUTES.HOME} element={<Home />} />
@@ -113,12 +113,11 @@ function App() {
           <Route path={ROUTES.STUDENT_COURSES} element={<StudentCourses />} />
           <Route path="/student/courses/discover" element={<StudentCoursesDiscover />} />
           <Route path="/student/course/:courseId/learn" element={<StudentCourseLearning />} />
-          <Route path={ROUTES.STUDENT_LIVE_CLASSES} element={<StudentLiveClasses />} />
-          <Route path={ROUTES.STUDENT_QUIZZES} element={<StudentQuizzes />} />
-          <Route path={ROUTES.STUDENT_QUIZ_DETAILS} element={<StudentQuizDetails />} />
+          <Route path={ROUTES.STUDENT_QUIZZES} element={<Navigate to={ROUTES.STUDENT_COURSES} replace />} />
+          <Route path={ROUTES.STUDENT_QUIZ_DETAILS} element={<Navigate to={ROUTES.STUDENT_COURSES} replace />} />
+          <Route path="/student/quiz/:quizId" element={<Navigate to={ROUTES.STUDENT_COURSES} replace />} />
           <Route path="/student/quiz/:quizId/take" element={<TakeQuiz />} />
           <Route path="/student/quiz/:quizId/results/:attemptId" element={<QuizResults />} />
-          <Route path={ROUTES.STUDENT_RECORDINGS} element={<StudentRecordings />} />
           <Route path={ROUTES.STUDENT_CERTIFICATES} element={<StudentCertificates />} />
           <Route path={ROUTES.STUDENT_PAYMENTS} element={<StudentPayments />} />
           <Route path={ROUTES.STUDENT_REWARDS} element={<StudentRewards />} />
@@ -148,6 +147,7 @@ function App() {
           <Route path="/teacher/quizzes/:quizId/grade" element={<GradeQuiz />} />
           <Route path="/teacher/quizzes/:quizId/results" element={<QuizResultsDashboard />} />
           <Route path={ROUTES.TEACHER_REVENUE} element={<TeacherRevenue />} />
+          <Route path={ROUTES.TEACHER_PAYMENT_APPROVALS} element={<TeacherPaymentApprovals />} />
           <Route path={ROUTES.TEACHER_REWARDS} element={<TeacherRewards />} />
           <Route path={ROUTES.TEACHER_ANNOUNCEMENTS} element={<TeacherAnnouncements />} />
           <Route path={ROUTES.TEACHER_PROFILE} element={<TeacherProfile />} />
@@ -165,9 +165,14 @@ function App() {
           <Route path={ROUTES.ADMIN_STUDENTS} element={<AdminStudents />} />
           <Route path={ROUTES.ADMIN_TEACHERS} element={<AdminTeachers />} />
           <Route path={ROUTES.ADMIN_COURSES} element={<AdminCourses />} />
+          <Route path="/admin/courses/:courseId" element={<TeacherCourseDetail />} />
+          <Route path="/admin/courses/:courseId/content" element={<TeacherCourseDetail />} />
+          <Route path="/admin/courses/:courseId/reviews" element={<TeacherCourseDetail />} />
+          <Route path="/admin/courses/:courseId/enrollment-keys" element={<TeacherCourseDetail />} />
           <Route path={ROUTES.ADMIN_PAYMENTS} element={<AdminPayments />} />
           <Route path={ROUTES.ADMIN_QUIZZES} element={<AdminQuizzes />} />
           <Route path={ROUTES.ADMIN_CERTIFICATES} element={<AdminCertificates />} />
+          <Route path={ROUTES.ADMIN_ANNOUNCEMENTS} element={<AdminAnnouncements />} />
           <Route path={ROUTES.ADMIN_MANAGEMENT} element={<AdminManagement />} />
           <Route path={ROUTES.ADMIN_REPORTS} element={<AdminReports />} />
           <Route path={ROUTES.ADMIN_SETTINGS} element={<AdminSettings />} />

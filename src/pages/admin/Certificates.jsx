@@ -1,66 +1,29 @@
-import { useState } from 'react';
-import { FaFilePdf, FaGraduationCap, FaTimes, FaTrophy, FaChartLine, FaChartArea, FaStar, FaEye, FaSpinner } from 'react-icons/fa';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  FaGraduationCap,
+  FaTimes,
+  FaChartLine,
+  FaEye,
+} from 'react-icons/fa';
 import Notification from '../../components/common/Notification';
 import ButtonWithLoader from '../../components/common/ButtonWithLoader';
 import StatCard from '../../components/common/StatCard';
 import DataTable from '../../components/common/DataTable';
+import { certificateAPI } from '../../api/certificate';
 
 const AdminCertificates = () => {
   const [notification, setNotification] = useState(null);
   const [filterType, setFilterType] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [viewingCertId, setViewingCertId] = useState(null);
-
-  const certificates = [
-    {
-      id: 'CERT-2025-001',
-      student: 'Dilshan Mendis',
-      course: 'Complete Scholarship Package',
-      type: 'completion',
-      issueDate: 'Dec 15, 2025',
-      teacher: 'Anuruddha Sir',
-      score: 92,
-      status: 'issued',
-    },
-    {
-      id: 'CERT-2025-002',
-      student: 'Kamal Perera',
-      course: 'Mathematics Excellence',
-      type: 'achievement',
-      issueDate: 'Dec 14, 2025',
-      teacher: 'Anuruddha Sir',
-      score: 95,
-      status: 'issued',
-    },
-    {
-      id: 'CERT-2025-003',
-      student: 'Sanduni Fernando',
-      course: 'Science Mastery',
-      type: 'completion',
-      issueDate: 'Dec 12, 2025',
-      teacher: 'Saman Fernando',
-      score: 88,
-      status: 'issued',
-    },
-    {
-      id: 'CERT-2025-004',
-      student: 'Nimal Silva',
-      course: 'English Grammar',
-      type: 'participation',
-      issueDate: 'Dec 10, 2025',
-      teacher: 'Saman Fernando',
-      score: 78,
-      status: 'issued',
-    },
-  ];
-
-  const statsData = {
-    total_issued: 1234,
-    this_month: 89,
-    pending: 12,
-    achievements: 456,
-  };
+  const [certificates, setCertificates] = useState([]);
+  const [statsData, setStatsData] = useState({
+    total_issued: 0,
+    this_month: 0,
+    pending: 0,
+  });
 
   const metricsConfig = [
     {
@@ -85,46 +48,77 @@ const AdminCertificates = () => {
       icon: FaTimes,
       bgColor: 'bg-orange-100',
       textColor: 'text-orange-600',
-      description: 'awaiting approval',
+      description: 'awaiting issuance',
     },
-    {
-      label: 'Achievements',
-      statsKey: 'achievements',
-      icon: FaTrophy,
-      bgColor: 'bg-yellow-100',
-      textColor: 'text-yellow-600',
-      description: 'badge badges awarded',
-    },
-  ];
-  const achievements = [
-    { name: 'Top Performer', count: 45, icon: FaTrophy, color: 'bg-yellow-100 text-yellow-700' },
-    { name: 'Perfect Attendance', count: 78, icon: FaStar, color: 'bg-blue-100 text-blue-700' },
-    { name: 'Quiz Master', count: 34, icon: FaFilePdf, color: 'bg-green-100 text-green-700' },
-    { name: 'Fast Learner', count: 56, icon: FaChartArea, color: 'bg-purple-100 text-purple-700' },
   ];
 
   const getCertTypeColor = (type) => {
     const colors = {
       completion: 'bg-green-100 text-green-700',
-      achievement: 'bg-yellow-100 text-yellow-700',
       participation: 'bg-blue-100 text-blue-700',
     };
     return colors[type] || colors.participation;
   };
 
-  const handleIssueCertificate = async () => {
-    setActionLoading(true);
+  const loadCertificates = useCallback(async () => {
+    setLoading(true);
     try {
-      // TODO: Add API call to issue certificate
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      setNotification({
-        type: 'success',
-        message: 'Certificate issued successfully!'
+      const params = {
+        ...(filterType !== 'all' ? { type: filterType } : {}),
+        ...(searchTerm.trim() ? { search: searchTerm.trim() } : {}),
+      };
+
+      const [statsResponse, listResponse] = await Promise.all([
+        certificateAPI.getAdminStats(),
+        certificateAPI.getAdminCertificates(params),
+      ]);
+
+      const statsPayload = statsResponse?.data?.data || {};
+      const listPayload = listResponse?.data?.data || {};
+
+      setStatsData({
+        total_issued: statsPayload.total_issued || 0,
+        this_month: statsPayload.this_month || 0,
+        pending: statsPayload.pending || 0,
       });
+
+      setCertificates(Array.isArray(listPayload.certificates) ? listPayload.certificates : []);
     } catch (error) {
       setNotification({
         type: 'error',
-        message: 'Failed to issue certificate: ' + error.message
+        message: error?.message || 'Failed to load certificate data',
+      });
+      setCertificates([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [filterType, searchTerm]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      loadCertificates();
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [loadCertificates]);
+
+  const handleIssueCertificate = async () => {
+    setActionLoading(true);
+    try {
+      const response = await certificateAPI.issuePendingCertificates();
+      const issuedCount = response?.data?.data?.issued_count || 0;
+      setNotification({
+        type: 'success',
+        message:
+          issuedCount > 0
+            ? `${issuedCount} certificate${issuedCount > 1 ? 's' : ''} issued successfully!`
+            : 'No pending certificates found to issue.',
+      });
+      await loadCertificates();
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: 'Failed to issue certificate: ' + error.message,
       });
     } finally {
       setActionLoading(false);
@@ -134,41 +128,38 @@ const AdminCertificates = () => {
   const handleViewCertificate = async (certId) => {
     setViewingCertId(certId);
     try {
-      // TODO: Add API call to view/download certificate
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const response = await certificateAPI.getCertificateDetails(certId);
+      const cert = response?.data?.data;
       setNotification({
         type: 'info',
-        message: 'Opening certificate...'
+        message: cert
+          ? `Certificate: ${cert.certificate_code || cert.id} | ${cert.student_name || cert.student} - ${cert.course_title || cert.course}`
+          : 'Certificate details loaded.',
       });
     } catch (error) {
       setNotification({
         type: 'error',
-        message: 'Failed to view certificate: ' + error.message
+        message: 'Failed to view certificate: ' + error.message,
       });
     } finally {
       setViewingCertId(null);
     }
   };
 
-  const filteredCertificates = certificates.filter((cert) => {
-    return filterType === 'all' || cert.type === filterType;
-  });
-
-
   return (
     <div className="p-8">
       {notification && (
         <div className="fixed top-4 left-4 right-4 z-50 max-w-sm">
-          <Notification 
-            {...notification} 
-            onClose={() => setNotification(null)} 
+          <Notification
+            {...notification}
+            onClose={() => setNotification(null)}
           />
         </div>
       )}
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Certificate Management</h1>
-          <p className="text-gray-600">Issue and manage certificates and achievements</p>
+          <p className="text-gray-600">Issue and manage certificates</p>
         </div>
         <ButtonWithLoader
           label="+ Issue Certificate"
@@ -180,25 +171,10 @@ const AdminCertificates = () => {
         />
       </div>
 
-      <StatCard stats={statsData} metricsConfig={metricsConfig} />
-
-      {/* Achievements Summary */}
-      <div className="card mb-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-4">Achievement Badges Issued</h2>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {achievements.map((achievement, index) => (
-            <div key={index} className={`p-4 rounded-lg ${achievement.color}`}>
-              <div className="text-3xl mb-2">{achievement.icon}</div>
-              <p className="font-bold text-gray-900">{achievement.name}</p>
-              <p className="text-2xl font-bold">{achievement.count}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
+      <StatCard stats={statsData} metricsConfig={metricsConfig} loading={loading} />
       {/* Certificates DataTable */}
       <DataTable
-        data={filteredCertificates}
+        data={certificates}
         columns={[
           {
             key: 'id',
@@ -224,7 +200,6 @@ const AdminCertificates = () => {
             filterable: true,
             filterOptions: [
               { label: 'Completion', value: 'completion' },
-              { label: 'Achievement', value: 'achievement' },
               { label: 'Participation', value: 'participation' },
             ],
             render: (value) => (
@@ -265,8 +240,8 @@ const AdminCertificates = () => {
               <ButtonWithLoader
                 label="View"
                 loadingLabel="Loading..."
-                isLoading={viewingCertId === cert.id}
-                onClick={() => handleViewCertificate(cert.id)}
+                isLoading={viewingCertId === cert.certificate_id}
+                onClick={() => handleViewCertificate(cert.certificate_id)}
                 icon={<FaEye />}
                 variant="primary"
               />
@@ -285,33 +260,13 @@ const AdminCertificates = () => {
           statusFilterOptions: [
             { label: 'All Types', value: 'all' },
             { label: 'Course Completion', value: 'completion' },
-            { label: 'Achievement', value: 'achievement' },
             { label: 'Participation', value: 'participation' },
           ],
           statusFilterValue: filterType,
           onStatusFilterChange: (value) => setFilterType(value),
         }}
-        loading={false}
+        loading={loading}
       />
-
-      {/* Achievement Badges */}
-      <div className="mt-8">
-        <h2 className="text-xl font-bold text-gray-900 mb-6">Achievement Badges</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {achievements.map((achievement, idx) => {
-            const IconComponent = achievement.icon;
-            return (
-              <div key={idx} className="card text-center p-6">
-                <div className={`${achievement.color} w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3`}>
-                  <IconComponent className="text-xl" />
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-1">{achievement.name}</h3>
-                <p className="text-2xl font-bold text-primary-600">{achievement.count}</p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
     </div>
   );
 };

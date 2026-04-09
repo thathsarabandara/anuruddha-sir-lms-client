@@ -36,7 +36,7 @@ const Services = () => {
       icon: FaGem,
       title: 'Rewards System',
       description: 'Gamified learning with coins and gems. Earn rewards for achievements and performance.',
-      features: ['Achievement Badges', 'Coin System', 'Gem Rewards', 'Redemption Options'],
+      features: ['Milestone Rewards', 'Coin System', 'Gem Rewards', 'Redemption Options'],
     },
     {
       icon: FaTrophy,
